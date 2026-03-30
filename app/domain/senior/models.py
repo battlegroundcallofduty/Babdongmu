@@ -1,5 +1,7 @@
 """어르신 MongoDB 문서 스키마."""
 
+from datetime import datetime, timezone
+
 
 def senior_document(
     name: str,
@@ -24,4 +26,5 @@ def senior_document(
         "guardian_id": guardian_id,
         "note": note,
         "is_active": True,
+        "created_at": datetime.now(timezone.utc),
     }

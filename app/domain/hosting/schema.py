@@ -10,6 +10,7 @@ class HostingCreateRequest(BaseModel):
     date: str
     time_slot: str  # "점심" | "저녁"
     menu: str
+    max_guests: int = 2  # 2~4명
     note: str = ""
 
 
@@ -23,5 +24,6 @@ class HostingResponse(BaseModel):
     date: str
     time_slot: str
     menu: str
+    max_guests: int
     status: str
-    matched_volunteer_id: str | None = None
+    matched_volunteer_ids: list[str] = []

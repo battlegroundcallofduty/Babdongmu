@@ -22,5 +22,8 @@ def user_document(
         "phone": phone,
         "role": role,
         "district": district,
+        "verification_status": "unverified",  # unverified -> verified
+        "total_hours": 0.0,
+        "visit_count": 0,
         "is_active": True,
     }
