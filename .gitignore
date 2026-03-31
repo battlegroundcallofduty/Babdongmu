@@ -1,6 +1,7 @@
 # Claude Code
 .claude/
 .gstack/
+CLAUDE.md
 
 # Python
 __pycache__/
