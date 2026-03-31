@@ -27,3 +27,4 @@ class SeniorResponse(BaseModel):
     available_days: list[str]
     available_time: str
     is_active: bool
+    ai_summary: str = ""

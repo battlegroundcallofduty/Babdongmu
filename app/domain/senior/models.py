@@ -26,5 +26,7 @@ def senior_document(
         "guardian_id": guardian_id,
         "note": note,
         "is_active": True,
+        "ai_summary": "",
+        "ai_summary_updated_at": None,
         "created_at": datetime.now(timezone.utc),
     }

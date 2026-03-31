@@ -18,6 +18,10 @@ class Settings(BaseSettings):
     COOLSMS_API_SECRET: str = ""
     COOLSMS_SENDER: str = ""
 
+    # OpenAI (AI 요약 기능)
+    OPENAI_API_KEY: str = ""
+    OPENAI_MODEL: str = "gpt-4o-mini"
+
     class Config:
         env_file = ".env"
 
