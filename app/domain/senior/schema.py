@@ -10,7 +10,6 @@ class SeniorCreateRequest(BaseModel):
     age: int
     address: str
     district: str
-    specialty_foods: list[str]
     available_days: list[str]
     available_time: str
     note: str = ""
@@ -23,7 +22,6 @@ class SeniorResponse(BaseModel):
     name: str
     age: int
     district: str
-    specialty_foods: list[str]
     available_days: list[str]
     available_time: str
     is_active: bool

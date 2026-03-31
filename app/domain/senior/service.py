@@ -1,7 +1,7 @@
 """어르신 비즈니스 로직."""
 
 
-async def create_senior(data: dict, guardian_id: str) -> dict:
+async def create_senior(data: dict, registered_by: str) -> dict:
     """어르신을 등록합니다."""
     pass
 

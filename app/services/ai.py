@@ -1,4 +1,4 @@
-"""AI 요약 생성 서비스 (OpenAI 기반)."""
+"""AI 요약 생성 서비스 (Gemini 기반)."""
 
 from app.config import settings
 
@@ -20,7 +20,7 @@ SUMMARY_PROMPT = """당신은 독거 어르신을 위한 식사 동반 플랫폼
 
 async def generate_senior_summary(reviews: list[str]) -> str:
     """후기 목록을 받아 어르신 AI 소개글을 생성합니다."""
-    # TODO: OpenAI API 호출 구현
+    # TODO: Gemini API 호출 구현
     # 1. reviews가 최소 3개 이상일 때만 생성
     # 2. SUMMARY_PROMPT에 후기를 삽입하여 LLM 호출
     # 3. 생성된 요약을 반환

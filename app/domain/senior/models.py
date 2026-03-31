@@ -8,10 +8,9 @@ def senior_document(
     age: int,
     address: str,
     district: str,
-    specialty_foods: list[str],
     available_days: list[str],
     available_time: str,
-    guardian_id: str,
+    registered_by: str,
     note: str = "",
 ) -> dict:
     """어르신 문서를 생성합니다."""
@@ -20,10 +19,9 @@ def senior_document(
         "age": age,
         "address": address,
         "district": district,
-        "specialty_foods": specialty_foods,
         "available_days": available_days,
         "available_time": available_time,
-        "guardian_id": guardian_id,
+        "registered_by": registered_by,
         "note": note,
         "is_active": True,
         "ai_summary": "",
