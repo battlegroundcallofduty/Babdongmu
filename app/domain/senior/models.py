@@ -1,30 +1,28 @@
-"""어르신 MongoDB 문서 스키마."""
+"""어르신 SQLAlchemy ORM 모델."""
 
 from datetime import datetime, timezone
+from typing import Optional
+
+from sqlalchemy import TIMESTAMP, Boolean, ForeignKey, Integer, String, Text
+from sqlalchemy.orm import Mapped, mapped_column
+
+from app.database import Base
 
 
-def senior_document(
-    name: str,
-    age: int,
-    address: str,
-    district: str,
-    available_days: list[str],
-    available_time: str,
-    registered_by: str,
-    note: str = "",
-) -> dict:
-    """어르신 문서를 생성합니다."""
-    return {
-        "name": name,
-        "age": age,
-        "address": address,
-        "district": district,
-        "available_days": available_days,
-        "available_time": available_time,
-        "registered_by": registered_by,
-        "note": note,
-        "is_active": True,
-        "ai_summary": "",
-        "ai_summary_updated_at": None,
-        "created_at": datetime.now(timezone.utc),
-    }
+class Senior(Base):
+    __tablename__ = "seniors"
+
+    senior_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    guardian_id: Mapped[int] = mapped_column(ForeignKey("users.user_id", ondelete="RESTRICT"))
+    name: Mapped[str] = mapped_column(String(100))
+    gender: Mapped[str] = mapped_column(String(10))
+    age: Mapped[int] = mapped_column(Integer)
+    address: Mapped[str] = mapped_column(String(255))
+    special_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    active_flag: Mapped[bool] = mapped_column(Boolean, default=True)
+    ai_summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    max_people: Mapped[int] = mapped_column(Integer, default=2)
+    created_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+    )

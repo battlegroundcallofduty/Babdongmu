@@ -4,9 +4,8 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     """환경변수 설정을 관리합니다."""
 
-    # MongoDB
-    MONGO_URL: str = "mongodb://babdongmu:babdongmu1234@localhost:27017"
-    MONGO_DB: str = "babdongmu"
+    # DB: 로컬은 SQLite, Docker 배포 시 PostgreSQL URL로 교체
+    DATABASE_URL: str = "sqlite+aiosqlite:///./babdongmu.db"
 
     # JWT
     SECRET_KEY: str = "dev-secret-key-change-in-production"

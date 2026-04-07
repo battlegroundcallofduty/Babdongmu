@@ -1,19 +1,22 @@
-"""매칭 MongoDB 문서 스키마."""
+"""매칭 SQLAlchemy ORM 모델."""
 
 from datetime import datetime, timezone
 
+from sqlalchemy import TIMESTAMP, Boolean, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column
 
-def match_document(
-    hosting_id: str,
-    volunteer_id: str,
-) -> dict:
-    """매칭 문서를 생성합니다."""
-    return {
-        "hosting_id": hosting_id,
-        "volunteer_id": volunteer_id,
-        "status": "scheduled",  # scheduled -> in_progress -> completed | no_show
-        "checkin_at": None,
-        "checkout_at": None,
-        "volunteer_hours": 0.0,
-        "created_at": datetime.now(timezone.utc),
-    }
+from app.database import Base
+
+
+class MatchingInfo(Base):
+    __tablename__ = "matching_info"
+
+    matching_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    hosting_id: Mapped[int] = mapped_column(ForeignKey("hostings.hosting_id", ondelete="CASCADE"))
+    vt_id: Mapped[int] = mapped_column(ForeignKey("users.user_id", ondelete="CASCADE"))  # 봉사자
+    is_apply: Mapped[bool] = mapped_column(Boolean, default=True)   # 신청/취소 여부
+    check_in: Mapped[bool] = mapped_column(Boolean, default=False)  # 방문 체크인 여부
+    created_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+    )

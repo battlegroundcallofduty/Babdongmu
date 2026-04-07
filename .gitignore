@@ -17,6 +17,11 @@ venv/
 .vscode/
 .idea/
 
+# DB
+*.db
+*.db-shm
+*.db-wal
+
 # Temp
 design-preview.html
 *.log
