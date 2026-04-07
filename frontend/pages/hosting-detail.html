@@ -3,15 +3,173 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>밥동무 - 호스팅 상세</title>
+  <title>호스팅 상세 - 밥동무</title>
   <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" rel="stylesheet">
   <link rel="stylesheet" href="/css/common.css">
 </head>
 <body>
-  <div class="container" style="padding-top: 40px;">
-    <h2>호스팅 상세</h2>
-    <p style="color: var(--muted); margin-top: 8px;">어르신 소개와 오늘의 메뉴를 확인하세요.</p>
+  <!-- Navigation -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="/" class="nav-logo">
+        <svg class="nav-logo-icon" viewBox="0 0 32 32" fill="none">
+          <circle cx="16" cy="16" r="14" fill="#D4763C" opacity="0.12"/>
+          <path d="M8 18c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke="#D4763C" stroke-width="2" stroke-linecap="round"/>
+          <path d="M6 18h20v1c0 3.3-2.7 6-6 6h-8c-3.3 0-6-2.7-6-6v-1z" fill="#D4763C" opacity="0.2"/>
+          <ellipse cx="16" cy="18" rx="10" ry="2" fill="#D4763C" opacity="0.15"/>
+          <path d="M13 14c-.5-2 .5-4 3-4s3.5 2 3 4" stroke="#5B8C5A" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+        </svg>
+        밥동무
+      </a>
+      <ul class="nav-links">
+        <li><a href="/pages/hostings.html" class="active">호스팅</a></li>
+        <li><a href="/pages/my-matches.html">내 매칭</a></li>
+        <li><a href="/pages/mypage.html">마이페이지</a></li>
+      </ul>
+      <button class="nav-toggle" onclick="toggleNav()" aria-label="메뉴 열기">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Mobile Drawer -->
+  <div class="nav-drawer" id="navDrawer" onclick="closeNav(event)">
+    <div class="nav-drawer-content">
+      <a href="/pages/hostings.html" class="active">호스팅</a>
+      <a href="/pages/my-matches.html">내 매칭</a>
+      <a href="/pages/mypage.html">마이페이지</a>
+    </div>
   </div>
+
+  <main class="container" style="max-width:720px;">
+    <!-- Back Link -->
+    <div class="page-header slide-up">
+      <a href="/pages/hostings.html" class="back-link">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 4l-6 6 6 6"/>
+        </svg>
+        목록으로
+      </a>
+    </div>
+
+    <!-- Profile Card -->
+    <div class="profile-card slide-up stagger-1">
+      <div class="profile-avatar">김</div>
+      <div class="profile-details">
+        <h2>김순자 어르신</h2>
+        <p>78세 · 성북구 정릉동</p>
+      </div>
+    </div>
+
+    <!-- AI Summary -->
+    <div class="ai-summary-card mb-lg slide-up stagger-2">
+      <div class="ai-summary-label">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <path d="M8 2l1.5 3.5H13l-3 2.5 1.2 3.5L8 9.5 4.8 11.5 6 8 3 5.5h3.5L8 2z"/>
+        </svg>
+        소개글
+      </div>
+      <p class="ai-summary-text">된장찌개 맛이 일품이시고, 늘 따뜻하게 맞아주셔서 집에 온 것 같은 편안함을 느낄 수 있어요. 이야기 나누는 걸 좋아하시는 정겨운 분입니다.</p>
+    </div>
+
+    <!-- Hosting Info -->
+    <div class="detail-section slide-up stagger-3">
+      <h3>호스팅 정보</h3>
+      <div class="detail-row">
+        <svg class="detail-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <rect x="3" y="4" width="14" height="14" rx="2"/><path d="M3 8h14"/><path d="M7 2v4M13 2v4"/>
+        </svg>
+        <span class="detail-label">날짜</span>
+        <span class="detail-value">2026년 4월 15일 (화)</span>
+      </div>
+      <div class="detail-row">
+        <svg class="detail-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <circle cx="10" cy="10" r="7"/><path d="M10 6v4l3 2"/>
+        </svg>
+        <span class="detail-label">시간대</span>
+        <span class="detail-value">점심</span>
+      </div>
+      <div class="detail-row">
+        <svg class="detail-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <path d="M4 16c0-4.4 3.6-8 8-8s8 4.4 8 8" transform="translate(-2,-2) scale(0.85)"/>
+          <ellipse cx="10" cy="14" rx="7" ry="1.5" opacity="0.3"/>
+        </svg>
+        <span class="detail-label">메뉴</span>
+        <span class="detail-value font-display font-bold text-primary">된장찌개</span>
+      </div>
+      <div class="detail-row">
+        <svg class="detail-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <circle cx="7" cy="8" r="3"/><circle cx="13" cy="8" r="3"/><path d="M2 17c0-2.8 2.2-5 5-5 1.3 0 2.5.5 3.4 1.3" opacity="0.5"/><path d="M18 17c0-2.8-2.2-5-5-5-1.3 0-2.5.5-3.4 1.3" opacity="0.5"/>
+        </svg>
+        <span class="detail-label">모집 현황</span>
+        <span class="detail-value"><span class="badge badge-open">모집중 2/3</span></span>
+      </div>
+      <div class="detail-row">
+        <svg class="detail-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <circle cx="10" cy="10" r="7"/><path d="M10 7v3"/><circle cx="10" cy="13" r="0.5" fill="currentColor"/>
+        </svg>
+        <span class="detail-label">특이사항</span>
+        <span class="detail-value">청력이 약하셔서 천천히 크게 말씀해주세요.</span>
+      </div>
+    </div>
+
+    <!-- Apply Button -->
+    <button id="apply-btn" class="btn btn-primary btn-lg w-full slide-up stagger-4">매칭 신청하기</button>
+
+    <!-- Reviews -->
+    <div class="detail-section mt-2xl slide-up stagger-5">
+      <h3>봉사자 후기</h3>
+
+      <div class="review-card">
+        <div class="review-header">
+          <span class="review-author">홍길동</span>
+          <span class="review-date">2026.04.10</span>
+        </div>
+        <p class="review-message">된장찌개가 정말 맛있었어요. 할머니께서 손녀딸 온 것 같다며 기뻐하셨습니다.</p>
+      </div>
+
+      <div class="review-card">
+        <div class="review-header">
+          <span class="review-author">김철수</span>
+          <span class="review-date">2026.04.03</span>
+        </div>
+        <p class="review-message">따뜻한 밥상에 마음까지 따뜻해졌습니다. 다음에 또 방문하고 싶어요.</p>
+      </div>
+
+      <div class="review-card">
+        <div class="review-header">
+          <span class="review-author">이영희</span>
+          <span class="review-date">2026.03.28</span>
+        </div>
+        <p class="review-message">할머니 손맛이 최고예요. 집밥이 그리울 때 꼭 다시 올게요.</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-bottom">
+        &copy; 2026 밥동무. 독거 어르신을 위한 식사 동반 플랫폼
+      </div>
+    </div>
+  </footer>
+
   <script src="/js/api.js"></script>
+  <script>
+    function toggleNav() {
+      const toggle = document.querySelector('.nav-toggle');
+      const drawer = document.getElementById('navDrawer');
+      toggle.classList.toggle('active');
+      drawer.classList.toggle('open');
+      document.body.style.overflow = drawer.classList.contains('open') ? 'hidden' : '';
+    }
+
+    function closeNav(e) {
+      if (e.target === e.currentTarget) {
+        toggleNav();
+      }
+    }
+  </script>
 </body>
 </html>
