@@ -4,13 +4,13 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
 from app.api.v1.router import api_router
-from app.database import connect_db, close_db
+from app.database import init_db, close_db
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """앱 시작/종료 시 DB 연결을 관리합니다."""
-    await connect_db()
+    await init_db()
     yield
     await close_db()
 
