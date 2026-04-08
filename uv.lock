@@ -66,6 +66,7 @@ dependencies = [
     { name = "pydantic-settings" },
     { name = "pyjwt" },
     { name = "python-dotenv" },
+    { name = "solapi" },
     { name = "sqlalchemy", extra = ["asyncio"] },
     { name = "uvicorn", extra = ["standard"] },
 ]
@@ -90,6 +91,7 @@ requires-dist = [
     { name = "pydantic-settings", specifier = "==2.8.1" },
     { name = "pyjwt", specifier = "==2.12.1" },
     { name = "python-dotenv", specifier = "==1.1.0" },
+    { name = "solapi" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = "==2.0.40" },
     { name = "uvicorn", extras = ["standard"], specifier = "==0.34.2" },
 ]
@@ -757,6 +759,19 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/ff/61/c488943414fb2b8754c02f3879de003e26efdd20f38167ded3fb3fc1cda3/ruff-0.11.4-py3-none-win32.whl", hash = "sha256:0e9365a7dff9b93af933dab8aebce53b72d8f815e131796268709890b4a83270", size = 10311496, upload-time = "2025-04-04T18:24:42.94Z" },
     { url = "https://files.pythonhosted.org/packages/b6/2b/2a1c8deb5f5dfa3871eb7daa41492c4d2b2824a74d2b38e788617612a66d/ruff-0.11.4-py3-none-win_amd64.whl", hash = "sha256:5a9fa1c69c7815e39fcfb3646bbfd7f528fa8e2d4bebdcf4c2bd0fa037a255fb", size = 11399146, upload-time = "2025-04-04T18:24:45.651Z" },
     { url = "https://files.pythonhosted.org/packages/4f/03/3aec4846226d54a37822e4c7ea39489e4abd6f88388fba74e3d4abe77300/ruff-0.11.4-py3-none-win_arm64.whl", hash = "sha256:d435db6b9b93d02934cf61ef332e66af82da6d8c69aefdea5994c89997c7a0fc", size = 10450306, upload-time = "2025-04-04T18:24:49.603Z" },
+]
+
+[[package]]
+name = "solapi"
+version = "5.0.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "httpx" },
+    { name = "pydantic" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/94/77/27ef67b3b61f690dc8e31f02ad7c1f735ed71df9af93b00426a7c956ee67/solapi-5.0.3.tar.gz", hash = "sha256:3090cf2e760885197ca18cccc3f6c2f21c32f99d3afdb948ff486f355b37e297", size = 18365, upload-time = "2026-01-22T13:08:12.085Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b6/48/6b65fd1f2187ed50f49699e1c62e2e4d37875fcdd3b26d3d075f02a8eddc/solapi-5.0.3-py3-none-any.whl", hash = "sha256:45b0d29267291026141d1472fc73539fb7dc0509202f56047f4af87a273af709", size = 34957, upload-time = "2026-01-22T13:08:10.061Z" },
 ]
 
 [[package]]

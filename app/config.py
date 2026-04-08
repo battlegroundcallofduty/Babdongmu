@@ -12,10 +12,10 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
 
-    # CoolSMS (선택)
-    COOLSMS_API_KEY: str = ""
-    COOLSMS_API_SECRET: str = ""
-    COOLSMS_SENDER: str = ""
+    # Solapi(=CoolSMS) (SMS 발송)
+    SOLAPI_API_KEY: str = ""
+    SOLAPI_API_SECRET: str = ""
+    SOLAPI_SENDER: str = ""
 
     # Gemini (AI 요약 기능)
     GEMINI_API_KEY: str = ""

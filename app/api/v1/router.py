@@ -6,6 +6,7 @@ from app.domain.hosting.router import router as hosting_router
 from app.domain.match.router import router as match_router
 from app.domain.review.router import router as review_router
 from app.domain.ai.router import router as ai_router
+from app.domain.test.router import router as test_router
 
 api_router = APIRouter()
 
@@ -15,3 +16,4 @@ api_router.include_router(hosting_router, prefix="/hostings", tags=["hostings"])
 api_router.include_router(match_router, prefix="/matches", tags=["matches"])
 api_router.include_router(review_router, prefix="/reviews", tags=["reviews"])
 api_router.include_router(ai_router, prefix="/ai", tags=["ai"])
+api_router.include_router(test_router, prefix="/test", tags=["test"])
