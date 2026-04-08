@@ -1,21 +1,100 @@
 """매칭 비즈니스 로직."""
 
+from datetime import datetime, timezone
 
-async def create_match(hosting_id: str, volunteer_id: str) -> dict:
+from fastapi import HTTPException
+from sqlalchemy import select, func
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.domain.hosting.models import Hosting
+from app.domain.match.models import MatchingInfo
+
+
+async def create_match(db: AsyncSession, hosting_id: int, vt_id: int) -> MatchingInfo:
     """매칭을 생성합니다."""
-    pass
+
+    # 1. 호스팅 존재 여부 확인
+    hosting = await db.get(Hosting, hosting_id)
+    if not hosting:
+        raise HTTPException(status_code=404, detail="존재하지 않는 호스팅입니다.")
+
+    # 2. 호스팅 상태 확인
+    if hosting.hosting_status != "신청가능":
+        raise HTTPException(status_code=400, detail="신청 불가능한 호스팅입니다.")
+
+    # 3. 중복 신청 확인
+    result = await db.execute(
+        select(MatchingInfo).where(
+            MatchingInfo.hosting_id == hosting_id,
+            MatchingInfo.vt_id == vt_id,
+            MatchingInfo.is_apply == True,
+        )
+    )
+    if result.scalar_one_or_none():
+        raise HTTPException(status_code=409, detail="이미 신청한 호스팅입니다.")
+
+    # 4. 매칭 생성
+    match = MatchingInfo(hosting_id=hosting_id, vt_id=vt_id)
+    db.add(match)
+
+    # 5. 정원 찼는지 확인 후 호스팅 상태 업데이트
+    count_result = await db.execute(
+        select(func.count()).where(
+            MatchingInfo.hosting_id == hosting_id,
+            MatchingInfo.is_apply == True,
+        )
+    )
+    current_count = count_result.scalar()
+    if current_count + 1 >= hosting.max_people:
+        hosting.hosting_status = "모집완료"
+
+    await db.commit()
+    await db.refresh(match)
+    return match
 
 
-async def list_matches_by_volunteer(volunteer_id: str, status: str | None = None) -> list[dict]:
+async def list_matches_by_volunteer(db: AsyncSession, vt_id: int) -> list[MatchingInfo]:
     """봉사자의 매칭 목록을 조회합니다."""
-    pass
+    result = await db.execute(
+        select(MatchingInfo).where(MatchingInfo.vt_id == vt_id)
+    )
+    return result.scalars().all()
 
 
-async def checkin(match_id: str) -> dict | None:
+async def checkin(db: AsyncSession, match_id: int, vt_id: int) -> MatchingInfo:
     """체크인 시간을 기록합니다."""
-    pass
+    match = await db.get(MatchingInfo, match_id)
+
+    if not match:
+        raise HTTPException(status_code=404, detail="존재하지 않는 매칭입니다.")
+    if match.vt_id != vt_id:
+        raise HTTPException(status_code=403, detail="권한이 없습니다.")
+    if match.check_in:
+        raise HTTPException(status_code=400, detail="이미 체크인했습니다.")
+
+    match.check_in = True
+    match.check_in_time = datetime.now(timezone.utc)
+    await db.commit()
+    await db.refresh(match)
+    return match
 
 
-async def checkout(match_id: str) -> dict | None:
+async def checkout(db: AsyncSession, match_id: int, vt_id: int) -> MatchingInfo:
     """체크아웃 시간을 기록하고 봉사시간을 계산합니다."""
-    pass
+    match = await db.get(MatchingInfo, match_id)
+
+    if not match:
+        raise HTTPException(status_code=404, detail="존재하지 않는 매칭입니다.")
+    if match.vt_id != vt_id:
+        raise HTTPException(status_code=403, detail="권한이 없습니다.")
+    if not match.check_in:
+        raise HTTPException(status_code=400, detail="체크인 먼저 해주세요.")
+    if match.check_out_time:
+        raise HTTPException(status_code=400, detail="이미 체크아웃했습니다.")
+
+    match.check_out_time = datetime.now(timezone.utc)
+    diff = match.check_out_time - match.check_in_time
+    match.volunteer_minutes = int(diff.total_seconds() // 60)
+    await db.commit()
+    await db.refresh(match)
+    return match
