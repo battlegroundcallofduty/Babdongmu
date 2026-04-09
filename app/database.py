@@ -16,11 +16,11 @@ class Base(DeclarativeBase):
 async def init_db() -> None:
     """데이터베이스 테이블을 생성합니다."""
     # 모든 모델을 import해야 Base.metadata에 등록됩니다
-    from app.domain.user.models import User, Document  # noqa: F401
-    from app.domain.senior.models import Senior  # noqa: F401
     from app.domain.hosting.models import Hosting, SmsLog  # noqa: F401
     from app.domain.match.models import MatchingInfo  # noqa: F401
     from app.domain.review.models import Review, ReviewImg  # noqa: F401
+    from app.domain.senior.models import Senior  # noqa: F401
+    from app.domain.user.models import Document, User  # noqa: F401
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
