@@ -151,6 +151,7 @@ async def send_auth_sms(receiver_phone: str, auth_code: str) -> bool:
 # Solapi 구현체
 # ---------------------------------------------------------------------------
 
+
 async def _send_via_solapi(to: str, message: str) -> bool:
     """Solapi로 SMS를 발송합니다.
 

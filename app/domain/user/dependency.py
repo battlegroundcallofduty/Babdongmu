@@ -48,3 +48,13 @@ async def get_current_user(
         )
 
     return user
+
+
+async def require_admin(current_user: User = Depends(get_current_user)) -> User:
+    """관리자 권한을 확인합니다."""
+    if current_user.user_role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="관리자만 접근할 수 있습니다.",
+        )
+    return current_user
