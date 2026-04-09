@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.security import create_access_token
 from app.database import get_db
 from app.domain.user.dependency import get_current_user
-from app.domain.user.models import User
+from app.domain.user.models import User, UserRole
 from app.domain.user.schemas import (
     TokenResponse,
     UserLoginRequest,
@@ -21,6 +21,13 @@ router = APIRouter()
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register(body: UserRegisterRequest, db: AsyncSession = Depends(get_db)):
     """회원가입을 처리합니다."""
+    # admin 역할로는 가입 불가 — admin은 seed 스크립트로 별도 생성
+    if body.user_role == UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="유효하지 않은 역할입니다.",
+        )
+
     existing = await get_user_by_email(body.email, db)
     if existing:
         raise HTTPException(

@@ -1,12 +1,19 @@
 """어르신 SQLAlchemy ORM 모델."""
 
+import enum
 from datetime import datetime, timezone
 from typing import Optional
 
-from sqlalchemy import TIMESTAMP, Boolean, ForeignKey, Integer, String, Text
+from sqlalchemy import TIMESTAMP, Boolean, Enum, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
+
+
+class GenderEnum(enum.Enum):
+    MALE = "male"
+    FEMALE = "female"
+    OTHER = "other"
 
 
 class Senior(Base):
@@ -15,7 +22,7 @@ class Senior(Base):
     senior_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     guardian_id: Mapped[int] = mapped_column(ForeignKey("users.user_id", ondelete="RESTRICT"))
     name: Mapped[str] = mapped_column(String(100))
-    gender: Mapped[str] = mapped_column(String(10))
+    gender: Mapped[GenderEnum] = mapped_column(Enum(GenderEnum))
     age: Mapped[int] = mapped_column(Integer)
     address: Mapped[str] = mapped_column(String(255))
     special_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
