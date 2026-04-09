@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
 from app.api.v1.router import api_router
-from app.database import init_db, close_db
+from app.database import close_db, init_db
 
 
 @asynccontextmanager
