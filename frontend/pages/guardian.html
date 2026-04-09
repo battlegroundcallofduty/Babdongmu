@@ -84,18 +84,9 @@
             <label class="form-label" for="senior-district">동네</label>
             <input class="form-input" type="text" id="senior-district" placeholder="성북구 정릉동" required>
           </div>
-          <div class="grid grid-2">
-            <div class="form-group">
-              <label class="form-label" for="senior-days">가능 요일</label>
-              <input class="form-input" type="text" id="senior-days" placeholder="월, 수, 금" required>
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="senior-time">시간대</label>
-              <select class="form-input" id="senior-time" required>
-                <option value="점심">점심</option>
-                <option value="저녁">저녁</option>
-              </select>
-            </div>
+          <div class="form-group">
+            <label class="form-label" for="senior-days">가능 요일</label>
+            <input class="form-input" type="text" id="senior-days" placeholder="월, 수, 금" required>
           </div>
           <div class="form-group">
             <label class="form-label" for="senior-note">특이사항</label>
@@ -119,12 +110,13 @@
               <label class="form-label" for="hosting-date">날짜</label>
               <input class="form-input" type="date" id="hosting-date" required>
             </div>
-            <div class="form-group">
-              <label class="form-label" for="hosting-time">시간대</label>
-              <select class="form-input" id="hosting-time" required>
-                <option value="점심">점심</option>
-                <option value="저녁">저녁</option>
-              </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">시간대</label>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <select class="form-input" id="hosting-start-time" required></select>
+              <span style="white-space:nowrap; color:var(--text-soft)">~</span>
+              <select class="form-input" id="hosting-end-time" required></select>
             </div>
           </div>
           <div class="grid grid-2">
@@ -181,6 +173,23 @@
   <script>
     function toggleNav(){const t=document.querySelector('.nav-toggle'),d=document.getElementById('navDrawer');t.classList.toggle('active');d.classList.toggle('open');document.body.style.overflow=d.classList.contains('open')?'hidden':'';}
     function closeNav(e){if(e.target===e.currentTarget)toggleNav();}
+
+    // 30분 단위 시간 옵션 생성
+    function buildTimeOptions(selectEl, defaultHour, maxHour, minHour = 7) {
+      for (let h = minHour; h <= maxHour; h++) {
+        for (let m = 0; m < 60; m += 30) {
+          if (h === maxHour && m > 0) break;  // 마지막 시간은 정각만
+          const label = `${h}시 ${m === 0 ? '00' : m}분`;
+          const value = `${String(h).padStart(2,'0')}:${m === 0 ? '00' : '30'}`;
+          const opt = new Option(label, value);
+          if (h === defaultHour && m === 0) opt.selected = true;
+          selectEl.appendChild(opt);
+        }
+      }
+    }
+
+    buildTimeOptions(document.getElementById('hosting-start-time'), 12, 20);  // 시작: 7:00 ~ 20:00
+    buildTimeOptions(document.getElementById('hosting-end-time'), 13, 22, 9);  // 종료: 9:00 ~ 22:00
 
     document.getElementById('show-register-form')?.addEventListener('click', () => {
       document.getElementById('register-form-section').classList.toggle('hidden');

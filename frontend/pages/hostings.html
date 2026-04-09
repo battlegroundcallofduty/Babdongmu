@@ -50,10 +50,10 @@
     <!-- Filters -->
     <div class="filter-bar slide-up stagger-1">
       <select id="filter-district">
-        <option value="">전체 동네</option>
-        <option value="정릉동">정릉동</option>
-        <option value="길음동">길음동</option>
-        <option value="돈암동">돈암동</option>
+        <option value="">전체 구</option>
+        <option value="덕양구">덕양구</option>
+        <option value="일산동구">일산동구</option>
+        <option value="일산서구">일산서구</option>
       </select>
       <select id="filter-status">
         <option value="">전체 상태</option>
@@ -74,7 +74,7 @@
                 <svg class="icon-sm" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="display:inline;vertical-align:-3px;margin-right:2px;width:14px;height:14px;">
                   <path d="M10 11a3 3 0 100-6 3 3 0 000 6z"/><path d="M10 18s-6-4.35-6-9a6 6 0 1112 0c0 4.65-6 9-6 9z"/>
                 </svg>
-                성북구 정릉동
+                고양시 덕양구 화정동
               </div>
             </div>
           </div>
@@ -101,7 +101,7 @@
                 <svg class="icon-sm" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="display:inline;vertical-align:-3px;margin-right:2px;width:14px;height:14px;">
                   <path d="M10 11a3 3 0 100-6 3 3 0 000 6z"/><path d="M10 18s-6-4.35-6-9a6 6 0 1112 0c0 4.65-6 9-6 9z"/>
                 </svg>
-                성북구 길음동
+                고양시 일산동구 정발산동
               </div>
             </div>
           </div>
@@ -128,7 +128,7 @@
                 <svg class="icon-sm" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="display:inline;vertical-align:-3px;margin-right:2px;width:14px;height:14px;">
                   <path d="M10 11a3 3 0 100-6 3 3 0 000 6z"/><path d="M10 18s-6-4.35-6-9a6 6 0 1112 0c0 4.65-6 9-6 9z"/>
                 </svg>
-                성북구 돈암동
+                고양시 일산서구 대화동
               </div>
             </div>
           </div>
@@ -183,6 +183,34 @@
         toggleNav();
       }
     }
+
+    // 지역 필터링
+    function filterHostings() {
+      const district = document.getElementById('filter-district').value;
+      const status = document.getElementById('filter-status').value;
+      const cards = document.querySelectorAll('.hosting-card');
+      let visibleCount = 0;
+
+      cards.forEach(card => {
+        const cardDistrict = card.querySelector('.hosting-district').textContent.trim().split(' ').slice(0, 3).join(' ');
+        const cardStatus = card.querySelector('[class*="badge"]').textContent.trim();
+
+        const matchDistrict = !district || cardDistrict.includes(district);
+        const matchStatus = !status || cardStatus.includes(status === 'approved' ? '모집중' : '매칭완료');
+
+        if (matchDistrict && matchStatus) {
+          card.style.display = '';
+          visibleCount++;
+        } else {
+          card.style.display = 'none';
+        }
+      });
+
+      document.getElementById('empty-state').classList.toggle('hidden', visibleCount > 0);
+    }
+
+    document.getElementById('filter-district')?.addEventListener('change', filterHostings);
+    document.getElementById('filter-status')?.addEventListener('change', filterHostings);
   </script>
 </body>
 </html>

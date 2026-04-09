@@ -3,7 +3,8 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domain.user.models import User
+from app.core.security import hash_password, verify_password
+from app.domain.user.models import User, UserRole
 
 
 async def get_user_by_id(user_id: int, db: AsyncSession) -> User | None:
@@ -22,11 +23,35 @@ async def get_user_by_email(email: str, db: AsyncSession) -> User | None:
     return result.scalar_one_or_none()
 
 
-async def create_user(email: str, password: str, name: str, phone: str, role: str, address: str) -> dict:
-    """유저를 생성합니다."""
-    pass
+async def create_user(
+    email: str,
+    password: str,
+    name: str,
+    phone_number: str,
+    user_role: UserRole,
+    address: str,
+    db: AsyncSession,
+) -> User:
+    """회원가입: 유저를 생성합니다."""
+    user = User(
+        email=email,
+        password=hash_password(password),
+        name=name,
+        phone_number=phone_number,
+        user_role=user_role,
+        address=address,
+    )
+    db.add(user)
+    await db.commit()
+    await db.refresh(user)
+    return user
 
 
-async def authenticate_user(email: str, password: str) -> dict | None:
-    """이메일과 비밀번호로 유저를 인증합니다."""
-    pass
+async def authenticate_user(email: str, password: str, db: AsyncSession) -> User | None:
+    """로그인: 이메일과 비밀번호로 유저를 인증합니다. 실패 시 None 반환."""
+    user = await get_user_by_email(email, db)
+    if user is None:
+        return None
+    if not verify_password(password, user.password):
+        return None
+    return user

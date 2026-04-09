@@ -2,7 +2,7 @@
 
 from datetime import datetime, timezone
 
-from sqlalchemy import TIMESTAMP, Boolean, ForeignKey, UniqueConstraint
+from sqlalchemy import TIMESTAMP, Boolean, ForeignKey, Integer, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -22,6 +22,7 @@ class MatchingInfo(Base):
     check_in: Mapped[bool] = mapped_column(Boolean, default=False)   # 체크인 여부
     check_in_time: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
     check_out_time: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
+    actual_volunteer_time: Mapped[int | None] = mapped_column(Integer, nullable=True)  # 관리자 최종 부여 봉사시간 (분 단위)
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True),
         default=lambda: datetime.now(timezone.utc),
