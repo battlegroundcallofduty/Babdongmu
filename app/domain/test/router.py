@@ -13,9 +13,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.domain.hosting.models import Hosting
-from app.domain.senior.models import Senior
-from app.domain.user.models import User
+from app.domain.hosting.models import AlarmType, Hosting
+from app.domain.senior.models import GenderEnum, Senior
+from app.domain.user.models import CertFlag, User, UserRole
 from app.services import sms as sms_service
 from app.services.sms import send_auth_sms, send_sms
 
@@ -30,7 +30,7 @@ class AuthSmsRequest(BaseModel):
 class NotificationSmsRequest(BaseModel):
     hosting_id: int
     receiver_id: int
-    alarm_type: str  # match | checkin | checkout | update
+    alarm_type: AlarmType  # MATCH | CHECKIN | CHECKOUT | UPDATE
     volunteer_id: int | None = None
     use_long_message: bool = False
 
@@ -59,8 +59,8 @@ async def seed_sms_test_data(
         password="x",
         phone_number=payload.receiver_phone,
         address="테스트 주소",
-        user_role="guardian",
-        cert_flag="approved",
+        user_role=UserRole.GUARDIAN,
+        cert_flag=CertFlag.APPROVED,
     )
     db.add(guardian)
     await db.flush()
@@ -73,8 +73,8 @@ async def seed_sms_test_data(
         # 별도 입력이 없으면 보호자(receiver)와 동일한 번호로 둔다.
         phone_number=payload.volunteer_phone or payload.receiver_phone,
         address="테스트 주소",
-        user_role="volunteer",
-        cert_flag="approved",
+        user_role=UserRole.VOLUNTEER,
+        cert_flag=CertFlag.APPROVED,
     )
     db.add(volunteer)
     await db.flush()
@@ -82,7 +82,7 @@ async def seed_sms_test_data(
     senior = Senior(
         guardian_id=guardian.user_id,
         name="테스트어르신",
-        gender="여",
+        gender=GenderEnum.FEMALE,
         age=80,
         address="테스트 주소",
         max_people=2,

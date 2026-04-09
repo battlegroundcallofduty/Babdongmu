@@ -11,7 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
-from app.domain.hosting.models import Hosting, SmsLog
+from app.domain.hosting.models import AlarmType, Hosting, SmsLog
 from app.domain.user.service import get_user_by_id
 
 
@@ -19,7 +19,7 @@ async def send_sms(
     db: AsyncSession,
     hosting_id: int,
     receiver_id: int,
-    alarm_type: str,
+    alarm_type: AlarmType,
     volunteer_id: int | None = None,
     use_long_message: bool = False,
 ) -> bool:
@@ -29,8 +29,8 @@ async def send_sms(
         db: 데이터베이스 세션
         hosting_id: 호스팅 ID
         receiver_id: 수신자 ID (보호자 등)
-        alarm_type: match | checkin | checkout | update
-        volunteer_id: 봉사자 ID (match, checkin, checkout에서 필요)
+        alarm_type: AlarmType Enum (MATCH / CHECKIN / CHECKOUT / UPDATE)
+        volunteer_id: 봉사자 ID (MATCH, CHECKIN, CHECKOUT에서 필요)
         use_long_message: True면 장문(LMS), False면 단문(SMS)
     """
     # 수신자 정보 조회
@@ -48,7 +48,7 @@ async def send_sms(
         hosting = result.scalar_one_or_none()
 
     # 메시지 생성
-    if alarm_type == "match":
+    if alarm_type == AlarmType.MATCH:
         volunteer_name = "봉사자"
         if volunteer_id:
             volunteer = await get_user_by_id(volunteer_id)
@@ -65,7 +65,7 @@ async def send_sms(
         else:
             message = f"[밥동무] {volunteer_name}님이 호스팅을 신청했습니다."
 
-    elif alarm_type == "checkin":
+    elif alarm_type == AlarmType.CHECKIN:
         volunteer_name = "봉사자"
         if volunteer_id:
             volunteer = await get_user_by_id(volunteer_id)
@@ -82,7 +82,7 @@ async def send_sms(
         else:
             message = f"[밥동무] {volunteer_name}님이 방문 체크인했습니다."
 
-    elif alarm_type == "update":
+    elif alarm_type == AlarmType.UPDATE:
         if use_long_message and hosting:
             time_str = hosting.hosting_at.strftime("%m월 %d일 %H:%M")
             message = (
@@ -95,7 +95,7 @@ async def send_sms(
         else:
             message = "[밥동무] 호스팅 정보가 수정되었습니다. 확인해주세요."
 
-    elif alarm_type == "checkout":
+    elif alarm_type == AlarmType.CHECKOUT:
         volunteer_name = "봉사자"
         if volunteer_id:
             volunteer = await get_user_by_id(volunteer_id)
