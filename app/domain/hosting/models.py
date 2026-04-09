@@ -47,6 +47,7 @@ class SmsLog(Base):
     """SMS 발송 이력.
 
     수신자가 여러 명인 경우 수신자별로 row 생성.
+    alarm_type: match | checkin | checkout | update
     """
 
     __tablename__ = "sms_logs"
