@@ -4,8 +4,9 @@ from datetime import datetime
 
 from pydantic import BaseModel, EmailStr
 
-# == 요청 스키마
+from app.domain.user.models import CertFlag, UserRole
 
+# == 요청 스키마
 
 class UserRegisterRequest(BaseModel):
     """회원가입 요청"""
@@ -14,7 +15,7 @@ class UserRegisterRequest(BaseModel):
     password: str
     name: str
     phone_number: str
-    user_role: str  # volunteer | guardian
+    user_role: UserRole  # volunteer | guardian
     address: str
 
 
@@ -27,7 +28,6 @@ class UserLoginRequest(BaseModel):
 
 # == 응답 스키마
 
-
 class UserResponse(BaseModel):
     """유저 정보 반환 (비밀번호 제외)"""
 
@@ -35,9 +35,9 @@ class UserResponse(BaseModel):
     email: str
     name: str
     phone_number: str
-    user_role: str
+    user_role: UserRole
     address: str
-    cert_flag: str
+    cert_flag: CertFlag
     created_at: datetime
 
     model_config = {"from_attributes": True}

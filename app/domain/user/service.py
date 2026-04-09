@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import hash_password, verify_password
-from app.domain.user.models import User
+from app.domain.user.models import User, UserRole
 
 
 async def get_user_by_id(user_id: int, db: AsyncSession) -> User | None:
@@ -28,7 +28,7 @@ async def create_user(
     password: str,
     name: str,
     phone_number: str,
-    user_role: str,
+    user_role: UserRole,
     address: str,
     db: AsyncSession,
 ) -> User:
