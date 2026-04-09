@@ -30,21 +30,11 @@ async def list_my_matches(
     return await service.list_matches_by_volunteer(db, current_user.user_id)
 
 
-@router.patch("/{senior_id}/checkin")
-async def checkin(
+@router.patch("/{senior_id}/check")
+async def check(
     senior_id: int,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """체크인합니다."""
-    return await service.checkin(db, senior_id, current_user.user_id)
-
-
-@router.patch("/{senior_id}/checkout")
-async def checkout(
-    senior_id: int,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """체크아웃합니다."""
-    return await service.checkout(db, senior_id, current_user.user_id)
+    """QR 체크인/아웃합니다."""
+    return await service.check(db, senior_id, current_user.user_id)

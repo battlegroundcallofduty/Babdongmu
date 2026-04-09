@@ -3,7 +3,7 @@
 from datetime import datetime, timezone
 
 from fastapi import HTTPException
-from sqlalchemy import select, func
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.hosting.models import Hosting
@@ -61,8 +61,8 @@ async def list_matches_by_volunteer(db: AsyncSession, vt_id: int) -> list[Matchi
     return result.scalars().all()
 
 
-async def checkin(db: AsyncSession, senior_id: int, vt_id: int) -> MatchingInfo:
-    """체크인 시간을 기록합니다."""
+async def check(db: AsyncSession, senior_id: int, vt_id: int) -> MatchingInfo:
+    """체크인 안 됐으면 체크인, 됐으면 체크아웃 갱신."""
     result = await db.execute(
         select(MatchingInfo).where(
             MatchingInfo.senior_id == senior_id,
@@ -74,35 +74,13 @@ async def checkin(db: AsyncSession, senior_id: int, vt_id: int) -> MatchingInfo:
 
     if not match:
         raise HTTPException(status_code=404, detail="존재하지 않는 매칭입니다.")
-    if match.check_in:
-        raise HTTPException(status_code=400, detail="이미 체크인했습니다.")
 
-    match.check_in = True
-    match.check_in_time = datetime.now(timezone.utc)
-    await db.commit()
-    await db.refresh(match)
-    return match
-
-
-async def checkout(db: AsyncSession, senior_id: int, vt_id: int) -> MatchingInfo:
-    """체크아웃 시간을 기록합니다."""
-    result = await db.execute(
-        select(MatchingInfo).where(
-            MatchingInfo.senior_id == senior_id,
-            MatchingInfo.vt_id == vt_id,
-            MatchingInfo.is_apply == True,
-        )
-    )
-    match = result.scalar_one_or_none()
-
-    if not match:
-        raise HTTPException(status_code=404, detail="존재하지 않는 매칭입니다.")
     if not match.check_in:
-        raise HTTPException(status_code=400, detail="체크인 먼저 해주세요.")
-    if match.check_out_time:
-        raise HTTPException(status_code=400, detail="이미 체크아웃했습니다.")
+        match.check_in = True
+        match.check_in_time = datetime.now(timezone.utc)
+    else:
+        match.check_out_time = datetime.now(timezone.utc)
 
-    match.check_out_time = datetime.now(timezone.utc)
     await db.commit()
     await db.refresh(match)
     return match
