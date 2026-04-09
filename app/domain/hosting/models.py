@@ -31,7 +31,7 @@ class SmsLog(Base):
     """SMS 발송 이력.
 
     수신자가 여러 명인 경우 수신자별로 row 생성.
-    alarm_type: match | checkin | update
+    alarm_type: match | checkin | checkout | update
     """
 
     __tablename__ = "sms_logs"
@@ -40,7 +40,7 @@ class SmsLog(Base):
     hosting_id: Mapped[int] = mapped_column(ForeignKey("hostings.hosting_id", ondelete="CASCADE"))
     receiver_id: Mapped[int] = mapped_column(ForeignKey("users.user_id", ondelete="CASCADE"))
     is_send: Mapped[bool] = mapped_column(Boolean, default=False)
-    alarm_type: Mapped[str] = mapped_column(String(20))  # match | checkin | update
+    alarm_type: Mapped[str] = mapped_column(String(20))  # match | checkin | checkout | update
     contents: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True),

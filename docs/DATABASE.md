@@ -137,7 +137,7 @@
 | hosting_id | FK → hostings | 관련 호스팅 |
 | receiver_id | FK → users | 수신자 |
 | is_send | BOOLEAN | 발송 성공 여부 |
-| alarm_type | VARCHAR | 알람 구분 (`match` / `checkin` / `update`) |
+| alarm_type | VARCHAR | 알람 구분 (`match` / `checkin` / `checkout` / `update`) |
 | contents | TEXT | 발송 내용 |
 | created_at | TIMESTAMP | 발송일 |
 
@@ -151,6 +151,7 @@
 |------------|-----------|--------|
 | `match` | 봉사자가 호스팅 신청 시 | 보호자 |
 | `checkin` | 봉사자가 방문 체크인 시 | 보호자 |
+| `checkout` | 봉사자가 방문 체크아웃 시 | 보호자 |
 | `update` | 호스팅 정보 수정 시 | 신청한 봉사자 전원 |
 
 ---
