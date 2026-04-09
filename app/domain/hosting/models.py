@@ -17,8 +17,12 @@ class Hosting(Base):
     menu: Mapped[str] = mapped_column(String(255))
     hosting_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True))
     hosting_end: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
-    max_people: Mapped[int] = mapped_column(Integer, default=2)  # seniors.max_people이 기본값, 수정 가능 (2~4)
-    hosting_status: Mapped[str] = mapped_column(String(20), default="신청가능")  # 신청가능 | 모집완료 | 신청불가
+    max_people: Mapped[int] = mapped_column(
+        Integer, default=2
+    )  # seniors.max_people이 기본값, 수정 가능 (2~4)
+    hosting_status: Mapped[str] = mapped_column(
+        String(20), default="신청가능"
+    )  # 신청가능 | 모집완료 | 신청불가
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True),
         default=lambda: datetime.now(timezone.utc),
