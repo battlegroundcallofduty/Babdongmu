@@ -30,7 +30,7 @@ class AuthSmsRequest(BaseModel):
 class NotificationSmsRequest(BaseModel):
     hosting_id: int
     receiver_id: int
-    alarm_type: str  # match | checkin | update
+    alarm_type: str  # match | checkin | checkout | update
     volunteer_id: int | None = None
     use_long_message: bool = False
 
@@ -93,7 +93,7 @@ async def seed_sms_test_data(
     hosting = Hosting(
         senior_id=senior.senior_id,
         menu="된장찌개",
-        hosting_time=datetime.now(timezone.utc) + timedelta(days=1),
+        hosting_at=datetime.now(timezone.utc) + timedelta(days=1),
         max_people=2,
     )
     db.add(hosting)

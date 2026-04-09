@@ -5,9 +5,8 @@ from app.domain.hosting.router import router as hosting_router
 from app.domain.match.router import router as match_router
 from app.domain.review.router import router as review_router
 from app.domain.senior.router import router as senior_router
-from app.domain.user.router import router as user_router
 from app.domain.test.router import router as test_router
-
+from app.domain.user.router import router as user_router
 
 api_router = APIRouter()
 
