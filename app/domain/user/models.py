@@ -26,7 +26,7 @@ class User(Base):
     )
     updated_at: Mapped[Optional[datetime]] = mapped_column(
         TIMESTAMP(timezone=True),
-        nullable=True
+        nullable=True,
     )
 
 
@@ -44,4 +44,8 @@ class Document(Base):
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True),
         default=lambda: datetime.now(timezone.utc),
+    )
+    updated_at: Mapped[Optional[datetime]] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=True,
     )
