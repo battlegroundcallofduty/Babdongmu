@@ -18,8 +18,10 @@ class User(Base):
     password: Mapped[str] = mapped_column(String(255))
     phone_number: Mapped[str] = mapped_column(String(20))
     address: Mapped[str] = mapped_column(String(255))
-    user_role: Mapped[str] = mapped_column(String(20))           # volunteer | guardian | admin
-    cert_flag: Mapped[str] = mapped_column(String(20), default="pending")  # pending | approved | rejected
+    user_role: Mapped[str] = mapped_column(String(20))  # volunteer | guardian | admin
+    cert_flag: Mapped[str] = mapped_column(
+        String(20), default="pending"
+    )  # pending | approved | rejected
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True),
         default=lambda: datetime.now(timezone.utc),

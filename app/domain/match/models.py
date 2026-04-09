@@ -14,7 +14,7 @@ class MatchingInfo(Base):
     matching_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     hosting_id: Mapped[int] = mapped_column(ForeignKey("hostings.hosting_id", ondelete="CASCADE"))
     vt_id: Mapped[int] = mapped_column(ForeignKey("users.user_id", ondelete="CASCADE"))  # 봉사자
-    is_apply: Mapped[bool] = mapped_column(Boolean, default=True)   # 신청/취소 여부
+    is_apply: Mapped[bool] = mapped_column(Boolean, default=True)  # 신청/취소 여부
     check_in: Mapped[bool] = mapped_column(Boolean, default=False)  # 방문 체크인 여부
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True),

@@ -8,9 +8,12 @@ from app.database import get_db
 from app.domain.user.dependency import get_current_user
 from app.domain.user.models import User
 from app.domain.user.schemas import (
-    TokenResponse, UserLoginRequest, UserRegisterRequest, UserResponse)
-from app.domain.user.service import (
-    authenticate_user, create_user, get_user_by_email)
+    TokenResponse,
+    UserLoginRequest,
+    UserRegisterRequest,
+    UserResponse,
+)
+from app.domain.user.service import authenticate_user, create_user, get_user_by_email
 
 router = APIRouter()
 
@@ -22,7 +25,8 @@ async def register(body: UserRegisterRequest, db: AsyncSession = Depends(get_db)
     if existing:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="이미 사용 중인 이메일입니다.",)
+            detail="이미 사용 중인 이메일입니다.",
+        )
 
     user = await create_user(
         email=body.email,

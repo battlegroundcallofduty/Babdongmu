@@ -23,8 +23,15 @@ async def get_user_by_email(email: str, db: AsyncSession) -> User | None:
     return result.scalar_one_or_none()
 
 
-async def create_user(email: str, password: str, name: str, phone_number: str,
-    user_role: str, address: str, db: AsyncSession) -> User:
+async def create_user(
+    email: str,
+    password: str,
+    name: str,
+    phone_number: str,
+    user_role: str,
+    address: str,
+    db: AsyncSession,
+) -> User:
     """회원가입: 유저를 생성합니다."""
     user = User(
         email=email,
@@ -48,9 +55,3 @@ async def authenticate_user(email: str, password: str, db: AsyncSession) -> User
     if not verify_password(password, user.password):
         return None
     return user
-
-
-
-
-
-
