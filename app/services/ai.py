@@ -1,6 +1,5 @@
 """AI 요약 생성 서비스 (Gemini 기반)."""
 
-from app.config import settings
 
 
 SUMMARY_PROMPT = """당신은 독거 어르신을 위한 식사 동반 플랫폼 '밥동무'의 AI 어시스턴트입니다.

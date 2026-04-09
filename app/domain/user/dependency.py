@@ -32,7 +32,7 @@ async def get_current_user(
     user_id = payload.get("sub")
     if user_id is None:
         raise credentials_exception
-    
+
     # sub 값을 정수로 방어도 해주고, 정수가 아닌 경우 500 에러 말고 401 에러로
     try:
         user_id_int = int(user_id)

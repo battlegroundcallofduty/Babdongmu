@@ -22,6 +22,7 @@ class Senior(Base):
     active_flag: Mapped[bool] = mapped_column(Boolean, default=True)
     ai_summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     max_people: Mapped[int] = mapped_column(Integer, default=2)
+    qr_code: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True),
         default=lambda: datetime.now(timezone.utc),
