@@ -30,21 +30,21 @@ async def list_my_matches(
     return await service.list_matches_by_volunteer(db, current_user.user_id)
 
 
-@router.patch("/{match_id}/checkin")
+@router.patch("/{senior_id}/checkin")
 async def checkin(
-    match_id: int,
+    senior_id: int,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """체크인합니다."""
-    return await service.checkin(db, match_id, current_user.user_id)
+    return await service.checkin(db, senior_id, current_user.user_id)
 
 
-@router.patch("/{match_id}/checkout")
+@router.patch("/{senior_id}/checkout")
 async def checkout(
-    match_id: int,
+    senior_id: int,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """체크아웃합니다. 봉사시간이 자동 계산됩니다."""
-    return await service.checkout(db, match_id, current_user.user_id)
+    """체크아웃합니다."""
+    return await service.checkout(db, senior_id, current_user.user_id)
