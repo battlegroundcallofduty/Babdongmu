@@ -6,7 +6,7 @@ document.querySelectorAll('.tab[data-role]').forEach(tab => {
     // 클릭한 탭에만 active 추가
     tab.classList.add('active');
     // 'role' 입력칸에 tab에 있는 role값 넣기
-    document.getElementById('role').value = tab.dataset.role;
+    document.querySelector('#role').value = tab.dataset.role;
 
     const selectedRole = tab.dataset.role;
     document.querySelectorAll('[data-role-doc]').forEach(el => {
@@ -16,12 +16,12 @@ document.querySelectorAll('.tab[data-role]').forEach(tab => {
 });
 
 // 회원가입 폼 제출
-document.getElementById('register-form')?.addEventListener('submit', async (e) => {
+document.querySelector('#register-form')?.addEventListener('submit', async (e) => {
   e.preventDefault();  // 원래 submit 하면 새로고침하는데 직접 fetch할거니까 막기
 
-  const password = document.getElementById('password').value;
-  const passwordConfirm = document.getElementById('password-confirm').value;
-  const errorMsg = document.getElementById('error-msg');
+  const password = document.querySelector('#password').value;
+  const passwordConfirm = document.querySelector('#password-confirm').value;
+  const errorMsg = document.querySelector('#error-msg');
   // 백엔드 요청 보내기 전에 걸러주는것(1차 ux). schemas로 백엔드에서 한번 더 검증(2차 보안).
   if (password !== passwordConfirm) {
     errorMsg.textContent = '비밀번호가 일치하지 않습니다.';
@@ -36,13 +36,13 @@ document.getElementById('register-form')?.addEventListener('submit', async (e) =
       method: 'POST',
       // html inpust 값들을 json 변환해서 백엔드에 전송
       body: JSON.stringify({
-        email: document.getElementById('email').value,
+        email: document.querySelector('#email').value,
         password,
         password_confirm: passwordConfirm,
-        name: document.getElementById('name').value,
-        phone_number: document.getElementById('phone').value,
-        user_role: document.getElementById('role').value,
-        address: document.getElementById('district').value,
+        name: document.querySelector('#name').value,
+        phone_number: document.querySelector('#phone').value,
+        user_role: document.querySelector('#role').value,
+        address: document.querySelector('#district').value,
       }),
     });
 

@@ -1,7 +1,6 @@
 """유저 요청/응답 스키마."""
 
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel, EmailStr, field_validator, model_validator
 
@@ -48,9 +47,9 @@ class UserLoginRequest(BaseModel):
 class UserUpdateRequest(BaseModel):
     """회원정보 수정 요청 (마이페이지)"""
 
-    name: Optional[str] = None
-    phone_number: Optional[str] = None
-    address: Optional[str] = None
+    name: str | None = None
+    phone_number: str | None = None
+    address: str | None = None
 
 
 # ── 서류 요청 ────────────────
