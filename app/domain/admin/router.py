@@ -1,6 +1,7 @@
 """관리자 API 엔드포인트."""
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
@@ -44,12 +45,21 @@ async def get_stats(
     )
     time_pending = await db.scalar(
         select(func.count()).select_from(MatchingInfo)
-        .where(MatchingInfo.check_out_time.is_not(None), MatchingInfo.actual_volunteer_time.is_(None))
+        .where(
+            MatchingInfo.check_out_time.is_not(None),
+            MatchingInfo.actual_volunteer_time.is_(None),
+        )
     )
-    today = datetime.now(timezone.utc).date()
+    # KST 기준 오늘 범위를 UTC로 변환해서 비교 (저장은 UTC, 비교는 KST 자정 기준)
+    _kst = ZoneInfo("Asia/Seoul")
+    today_start = datetime.now(_kst).replace(hour=0, minute=0, second=0, microsecond=0)
+    today_end = today_start + timedelta(days=1)
     today_matches = await db.scalar(
         select(func.count()).select_from(MatchingInfo)
-        .where(func.date(MatchingInfo.created_at) == today)
+        .where(
+            MatchingInfo.created_at >= today_start.astimezone(timezone.utc),
+            MatchingInfo.created_at < today_end.astimezone(timezone.utc),
+        )
     )
 
     return {
@@ -84,7 +94,7 @@ async def list_pending_documents(
             "user_id": user.user_id,
             "user_name": user.name,
             "user_email": user.email,
-            "document_type": doc.document_type,
+            "document_type": doc.document_type.value,
             "document_url": doc.document_url,
             "created_at": doc.created_at.isoformat(),
         }
@@ -102,18 +112,22 @@ async def approve_document(
     doc_result = await db.execute(select(Document).where(Document.document_id == document_id))
     doc = doc_result.scalar_one_or_none()
     if doc is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="서류를 찾을 수 없습니다.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="서류를 찾을 수 없습니다."
+        )
 
     user_result = await db.execute(select(User).where(User.user_id == doc.user_id))
     user = user_result.scalar_one_or_none()
     if user is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="유저를 찾을 수 없습니다.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="유저를 찾을 수 없습니다."
+        )
 
     user.cert_flag = CertFlag.APPROVED
     user.updated_at = datetime.now(timezone.utc)
     await db.commit()
 
-    return {"user_id": user.user_id, "cert_flag": user.cert_flag}
+    return {"user_id": user.user_id, "cert_flag": user.cert_flag.value}
 
 
 @router.patch("/documents/{document_id}/reject", status_code=status.HTTP_200_OK)
@@ -126,18 +140,22 @@ async def reject_document(
     doc_result = await db.execute(select(Document).where(Document.document_id == document_id))
     doc = doc_result.scalar_one_or_none()
     if doc is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="서류를 찾을 수 없습니다.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="서류를 찾을 수 없습니다."
+        )
 
     user_result = await db.execute(select(User).where(User.user_id == doc.user_id))
     user = user_result.scalar_one_or_none()
     if user is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="유저를 찾을 수 없습니다.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="유저를 찾을 수 없습니다."
+        )
 
     user.cert_flag = CertFlag.REJECTED
     user.updated_at = datetime.now(timezone.utc)
     await db.commit()
 
-    return {"user_id": user.user_id, "cert_flag": user.cert_flag}
+    return {"user_id": user.user_id, "cert_flag": user.cert_flag.value}
 
 
 # ── 최근 매칭 신청 ────────────────────────────────────────────────────────────
@@ -172,6 +190,7 @@ async def list_recent_matches(
 
 
 # ── 봉사시간 부여 ──────────────────────────────────────────────────────────────
+
 class VolunteerTimeRequest(BaseModel):
     actual_volunteer_time: int  # 분 단위
 
@@ -181,8 +200,7 @@ async def list_completed_matches(
     db: AsyncSession = Depends(get_db),
     _: User = Depends(require_admin),
 ) -> list[dict]:
-    """체크아웃 완료 후 봉사시간 미부여 매칭 목록을 반환합니다.
-    """
+    """체크아웃 완료 후 봉사시간 미부여 매칭 목록을 반환합니다."""
     result = await db.execute(
         select(MatchingInfo, User, Hosting, Senior)
         .join(User, MatchingInfo.vt_id == User.user_id)
@@ -202,7 +220,10 @@ async def list_completed_matches(
             "senior_name": s.name,
             "check_in_time": m.check_in_time.isoformat() if m.check_in_time else None,
             "check_out_time": m.check_out_time.isoformat(),
-            "expected_minutes": int((h.hosting_end - h.hosting_at).total_seconds() // 60) if h.hosting_end else None,
+            "expected_minutes": (
+                int((h.hosting_end - h.hosting_at).total_seconds() // 60)
+                if h.hosting_end else None
+            ),
         }
         for m, u, h, s in rows
     ]
@@ -215,15 +236,13 @@ async def grant_volunteer_time(
     db: AsyncSession = Depends(get_db),
     _: User = Depends(require_admin),
 ) -> dict:
-    """봉사시간을 최종 부여합니다.
-
-    민지님의 MatchingInfo 확장 후 활성화 예정.
-    """
-
+    """봉사시간을 최종 부여합니다."""
     result = await db.execute(select(MatchingInfo).where(MatchingInfo.matching_id == matching_id))
     match = result.scalar_one_or_none()
     if match is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="매칭을 찾을 수 없습니다.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="매칭을 찾을 수 없습니다."
+        )
     match.actual_volunteer_time = payload.actual_volunteer_time
     await db.commit()
     return {"matching_id": matching_id, "actual_volunteer_time": payload.actual_volunteer_time}
