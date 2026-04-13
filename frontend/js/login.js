@@ -16,8 +16,16 @@ document.querySelector('#login-form')?.addEventListener('submit', async (e) => {
 
     // 토큰 꺼내서 저장
     saveToken(data.access_token);
-    // 이후 메인(/)으로 이동. 실패하면 에러 메시지
-    window.location.href = '/';
+
+    // 유저 role 조회 후 페이지 이동
+    const user = await api('/users/me');
+    if (user.user_role === 'admin') {
+      window.location.href = '/pages/admin.html';
+    } else if (user.user_role === 'guardian') {
+      window.location.href = '/pages/guardian.html';
+    } else {
+      window.location.href = '/pages/hostings.html';
+    }
   } catch (err) {
     errorMsg.textContent = err.message;
     errorMsg.classList.remove('hidden');
