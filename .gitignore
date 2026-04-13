@@ -2,6 +2,7 @@
 .claude/
 .gstack/
 CLAUDE.md
+code-review/
 
 # Python
 __pycache__/
