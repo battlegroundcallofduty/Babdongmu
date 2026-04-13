@@ -13,8 +13,12 @@ class Review(Base):
     __tablename__ = "reviews"
 
     review_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    matching_id: Mapped[int] = mapped_column(ForeignKey("matching_info.matching_id", ondelete="CASCADE"))
-    vt_id: Mapped[int] = mapped_column(ForeignKey("users.user_id", ondelete="CASCADE"))  # 봉사자
+    matching_id: Mapped[int] = mapped_column(
+        ForeignKey("matching_info.matching_id", ondelete="CASCADE"), index=True
+    )
+    vt_id: Mapped[int] = mapped_column(
+        ForeignKey("users.user_id", ondelete="CASCADE"), index=True  # 봉사자
+    )
     contents: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True),
@@ -29,7 +33,9 @@ class ReviewImg(Base):
     __tablename__ = "review_img"
 
     image_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    review_id: Mapped[int] = mapped_column(ForeignKey("reviews.review_id", ondelete="CASCADE"))
+    review_id: Mapped[int] = mapped_column(
+        ForeignKey("reviews.review_id", ondelete="CASCADE"), index=True
+    )
     image_url: Mapped[str] = mapped_column(String(512))
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True),

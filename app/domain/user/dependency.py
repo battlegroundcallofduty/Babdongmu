@@ -22,7 +22,7 @@ async def get_current_user(
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="유효하지 않은 토큰입니다.",
-        headers={"WWW-Authenticate": "Bearer"}, # 인증 실패라고 헤더에 알려주는거
+        headers={"WWW-Authenticate": "Bearer"},  # 인증 실패라고 헤더에 알려주는거
     )
 
     payload = decode_access_token(credentials.credentials)
@@ -48,3 +48,13 @@ async def get_current_user(
         )
 
     return user
+
+
+async def require_admin(current_user: User = Depends(get_current_user)) -> User:
+    """관리자 권한을 확인합니다."""
+    if current_user.user_role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="관리자만 접근할 수 있습니다.",
+        )
+    return current_user

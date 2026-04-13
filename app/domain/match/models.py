@@ -1,11 +1,19 @@
 """매칭 SQLAlchemy ORM 모델."""
 
+import enum
 from datetime import datetime, timezone
 
-from sqlalchemy import TIMESTAMP, ForeignKey, Index, String, text
+from sqlalchemy import TIMESTAMP, Enum, ForeignKey, Index, Integer, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
+
+
+class MatchStatus(enum.Enum):
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    CANCELLED = "cancelled"
 
 
 class MatchingInfo(Base):
@@ -17,7 +25,7 @@ class MatchingInfo(Base):
             "hosting_id",
             "vt_id",
             unique=True,
-            sqlite_where=text("match_status != 'cancelled'"),
+            sqlite_where=text(f"match_status != '{MatchStatus.CANCELLED.value}'"),
         ),
     )
 
@@ -27,10 +35,10 @@ class MatchingInfo(Base):
     senior_id: Mapped[int] = mapped_column(  # 어르신
         ForeignKey("seniors.senior_id", ondelete="CASCADE")
     )
-    # pending | approved | rejected | cancelled
-    match_status: Mapped[str] = mapped_column(String(20), default="pending")
+    match_status: Mapped[MatchStatus] = mapped_column(Enum(MatchStatus), default=MatchStatus.PENDING)
     check_in_time: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
     check_out_time: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
+    actual_volunteer_time: Mapped[int | None] = mapped_column(Integer, nullable=True)  # 관리자 최종 부여 봉사시간 (분 단위)
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True),
         default=lambda: datetime.now(timezone.utc),
