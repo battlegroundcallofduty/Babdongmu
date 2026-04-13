@@ -1,4 +1,5 @@
 """유저 비즈니스 로직."""
+from datetime import datetime, timezone
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -45,19 +46,33 @@ async def authenticate_user(email: str, password: str, db: AsyncSession) -> User
     user = await get_user_by_email(email, db)
     if user is None:
         return None
+    # 카카오 함수 만들면 비밀번호 관련 방어 추가해야함
     if not verify_password(password, user.password):
         return None
     return user
 
 
+# **kwargs: 가변적으로 받는 딕셔너리
 async def update_user(user_id: int, db: AsyncSession, **kwargs) -> User | None:
     """마이페이지: 회원정보 수정"""
-    pass
+    user = await get_user_by_id(user_id, db)
+    if user is None:
+        return None
+    for field, value in kwargs.items():
+        setattr(user, field, value) # 들어온것 업데이트
+    user.updated_at = datetime.now(timezone.utc)
+    await db.commit()
+    await db.refresh(user)
+    return user
 
 
 async def delete_user(user_id: int, db: AsyncSession) -> None:
     """탈퇴: 유저를 db에서 삭제"""
-    pass
+    user = await get_user_by_id(user_id, db)
+    if user is None:
+        return # 여기서 함수 종료하라는 뜻(return None과 같음)
+    await db.delete(user)
+    await db.commit()
 
 
 # ── 서류 ───────────
