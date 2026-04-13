@@ -90,12 +90,23 @@
 
 ### 5. 매칭
 
+선착순 방식. 신청 즉시 `match_status = approved`로 확정.
+
 | 기능 | 설명 |
 |------|------|
-| 매칭 신청 | 봉사자가 호스팅에 신청. `cert_flag = approved` 필수 |
-| 매칭 취소 | 봉사자가 자발적으로 취소 가능. `is_apply = false` |
+| 매칭 신청 | 봉사자가 호스팅에 신청. `cert_flag = approved` 필수. 신청 즉시 `match_status = approved`로 확정 |
+| 매칭 취소 | 봉사자가 자발적으로 취소 가능. `match_status = cancelled` |
 | 체크인 | 봉사자가 방문 현장에서 QR 스캔으로 체크인. `check_in_time` 기록 |
 | 체크아웃 | 봉사자가 방문 종료 시 QR 스캔으로 체크아웃. `check_out_time` 기록 |
+
+**매칭 상태 (`match_status`)**
+
+| 상태 | 사용 여부 | 설명 |
+|------|-----------|------|
+| `approved` | 사용 | 신청 완료 (선착순 즉시 확정) |
+| `cancelled` | 사용 | 봉사자가 자발적으로 취소 |
+| `pending` | 미사용 (예비) | 추후 승인 기반 방식 전환 시 활용 가능 |
+| `rejected` | 미사용 (예비) | 추후 승인 기반 방식 전환 시 활용 가능 |
 
 **체크인 / 체크아웃 API 동작 원칙**
 - API는 시간 **기록**만 담당 (`check_in_time` / `check_out_time` 저장)
