@@ -13,8 +13,11 @@ from app.domain.match.models import MatchingInfo, MatchStatus
 async def create_match(db: AsyncSession, hosting_id: int, vt_id: int) -> MatchingInfo:
     """매칭을 생성합니다."""
 
-    # 1. 호스팅 존재 여부 확인
-    hosting = await db.get(Hosting, hosting_id)
+    # 1. 호스팅 존재 여부 확인 (동시 요청 대비 row 잠금)
+    result = await db.execute(
+        select(Hosting).where(Hosting.hosting_id == hosting_id).with_for_update()
+    )
+    hosting = result.scalar_one_or_none()
     if not hosting:
         raise HTTPException(status_code=404, detail="존재하지 않는 호스팅입니다.")
 
