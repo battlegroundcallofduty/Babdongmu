@@ -7,14 +7,14 @@ from app.database import get_db
 from app.domain.match import service
 from app.domain.match.schemas import MatchResponse
 from app.domain.user.dependency import get_current_user
-from app.domain.user.models import User
+from app.domain.user.models import User, UserRole
 
 router = APIRouter()
 
 
 def _require_volunteer(current_user: User) -> None:
     """봉사자 역할인지 확인합니다."""
-    if current_user.user_role != "volunteer":
+    if current_user.user_role != UserRole.VOLUNTEER:
         raise HTTPException(status_code=403, detail="봉사자만 이용할 수 있습니다.")
 
 
