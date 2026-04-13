@@ -19,7 +19,7 @@ async def init_db() -> None:
     from app.domain.hosting.models import Hosting, SmsLog  # noqa: F401
     from app.domain.match.models import MatchingInfo  # noqa: F401
     from app.domain.review.models import Review, ReviewImg  # noqa: F401
-    from app.domain.senior.models import Senior  # noqa: F401
+    from app.domain.senior.models1 import Senior  # noqa: F401
     from app.domain.user.models import Document, User  # noqa: F401
 
     async with engine.begin() as conn:
