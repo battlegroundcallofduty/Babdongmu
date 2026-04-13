@@ -98,12 +98,14 @@
 | matching_id | PK | 매칭 ID |
 | hosting_id | FK → hostings | 호스팅 |
 | vt_id | FK → users | 봉사자 |
-| is_apply | BOOLEAN | 신청/취소 여부 |
-| check_in | BOOLEAN | 방문 체크인 여부 |
+| senior_id | FK → seniors | 어르신 |
+| match_status | ENUM | 매칭 상태 (`pending` / `approved` / `rejected` / `cancelled`). 기본값 `approved` |
 | check_in_time | TIMESTAMP nullable | 체크인 시간 |
 | check_out_time | TIMESTAMP nullable | 체크아웃 시간 |
 | actual_volunteer_time | INT nullable | 실봉사시간 (관리자 최종 부여, 분 단위) |
 | created_at | TIMESTAMP | 신청일 |
+
+> UNIQUE INDEX `uix_hosting_vt_active` on (hosting_id, vt_id) — `cancelled` 상태 제외하고 중복 신청 방지
 
 ---
 
