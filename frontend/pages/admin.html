@@ -238,6 +238,7 @@
   </div>
 
   <script src="/js/api.js"></script>
+  <script src="/js/admin.js"></script>
   <script>
     // ── 네비게이션 ──────────────────────────────────────────
     function toggleNav() {
@@ -248,14 +249,6 @@
       document.body.style.overflow = d.classList.contains('open') ? 'hidden' : '';
     }
     function closeNav(e) { if (e.target === e.currentTarget) toggleNav(); }
-
-    // ── 토스트 ───────────────────────────────────────────────
-    function showToast(msg, type = '') {
-      const el = document.getElementById('toast');
-      el.textContent = msg;
-      el.className = 'toast show ' + type;
-      setTimeout(() => { el.className = 'toast'; }, 2500);
-    }
 
     // ── 통계 ────────────────────────────────────────────────
     async function loadStats() {
@@ -445,33 +438,6 @@
             <p>봉사시간 부여 대기 중인 매칭이 없어요</p>
           </div>`;
       }
-    }
-
-    // ── 유틸 ────────────────────────────────────────────────
-    function formatDate(iso) {
-      if (!iso) return '-';
-      return new Date(iso).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' });
-    }
-    function formatDatetime(iso) {
-      if (!iso) return '-';
-      return new Date(iso).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-    }
-
-    // ── 인증 / 권한 확인 ─────────────────────────────────────
-    function denyAccess() {
-      document.getElementById('accessDenied').classList.add('show');
-      setTimeout(() => window.location.replace('/pages/login.html'), 2500);
-    }
-
-    async function checkAdmin() {
-      if (!isLoggedIn()) { denyAccess(); return false; }
-      try {
-        const me = await api('/users/me');
-        if (me.user_role !== 'admin') { denyAccess(); return false; }
-      } catch {
-        denyAccess(); return false;
-      }
-      return true;
     }
 
     // ── 초기화 ───────────────────────────────────────────────
