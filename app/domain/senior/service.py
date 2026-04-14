@@ -144,3 +144,38 @@ async def deactivate_senior(
     senior.active_flag = False
 
     await session.commit()
+
+
+async def activate_senior(
+    session: AsyncSession,
+    guardian_id: int,
+    senior_id: int,
+) -> None:
+    """어르신 정보를 활성화합니다."""
+
+    senior = await get_guardian_senior_by_id(
+        session=session,
+        guardian_id=guardian_id,
+        senior_id=senior_id,
+    )
+
+    senior.active_flag = True
+
+    await session.commit()
+
+
+async def delete_senior(
+    session: AsyncSession,
+    guardian_id: int,
+    senior_id: int,
+) -> None:
+    """어르신 정보를 삭제합니다."""
+
+    senior = await get_guardian_senior_by_id(
+        session=session,
+        guardian_id=guardian_id,
+        senior_id=senior_id,
+    )
+
+    await session.delete(senior)
+    await session.commit()

@@ -17,7 +17,7 @@ class SeniorCreateRequest(BaseModel):
     special_note: str | None = Field(default=None, description="특이사항")
     active_flag: bool = Field(default=True, description="활성 여부")
     ai_summary: str | None = Field(default=None, description="어르신 AI 요약")
-    max_people: int = Field(..., default=2, ge=2, le=4, description="최대 동행 인원")
+    max_people: int = Field(..., ge=2, le=4, description="최대 동행 인원")
     qr_code: str | None = Field(default=None, max_length=500, description="QR 코드 값")
 
 

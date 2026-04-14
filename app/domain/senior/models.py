@@ -3,10 +3,11 @@
 import enum
 from datetime import datetime, timezone
 
-from sqlalchemy import TIMESTAMP, Boolean, CheckConstraint, ForeignKey, Integer, String, Text, Enum
+from sqlalchemy import TIMESTAMP, Boolean, CheckConstraint, Enum, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
+
 
 class GenderEnum(str, enum.Enum):
     MALE = "male"
@@ -24,7 +25,7 @@ class Senior(Base):
     senior_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     guardian_id : Mapped[int] = mapped_column(
         ForeignKey("users.user_id", ondelete="RESTRICT"),
-        nullable=False, 
+        nullable=False,
         index=True
     )
 
@@ -52,4 +53,3 @@ class Senior(Base):
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
     )
-    
