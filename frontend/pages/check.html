@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>체크인/체크아웃 - 밥동무</title>
+  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/common.css">
+  <style>
+    .check-card {
+      background: var(--surface);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-md);
+      padding: var(--space-2xl);
+      text-align: center;
+      margin-top: var(--space-2xl);
+    }
+    .check-icon {
+      width: 64px;
+      height: 64px;
+      background: var(--primary-light);
+      border-radius: var(--radius-full);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto var(--space-lg);
+    }
+    .check-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin-bottom: var(--space-sm);
+    }
+    .check-desc {
+      color: var(--muted);
+      margin-bottom: var(--space-2xl);
+    }
+    .check-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-md);
+    }
+    .btn-checkin {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-lg);
+      padding: var(--space-lg);
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-checkin:hover { background: var(--primary-hover); }
+    .btn-checkin:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-checkout {
+      background: var(--secondary);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-lg);
+      padding: var(--space-lg);
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-checkout:hover { background: var(--secondary-hover); }
+    .btn-checkout:disabled { opacity: 0.5; cursor: not-allowed; }
+    .toast {
+      position: fixed;
+      bottom: var(--space-2xl);
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--text);
+      color: #fff;
+      padding: var(--space-md) var(--space-xl);
+      border-radius: var(--radius-full);
+      font-size: 0.95rem;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    .toast.show { opacity: 1; }
+    .toast.success { background: var(--success); }
+    .toast.error { background: var(--error); }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="/" class="nav-logo">
+        <svg class="nav-logo-icon" viewBox="0 0 32 32" fill="none">
+          <circle cx="16" cy="16" r="14" fill="#D4763C" opacity="0.12"/>
+          <path d="M8 18c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke="#D4763C" stroke-width="2" stroke-linecap="round"/>
+          <path d="M6 18h20v1c0 3.3-2.7 6-6 6h-8c-3.3 0-6-2.7-6-6v-1z" fill="#D4763C" opacity="0.2"/>
+          <ellipse cx="16" cy="18" rx="10" ry="2" fill="#D4763C" opacity="0.15"/>
+          <path d="M13 14c-.5-2 .5-4 3-4s3.5 2 3 4" stroke="#5B8C5A" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+        </svg>
+        밥동무
+      </a>
+      <ul class="nav-links">
+        <li><a href="/pages/hostings.html">호스팅</a></li>
+        <li><a href="/pages/my-matches.html">내 매칭</a></li>
+        <li><a href="/pages/mypage.html">마이페이지</a></li>
+      </ul>
+      <button class="nav-toggle" onclick="toggleNav()" aria-label="메뉴 열기">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Mobile Drawer -->
+  <div class="nav-drawer" id="navDrawer" onclick="closeNav(event)">
+    <div class="nav-drawer-content">
+      <a href="/pages/hostings.html">호스팅</a>
+      <a href="/pages/my-matches.html">내 매칭</a>
+      <a href="/pages/mypage.html">마이페이지</a>
+    </div>
+  </div>
+
+  <main class="container" style="max-width:480px;">
+    <div class="check-card slide-up">
+      <div class="check-icon">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="#D4763C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M16 4C9.4 4 4 9.4 4 16s5.4 12 12 12 12-5.4 12-12S22.6 4 16 4z"/>
+          <path d="M11 16l3.5 3.5L21 12"/>
+        </svg>
+      </div>
+      <h2 class="check-title">방문 확인</h2>
+      <p class="check-desc">체크인 또는 체크아웃 버튼을 눌러주세요.</p>
+      <div class="check-buttons">
+        <button class="btn-checkin" id="checkin-btn" onclick="handleCheckIn()">
+          체크인
+        </button>
+        <button class="btn-checkout" id="checkout-btn" onclick="handleCheckOut()">
+          체크아웃
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const seniorId = params.get('senior_id');
+
+    function showToast(message, type = '') {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = `toast show ${type}`;
+      setTimeout(() => { toast.className = 'toast'; }, 3000);
+    }
+
+    function setLoading(btnId, loading) {
+      const btn = document.getElementById(btnId);
+      btn.disabled = loading;
+      if (btnId === 'checkin-btn') {
+        btn.textContent = loading ? '처리 중...' : '체크인';
+      } else {
+        btn.textContent = loading ? '처리 중...' : '체크아웃';
+      }
+    }
+
+    async function handleCheckIn() {
+      if (!seniorId) return showToast('QR 코드를 확인해주세요.', 'error');
+      setLoading('checkin-btn', true);
+      try {
+        await api(`/matches/${seniorId}/checkin`, { method: 'PATCH' });
+        showToast('방문 체크인이 완료되었어요!', 'success');
+      } catch (e) {
+        showToast(e.message, 'error');
+      } finally {
+        setLoading('checkin-btn', false);
+      }
+    }
+
+    async function handleCheckOut() {
+      if (!seniorId) return showToast('QR 코드를 확인해주세요.', 'error');
+      setLoading('checkout-btn', true);
+      try {
+        await api(`/matches/${seniorId}/checkout`, { method: 'PATCH' });
+        showToast('방문이 완료되었어요!', 'success');
+      } catch (e) {
+        showToast(e.message, 'error');
+      } finally {
+        setLoading('checkout-btn', false);
+      }
+    }
+
+    function toggleNav() {
+      const toggle = document.querySelector('.nav-toggle');
+      const drawer = document.getElementById('navDrawer');
+      toggle.classList.toggle('active');
+      drawer.classList.toggle('open');
+      document.body.style.overflow = drawer.classList.contains('open') ? 'hidden' : '';
+    }
+
+    function closeNav(e) {
+      if (e.target === e.currentTarget) toggleNav();
+    }
+  </script>
+</body>
+</html>
