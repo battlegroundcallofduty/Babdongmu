@@ -7,6 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.security import hash_password, verify_password
 from app.domain.user.models import Document, User, UserRole
 
+ALLOWED_UPDATE_FIELDS = {"name", "phone_number", "address"} # update_user 허용 리스트
+
 
 # —— 유저 ─────────
 async def get_user_by_id(user_id: int, db: AsyncSession) -> User | None:
@@ -59,6 +61,8 @@ async def update_user(user_id: int, db: AsyncSession, **kwargs) -> User | None:
     if user is None:
         return None
     for field, value in kwargs.items():
+        if field not in ALLOWED_UPDATE_FIELDS:
+            continue  # setattr 실행 안 하고 다음 필드로
         setattr(user, field, value) # 들어온것 업데이트
     user.updated_at = datetime.now(timezone.utc)
     await db.commit()

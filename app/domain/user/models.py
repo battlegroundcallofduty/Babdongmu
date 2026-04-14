@@ -33,6 +33,7 @@ class User(Base):
     address: Mapped[str] = mapped_column(String(255))
     user_role: Mapped[UserRole] = mapped_column(Enum(UserRole))
     cert_flag: Mapped[CertFlag] = mapped_column(Enum(CertFlag), default=CertFlag.PENDING)
+    cert_reject_reason: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True),
         default=lambda: datetime.now(timezone.utc),
@@ -47,6 +48,7 @@ class DocumentType(enum.Enum):
     CRIMINAL_RECORD = "criminal_record"   # 봉사자: 범죄경력조회서
     WELFARE_CERT = "welfare_cert"         # 보호자: 복지관 인증서류
     FAMILY_CERT = "family_cert"           # 보호자: 가족관계증명서
+    IDENTITY_COPY = "identity_copy"       # 공통: 신분증 사본
 
 
 class Document(Base):
