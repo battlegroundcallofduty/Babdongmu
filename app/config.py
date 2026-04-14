@@ -19,7 +19,7 @@ class Settings(BaseSettings):
 
     # Gemini (AI 요약 기능)
     GEMINI_API_KEY: str = ""
-    GEMINI_MODEL: str = "gemini-3.1-flash-preview"
+    GEMINI_MODEL: str = "gemini-3.1-flash-lite-preview"
 
     class Config:
         env_file = ".env"
