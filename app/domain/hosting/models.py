@@ -31,7 +31,8 @@ class Hosting(Base):
     menu: Mapped[str] = mapped_column(String(255))
     hosting_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True))
     hosting_end: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
-    max_people: Mapped[int] = mapped_column(Integer, default=2)  # seniors.max_people이 기본값, 수정 가능
+    # seniors.max_people이 기본값, 수정 가능
+    max_people: Mapped[int] = mapped_column(Integer, default=2)  
     hosting_status: Mapped[HostingStatus] = mapped_column(
         Enum(HostingStatus), default=HostingStatus.OPEN
     )
