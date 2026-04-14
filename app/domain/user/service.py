@@ -70,6 +70,20 @@ async def update_user(user_id: int, db: AsyncSession, **kwargs) -> User | None:
     return user
 
 
+async def change_password(user_id: int, current_password: str, new_password: str, db: AsyncSession) -> bool:
+    """마이페이지: 비밀번호 변경 (불일치 에러는 router.py에서)"""
+    user = await get_user_by_id(user_id, db)
+    if user is None:
+        return False  # 원래는 404 에러 직접 던지는게 맞지만 service는 순수 파이썬 영역으로 두기 위해 ^^
+    if not verify_password(current_password, user.password):
+        # 현재 비밀번호가 틀리면 변경 거부
+        return False
+    user.password = hash_password(new_password)
+    user.updated_at = datetime.now(timezone.utc)
+    await db.commit()
+    return True
+
+
 async def delete_user(user_id: int, db: AsyncSession) -> None:
     """탈퇴: 유저를 db에서 삭제"""
     user = await get_user_by_id(user_id, db)

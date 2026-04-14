@@ -8,12 +8,13 @@ from app.database import get_db
 from app.domain.user.dependency import get_current_user
 from app.domain.user.models import User, UserRole
 from app.domain.user.schemas import (
+    PasswordChangeRequest,
     TokenResponse,
     UserLoginRequest,
     UserRegisterRequest,
     UserResponse,
 )
-from app.domain.user.service import authenticate_user, create_user, get_user_by_email
+from app.domain.user.service import authenticate_user, change_password, create_user, get_user_by_email
 
 router = APIRouter()
 
@@ -66,3 +67,18 @@ async def login(body: UserLoginRequest, db: AsyncSession = Depends(get_db)):
 async def get_me(current_user: User = Depends(get_current_user)):
     """현재 로그인한 유저 정보 반환"""
     return current_user
+
+
+@router.patch("/me/password", status_code=status.HTTP_204_NO_CONTENT)
+async def update_password(
+    body: PasswordChangeRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """마이페이지: 비밀번호 변경"""
+    success = await change_password(current_user.user_id, body.current_password, body.new_password, db)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="현재 비밀번호가 올바르지 않습니다.",
+        )
