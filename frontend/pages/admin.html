@@ -4,8 +4,127 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>관리자 대시보드 - 밥동무</title>
-  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" rel="stylesheet">
   <link rel="stylesheet" href="/css/common.css">
+  <style>
+    .doc-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-md) var(--space-lg);
+      border-bottom: 1px solid var(--border-light);
+      gap: var(--space-md);
+    }
+    .doc-item:last-child { border-bottom: none; }
+    .doc-item:hover { background: var(--surface-warm); }
+    .doc-info { flex: 1; min-width: 0; }
+    .doc-name { font-weight: 600; color: var(--text); margin-bottom: 2px; }
+    .doc-meta { font-size: 13px; color: var(--muted); }
+    .doc-link {
+      font-size: 13px;
+      color: var(--info);
+      text-decoration: underline;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .doc-actions { display: flex; gap: var(--space-sm); flex-shrink: 0; }
+
+    .match-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-md) var(--space-lg);
+      border-bottom: 1px solid var(--border-light);
+      gap: var(--space-md);
+    }
+    .match-item:last-child { border-bottom: none; }
+    .match-item:hover { background: var(--surface-warm); }
+    .match-info { flex: 1; min-width: 0; }
+    .match-name { font-weight: 600; color: var(--text); margin-bottom: 2px; }
+    .match-meta { font-size: 13px; color: var(--muted); }
+    .badge {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: var(--radius-full);
+      flex-shrink: 0;
+    }
+    .badge-approved  { background: #EDF5ED; color: #3A6B39; }
+    .badge-cancelled { background: #F0EBE6; color: #6B5E53; }
+    .badge-pending   { background: #FDF5E6; color: #8B6914; }
+
+    .time-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-md) var(--space-lg);
+      border-bottom: 1px solid var(--border-light);
+      gap: var(--space-md);
+    }
+    .time-item:last-child { border-bottom: none; }
+    .time-item:hover { background: var(--surface-warm); }
+    .time-info { flex: 1; min-width: 0; }
+    .time-name { font-weight: 600; color: var(--text); margin-bottom: 2px; }
+    .time-meta { font-size: 13px; color: var(--muted); }
+    .time-input-wrap { display: flex; align-items: center; gap: var(--space-sm); flex-shrink: 0; }
+    .time-input {
+      width: 80px;
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-size: 14px;
+      text-align: center;
+      background: var(--surface);
+      color: var(--text);
+    }
+    .time-unit { font-size: 13px; color: var(--muted); }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--space-md);
+      margin-bottom: var(--space-xl);
+    }
+    @media (max-width: 640px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .doc-item, .time-item { flex-wrap: wrap; }
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--text);
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: var(--radius-full);
+      font-size: 14px;
+      font-weight: 500;
+      z-index: 9999;
+      transition: transform 0.3s ease;
+      pointer-events: none;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .toast.success { background: var(--secondary); }
+    .toast.error { background: var(--error); }
+
+    .access-denied {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: var(--bg, #fff);
+      z-index: 99999;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+    .access-denied.show { display: flex; }
+    .access-denied-icon { font-size: 48px; }
+    .access-denied-title { font-size: 20px; font-weight: 700; color: var(--text); }
+    .access-denied-sub { font-size: 14px; color: var(--muted); }
+  </style>
 </head>
 <body>
   <nav class="nav">
@@ -17,115 +136,318 @@
       <ul class="nav-links">
         <li><a href="/pages/admin.html" class="active">대시보드</a></li>
         <li><a href="/pages/hostings.html">호스팅</a></li>
-        <li><a href="/pages/mypage.html">마이페이지</a></li>
+        <li><a href="#" onclick="logout()">로그아웃</a></li>
       </ul>
       <button class="nav-toggle" onclick="toggleNav()" aria-label="메뉴"><span></span><span></span><span></span></button>
     </div>
   </nav>
-  <div class="nav-drawer" id="navDrawer" onclick="closeNav(event)"><div class="nav-drawer-content"><a href="/pages/admin.html" class="active">대시보드</a><a href="/pages/hostings.html">호스팅</a><a href="/pages/mypage.html">마이페이지</a></div></div>
+  <div class="nav-drawer" id="navDrawer" onclick="closeNav(event)">
+    <div class="nav-drawer-content">
+      <a href="/pages/admin.html" class="active">대시보드</a>
+      <a href="/pages/hostings.html">호스팅</a>
+      <a href="#" onclick="logout()">로그아웃</a>
+    </div>
+  </div>
 
-  <main class="container">
+  <main class="container" style="padding-top: var(--space-xl); padding-bottom: var(--space-3xl);">
     <div class="page-header slide-up">
       <h1>관리자 대시보드</h1>
       <p>오늘 매칭 현황과 전체 통계를 확인하세요</p>
     </div>
 
     <!-- 통계 카드 -->
-    <div class="stats-grid mb-lg slide-up stagger-1">
+    <div class="stats-grid slide-up stagger-1">
       <div class="stat-card">
-        <div class="stat-value">5</div>
+        <div class="stat-value" id="stat-today-matches">-</div>
         <div class="stat-label">오늘 매칭</div>
       </div>
       <div class="stat-card">
-        <div class="stat-value">42</div>
+        <div class="stat-value" id="stat-total-volunteers">-</div>
         <div class="stat-label">전체 봉사자</div>
       </div>
       <div class="stat-card">
-        <div class="stat-value">12</div>
+        <div class="stat-value" id="stat-volunteers">-</div>
+        <div class="stat-label">승인된 봉사자</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-seniors">-</div>
         <div class="stat-label">등록 어르신</div>
       </div>
       <div class="stat-card">
-        <div class="stat-value">3</div>
-        <div class="stat-label">승인 대기</div>
+        <div class="stat-value" id="stat-pending">-</div>
+        <div class="stat-label">서류 승인 대기</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-time-pending">-</div>
+        <div class="stat-label">봉사시간 부여 대기</div>
       </div>
     </div>
 
-    <!-- 승인 대기 호스팅 -->
+    <!-- 최근 매칭 신청 -->
     <div class="section-header slide-up stagger-2">
-      <h2>승인 대기 호스팅</h2>
+      <h2>최근 매칭 신청</h2>
+    </div>
+    <div class="card mb-lg slide-up stagger-2">
+      <div id="recent-match-list">
+        <div class="empty-state" style="padding: var(--space-xl) 0;">
+          <div class="empty-state-icon">🍚</div>
+          <p>불러오는 중...</p>
+        </div>
+      </div>
     </div>
 
+    <!-- 서류 승인/반려 -->
+    <div class="section-header slide-up stagger-3">
+      <h2>서류 승인 대기</h2>
+    </div>
     <div class="card mb-lg slide-up stagger-3">
-      <div class="list-item">
-        <div>
-          <div class="font-bold">김순자 어르신 · 된장찌개</div>
-          <div class="text-sm text-muted">4월 18일 (금) · 점심 · 3명 모집 · 보호자: 김영수</div>
-        </div>
-        <div class="flex gap-sm">
-          <button class="btn btn-primary btn-sm">승인</button>
-          <button class="btn btn-ghost btn-sm">반려</button>
-        </div>
-      </div>
-      <div class="list-item">
-        <div>
-          <div class="font-bold">박영희 어르신 · 떡볶이</div>
-          <div class="text-sm text-muted">4월 19일 (토) · 저녁 · 2명 모집 · 보호자: 박지현</div>
-        </div>
-        <div class="flex gap-sm">
-          <button class="btn btn-primary btn-sm">승인</button>
-          <button class="btn btn-ghost btn-sm">반려</button>
-        </div>
-      </div>
-      <div class="list-item">
-        <div>
-          <div class="font-bold">이정자 어르신 · 비빔밥</div>
-          <div class="text-sm text-muted">4월 20일 (일) · 점심 · 4명 모집 · 보호자: 이민수</div>
-        </div>
-        <div class="flex gap-sm">
-          <button class="btn btn-primary btn-sm">승인</button>
-          <button class="btn btn-ghost btn-sm">반려</button>
+      <div id="doc-list">
+        <div class="empty-state" style="padding: var(--space-xl) 0;">
+          <div class="empty-state-icon">📄</div>
+          <p>불러오는 중...</p>
         </div>
       </div>
     </div>
 
-    <!-- 최근 매칭 -->
+    <!-- 봉사시간 부여 -->
     <div class="section-header slide-up stagger-4">
-      <h2>최근 매칭</h2>
+      <h2>봉사시간 부여</h2>
+      <p style="font-size: 13px; color: var(--muted); margin-top: 4px;">체크인/체크아웃 기록을 확인 후 최종 봉사시간을 입력하세요</p>
     </div>
-
     <div class="card slide-up stagger-5">
-      <div class="list-item">
-        <div>
-          <div class="font-bold">김순자 어르신 ← 홍길동, 김철수</div>
-          <div class="text-sm text-muted">4월 15일 · 점심 · 된장찌개</div>
+      <div id="time-list">
+        <div class="empty-state" style="padding: var(--space-xl) 0;">
+          <div class="empty-state-icon">⏱️</div>
+          <p>불러오는 중...</p>
         </div>
-        <span class="badge badge-open">진행중</span>
-      </div>
-      <div class="list-item">
-        <div>
-          <div class="font-bold">이정자 어르신 ← 이영희, 박민지, 최수진</div>
-          <div class="text-sm text-muted">4월 14일 · 점심 · 잔치국수</div>
-        </div>
-        <span class="badge badge-done">완료</span>
-      </div>
-      <div class="list-item">
-        <div>
-          <div class="font-bold">박영희 어르신 ← 정우성, 한소희</div>
-          <div class="text-sm text-muted">4월 13일 · 저녁 · 김치전</div>
-        </div>
-        <span class="badge badge-done">완료</span>
       </div>
     </div>
   </main>
 
   <footer class="footer">
-    <div class="footer-inner"><div class="footer-bottom">&copy; 2026 밥동무. 독거 어르신을 위한 식사 동반 플랫폼</div></div>
+    <div class="footer-inner">
+      <div class="footer-bottom">&copy; 2026 밥동무. 독거 어르신을 위한 식사 동반 플랫폼</div>
+    </div>
   </footer>
 
+  <div class="toast" id="toast"></div>
+  <div class="access-denied" id="accessDenied">
+    <div class="access-denied-icon">🔒</div>
+    <div class="access-denied-title">관리자 전용 페이지입니다</div>
+    <div class="access-denied-sub">접근 권한이 없습니다. 로그인 페이지로 이동합니다...</div>
+  </div>
+
   <script src="/js/api.js"></script>
+  <script src="/js/admin.js"></script>
   <script>
-    function toggleNav(){const t=document.querySelector('.nav-toggle'),d=document.getElementById('navDrawer');t.classList.toggle('active');d.classList.toggle('open');document.body.style.overflow=d.classList.contains('open')?'hidden':'';}
-    function closeNav(e){if(e.target===e.currentTarget)toggleNav();}
+    // ── 네비게이션 ──────────────────────────────────────────
+    function toggleNav() {
+      const t = document.querySelector('.nav-toggle');
+      const d = document.getElementById('navDrawer');
+      t.classList.toggle('active');
+      d.classList.toggle('open');
+      document.body.style.overflow = d.classList.contains('open') ? 'hidden' : '';
+    }
+    function closeNav(e) { if (e.target === e.currentTarget) toggleNav(); }
+
+    // ── 통계 ────────────────────────────────────────────────
+    async function loadStats() {
+      try {
+        const data = await api('/admin/stats');
+        document.getElementById('stat-pending').textContent = data.doc_pending ?? '-';
+        document.getElementById('stat-volunteers').textContent = data.approved_volunteers ?? '-';
+        document.getElementById('stat-total-volunteers').textContent = data.total_volunteers ?? '-';
+        document.getElementById('stat-seniors').textContent = data.seniors ?? '-';
+        document.getElementById('stat-today-matches').textContent = data.today_matches ?? '-';
+        document.getElementById('stat-time-pending').textContent = data.time_pending ?? '-';
+      } catch {
+        // 통계 API 미구현 시 무시
+      }
+    }
+
+    // ── 최근 매칭 신청 ───────────────────────────────────────
+    const STATUS_LABEL = { approved: '확정', cancelled: '취소', pending: '대기', rejected: '반려' };
+    const STATUS_BADGE  = { approved: 'badge-approved', cancelled: 'badge-cancelled', pending: 'badge-pending', rejected: 'badge-cancelled' };
+
+    async function loadRecentMatches() {
+      const wrap = document.getElementById('recent-match-list');
+      try {
+        const matches = await api('/admin/matches/recent');
+        if (!matches.length) {
+          wrap.innerHTML = `
+            <div class="empty-state" style="padding: var(--space-xl) 0;">
+              <div class="empty-state-icon">🍚</div>
+              <p>아직 매칭 신청이 없어요</p>
+            </div>`;
+          return;
+        }
+        wrap.innerHTML = matches.map(m => `
+          <div class="match-item">
+            <div class="match-info">
+              <div class="match-name">${m.volunteer_name} → ${m.senior_name} 어르신</div>
+              <div class="match-meta">호스팅 ${formatDatetime(m.hosting_at)} · 신청 ${formatDatetime(m.created_at)}</div>
+            </div>
+            <span class="badge ${STATUS_BADGE[m.match_status] ?? ''}">${STATUS_LABEL[m.match_status] ?? m.match_status}</span>
+          </div>
+        `).join('');
+      } catch {
+        wrap.innerHTML = `
+          <div class="empty-state" style="padding: var(--space-xl) 0;">
+            <div class="empty-state-icon">🍚</div>
+            <p>목록을 불러올 수 없어요</p>
+          </div>`;
+      }
+    }
+
+    // ── 서류 목록 ────────────────────────────────────────────
+    async function loadDocuments() {
+      const wrap = document.getElementById('doc-list');
+      try {
+        const docs = await api('/admin/documents/pending');
+        if (!docs.length) {
+          wrap.innerHTML = `
+            <div class="empty-state" style="padding: var(--space-xl) 0;">
+              <div class="empty-state-icon">✅</div>
+              <p>승인 대기 중인 서류가 없어요</p>
+            </div>`;
+          return;
+        }
+        wrap.innerHTML = docs.map(doc => `
+          <div class="doc-item" id="doc-${doc.document_id}">
+            <div class="doc-info">
+              <div class="doc-name">${doc.user_name}</div>
+              <div class="doc-meta">${doc.user_email} · 가입일 ${formatDate(doc.created_at)}</div>
+            </div>
+            <a class="doc-link" href="${doc.document_url}" target="_blank" rel="noopener">서류 보기</a>
+            <div class="doc-actions">
+              <button class="btn btn-primary btn-sm" onclick="approveDoc(${doc.document_id}, ${doc.user_id})">승인</button>
+              <button class="btn btn-ghost btn-sm" onclick="rejectDoc(${doc.document_id}, ${doc.user_id})">반려</button>
+            </div>
+          </div>
+        `).join('');
+      } catch {
+        wrap.innerHTML = `
+          <div class="empty-state" style="padding: var(--space-xl) 0;">
+            <div class="empty-state-icon">📄</div>
+            <p>서류 목록을 불러올 수 없어요</p>
+          </div>`;
+      }
+    }
+
+    async function approveDoc(documentId, userId) {
+      try {
+        await api(`/admin/documents/${documentId}/approve`, { method: 'PATCH' });
+        document.getElementById(`doc-${documentId}`)?.remove();
+        showToast('승인되었어요', 'success');
+        checkDocEmpty();
+        loadStats();
+      } catch (e) {
+        showToast(e.message, 'error');
+      }
+    }
+
+    async function rejectDoc(documentId, userId) {
+      if (!confirm('반려하면 봉사자에게 서류 재업로드가 요청됩니다. 계속할까요?')) return;
+      try {
+        await api(`/admin/documents/${documentId}/reject`, { method: 'PATCH' });
+        document.getElementById(`doc-${documentId}`)?.remove();
+        showToast('반려되었어요', 'error');
+        checkDocEmpty();
+        loadStats();
+      } catch (e) {
+        showToast(e.message, 'error');
+      }
+    }
+
+    function checkDocEmpty() {
+      const wrap = document.getElementById('doc-list');
+      if (!wrap.querySelector('.doc-item')) {
+        wrap.innerHTML = `
+          <div class="empty-state" style="padding: var(--space-xl) 0;">
+            <div class="empty-state-icon">✅</div>
+            <p>승인 대기 중인 서류가 없어요</p>
+          </div>`;
+      }
+    }
+
+    // ── 봉사시간 부여 ────────────────────────────────────────
+    async function loadTimePending() {
+      const wrap = document.getElementById('time-list');
+      try {
+        const matches = await api('/admin/matches/completed');
+        if (!matches.length) {
+          wrap.innerHTML = `
+            <div class="empty-state" style="padding: var(--space-xl) 0;">
+              <div class="empty-state-icon">✅</div>
+              <p>봉사시간 부여 대기 중인 매칭이 없어요</p>
+            </div>`;
+          return;
+        }
+        wrap.innerHTML = matches.map(m => `
+          <div class="time-item" id="match-${m.matching_id}">
+            <div class="time-info">
+              <div class="time-name">${m.volunteer_name} → ${m.senior_name} 어르신</div>
+              <div class="time-meta">
+                체크인 ${formatDatetime(m.check_in_time)} · 체크아웃 ${formatDatetime(m.check_out_time)}
+                · 호스팅 기준 ${m.expected_minutes ?? '-'}분
+              </div>
+            </div>
+            <div class="time-input-wrap">
+              <input class="time-input" type="number" min="0" placeholder="0" id="time-input-${m.matching_id}" value="${m.expected_minutes ?? ''}">
+              <span class="time-unit">분</span>
+              <button class="btn btn-primary btn-sm" onclick="grantTime(${m.matching_id})">부여</button>
+            </div>
+          </div>
+        `).join('');
+      } catch {
+        wrap.innerHTML = `
+          <div class="empty-state" style="padding: var(--space-xl) 0;">
+            <div class="empty-state-icon">⏱️</div>
+            <p>목록을 불러올 수 없어요</p>
+          </div>`;
+      }
+    }
+
+    async function grantTime(matchingId) {
+      const input = document.getElementById(`time-input-${matchingId}`);
+      const minutes = parseInt(input.value, 10);
+      if (isNaN(minutes) || minutes < 0) {
+        showToast('올바른 시간을 입력해주세요', 'error');
+        return;
+      }
+      try {
+        await api(`/admin/matches/${matchingId}/volunteer-time`, {
+          method: 'PATCH',
+          body: JSON.stringify({ actual_volunteer_time: minutes }),
+        });
+        document.getElementById(`match-${matchingId}`)?.remove();
+        showToast(`${minutes}분 부여되었어요`, 'success');
+        checkTimeEmpty();
+        loadStats();
+      } catch (e) {
+        showToast(e.message, 'error');
+      }
+    }
+
+    function checkTimeEmpty() {
+      const wrap = document.getElementById('time-list');
+      if (!wrap.querySelector('.time-item')) {
+        wrap.innerHTML = `
+          <div class="empty-state" style="padding: var(--space-xl) 0;">
+            <div class="empty-state-icon">✅</div>
+            <p>봉사시간 부여 대기 중인 매칭이 없어요</p>
+          </div>`;
+      }
+    }
+
+    // ── 초기화 ───────────────────────────────────────────────
+    checkAdmin().then(ok => {
+      if (!ok) return;
+      loadStats();
+      loadRecentMatches();
+      loadDocuments();
+      loadTimePending();
+    });
   </script>
 </body>
 </html>

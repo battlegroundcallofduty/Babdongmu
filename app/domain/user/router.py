@@ -20,7 +20,7 @@ router = APIRouter()
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register(body: UserRegisterRequest, db: AsyncSession = Depends(get_db)):
-    """회원가입을 처리합니다."""
+    """회원가입"""
     # admin 역할로는 가입 불가 — admin은 seed 스크립트로 별도 생성
     if body.user_role == UserRole.ADMIN:
         raise HTTPException(
@@ -49,7 +49,7 @@ async def register(body: UserRegisterRequest, db: AsyncSession = Depends(get_db)
 
 @router.post("/login", response_model=TokenResponse)
 async def login(body: UserLoginRequest, db: AsyncSession = Depends(get_db)):
-    """로그인을 처리합니다."""
+    """로그인"""
     user = await authenticate_user(body.email, body.password, db)
     if user is None:
         raise HTTPException(
@@ -64,5 +64,5 @@ async def login(body: UserLoginRequest, db: AsyncSession = Depends(get_db)):
 
 @router.get("/me", response_model=UserResponse)
 async def get_me(current_user: User = Depends(get_current_user)):
-    """현재 로그인한 유저 정보를 반환합니다."""
+    """현재 로그인한 유저 정보 반환"""
     return current_user
