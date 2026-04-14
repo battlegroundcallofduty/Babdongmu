@@ -5,6 +5,8 @@
 """
 
 import asyncio
+from datetime import timezone
+from zoneinfo import ZoneInfo
 
 from solapi import SolapiMessageService
 from sqlalchemy import select
@@ -34,28 +36,36 @@ async def send_sms(
         use_long_message: True면 장문(LMS), False면 단문(SMS)
     """
     # 수신자 정보 조회
-    receiver = await get_user_by_id(receiver_id)
-    if not receiver or not receiver.get("phone_number"):
+    receiver = await get_user_by_id(receiver_id, db)
+    if not receiver or not receiver.phone_number:
         print(f"[SMS] 수신자 {receiver_id}의 전화번호를 찾을 수 없습니다.")
         return False
 
-    to = receiver["phone_number"]
+    to = receiver.phone_number
 
     # 호스팅 정보 조회 (장문에서 필요)
     hosting = None
+    hosting_at_kst = None
     if use_long_message:
         result = await db.execute(select(Hosting).where(Hosting.hosting_id == hosting_id))
         hosting = result.scalar_one_or_none()
+        if hosting:
+            # SQLite는 naive datetime, PostgreSQL은 aware datetime(UTC) 반환
+            # naive인 경우 UTC로 간주하고 KST로 변환
+            dt = hosting.hosting_at
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            hosting_at_kst = dt.astimezone(ZoneInfo("Asia/Seoul"))
 
     # 메시지 생성
     if alarm_type == AlarmType.MATCH:
         volunteer_name = "봉사자"
         if volunteer_id:
-            volunteer = await get_user_by_id(volunteer_id)
-            volunteer_name = volunteer.get("name") if volunteer else "봉사자"
+            volunteer = await get_user_by_id(volunteer_id, db)
+            volunteer_name = volunteer.name if volunteer else "봉사자"
 
         if use_long_message and hosting:
-            time_str = hosting.hosting_at.strftime("%m월 %d일 %H:%M")
+            time_str = hosting_at_kst.strftime("%m월 %d일 %H:%M")
             message = (
                 f"[밥동무 호스팅 신청]\n\n"
                 f"{volunteer_name}님이 호스팅을 신청했습니다.\n\n"
@@ -68,11 +78,11 @@ async def send_sms(
     elif alarm_type == AlarmType.CHECKIN:
         volunteer_name = "봉사자"
         if volunteer_id:
-            volunteer = await get_user_by_id(volunteer_id)
-            volunteer_name = volunteer.get("name") if volunteer else "봉사자"
+            volunteer = await get_user_by_id(volunteer_id, db)
+            volunteer_name = volunteer.name if volunteer else "봉사자"
 
         if use_long_message and hosting:
-            time_str = hosting.hosting_at.strftime("%m월 %d일 %H:%M")
+            time_str = hosting_at_kst.strftime("%m월 %d일 %H:%M")
             message = (
                 f"[밥동무 방문 체크인]\n\n"
                 f"{volunteer_name}님이 방문 체크인했습니다.\n\n"
@@ -84,7 +94,7 @@ async def send_sms(
 
     elif alarm_type == AlarmType.UPDATE:
         if use_long_message and hosting:
-            time_str = hosting.hosting_at.strftime("%m월 %d일 %H:%M")
+            time_str = hosting_at_kst.strftime("%m월 %d일 %H:%M")
             message = (
                 f"[밥동무 호스팅 수정]\n\n"
                 f"호스팅 정보가 수정되었습니다.\n\n"
@@ -98,11 +108,11 @@ async def send_sms(
     elif alarm_type == AlarmType.CHECKOUT:
         volunteer_name = "봉사자"
         if volunteer_id:
-            volunteer = await get_user_by_id(volunteer_id)
-            volunteer_name = volunteer.get("name") if volunteer else "봉사자"
+            volunteer = await get_user_by_id(volunteer_id, db)
+            volunteer_name = volunteer.name if volunteer else "봉사자"
 
         if use_long_message and hosting:
-            time_str = hosting.hosting_at.strftime("%m월 %d일 %H:%M")
+            time_str = hosting_at_kst.strftime("%m월 %d일 %H:%M")
             message = (
                 f"[밥동무 방문 완료]\n\n"
                 f"{volunteer_name}님의 방문이 완료되었습니다.\n\n"

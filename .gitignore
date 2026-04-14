@@ -30,3 +30,7 @@ design-preview.html
 # OS
 .DS_Store
 Thumbs.db
+.tmp.driveupload/
+
+# Test File
+scripts/seed_test_data.py
