@@ -18,7 +18,7 @@ from app.domain.senior.service import (
     list_seniors_by_guardian,
     update_senior,
 )
-from app.domain.user.dependency import get_current_guardian
+from app.domain.user.dependency import require_guardian
 
 
 router = APIRouter(
@@ -35,7 +35,7 @@ router = APIRouter(
 async def create_senior_endpoint(
     request: SeniorCreateRequest,
     session: AsyncSession = Depends(get_db),
-    current_guardian=Depends(get_current_guardian),
+    current_guardian=Depends(require_guardian),
 ) -> SeniorResponse:
     """어르신을 등록합니다."""
 
@@ -53,7 +53,7 @@ async def create_senior_endpoint(
 )
 async def list_seniors_endpoint(
     session: AsyncSession = Depends(get_db),
-    current_guardian=Depends(get_current_guardian),
+    current_guardian=Depends(require_guardian),
 ) -> list[SeniorResponse]:
     """보호자의 어르신 목록을 조회합니다."""
 
@@ -71,7 +71,7 @@ async def list_seniors_endpoint(
 async def get_senior_detail_endpoint(
     senior_id: int,
     session: AsyncSession = Depends(get_db),
-    current_guardian=Depends(get_current_guardian),
+    current_guardian=Depends(require_guardian),
 ) -> SeniorResponse:
     """보호자의 어르신 상세 정보를 조회합니다."""
 
@@ -92,7 +92,7 @@ async def update_senior_endpoint(
     senior_id: int,
     request: SeniorUpdateRequest,
     session: AsyncSession = Depends(get_db),
-    current_guardian=Depends(get_current_guardian),
+    current_guardian=Depends(require_guardian),
 ) -> SeniorResponse:
     """어르신 정보를 수정합니다."""
 
@@ -111,7 +111,7 @@ async def update_senior_endpoint(
 async def deactivate_senior_endpoint(
     senior_id: int,
     session: AsyncSession = Depends(get_db),
-    current_guardian=Depends(get_current_guardian),
+    current_guardian=Depends(require_guardian),
 ) -> Response:
     """어르신 정보를 비활성화합니다."""
 
@@ -130,7 +130,7 @@ async def deactivate_senior_endpoint(
 async def activate_senior_endpoint(
     senior_id: int,
     session: AsyncSession = Depends(get_db),
-    current_guardian=Depends(get_current_guardian),
+    current_guardian=Depends(require_guardian),
 ) -> Response:
     """어르신 정보를 활성화합니다."""
 
@@ -149,7 +149,7 @@ async def activate_senior_endpoint(
 async def delete_senior_endpoint(
     senior_id: int,
     session: AsyncSession = Depends(get_db),
-    current_guardian=Depends(get_current_guardian),
+    current_guardian=Depends(require_guardian),
 ) -> Response:
     """어르신 정보를 삭제합니다."""
 
