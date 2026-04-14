@@ -16,7 +16,7 @@ async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: AsyncSession = Depends(get_db),
 ) -> User:
-    """JWT 토큰에서 현재 유저를 추출합니다."""
+    """JWT 토큰에서 현재 유저 추출"""
 
     # 401 에러시 공통으로 반환하는 예외 객체
     credentials_exception = HTTPException(
@@ -51,10 +51,30 @@ async def get_current_user(
 
 
 async def require_admin(current_user: User = Depends(get_current_user)) -> User:
-    """관리자 권한을 확인합니다."""
+    """관리자 권한 확인(관리자만 접근 가능)"""
     if current_user.user_role != UserRole.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="관리자만 접근할 수 있습니다.",
+        )
+    return current_user
+
+
+async def require_guardian(current_user: User = Depends(get_current_user)) -> User:
+    """보호자 권한 확인(보호자만 접근 가능)"""
+    if current_user.user_role != UserRole.GUARDIAN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="보호자만 접근할 수 있습니다.",
+        )
+    return current_user
+
+
+async def require_volunteer(current_user: User = Depends(get_current_user)) -> User:
+    """봉사자 권한 확인(봉사자만 접근 가능)"""
+    if current_user.user_role != UserRole.VOLUNTEER:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="봉사자만 접근할 수 있습니다.",
         )
     return current_user

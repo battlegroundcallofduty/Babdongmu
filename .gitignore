@@ -31,3 +31,5 @@ design-preview.html
 Thumbs.db
 .tmp.driveupload/
 
+# Test File
+scripts/seed_test_data.py

@@ -18,6 +18,19 @@ from app.domain.user.models import CertFlag, Document, User, UserRole
 router = APIRouter()
 
 
+def _fmt(dt: datetime | None) -> str | None:
+    """datetime을 UTC aware isoformat으로 직렬화합니다.
+
+    SQLite는 naive datetime을 반환하므로 UTC로 간주하여 tzinfo를 보정합니다.
+    PostgreSQL은 이미 aware datetime을 반환하므로 그대로 사용합니다.
+    """
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.isoformat()
+
+
 # ── 통계 ──────────────────────────────────────────────────────────────────────
 
 @router.get("/stats")
@@ -27,7 +40,8 @@ async def get_stats(
 ) -> dict:
     """대시보드 통계를 반환합니다."""
     doc_pending = await db.scalar(
-        select(func.count()).select_from(Document)
+        select(func.count(User.user_id.distinct()))
+        .select_from(Document)
         .join(User, Document.user_id == User.user_id)
         .where(User.cert_flag == CertFlag.PENDING)
     )
@@ -79,7 +93,7 @@ async def list_pending_documents(
     db: AsyncSession = Depends(get_db),
     _: User = Depends(require_admin),
 ) -> list[dict]:
-    """승인 대기 중인 봉사자 서류 목록을 반환합니다."""
+    """승인 대기 중인 서류 목록을 반환합니다."""
     result = await db.execute(
         select(Document, User)
         .join(User, Document.user_id == User.user_id)
@@ -96,27 +110,20 @@ async def list_pending_documents(
             "user_email": user.email,
             "document_type": doc.document_type.value,
             "document_url": doc.document_url,
-            "created_at": doc.created_at.isoformat(),
+            "created_at": _fmt(doc.created_at),
         }
         for doc, user in rows
     ]
 
 
-@router.patch("/documents/{document_id}/approve", status_code=status.HTTP_200_OK)
-async def approve_document(
-    document_id: int,
+@router.patch("/users/{user_id}/approve", status_code=status.HTTP_200_OK)
+async def approve_user(
+    user_id: int,
     db: AsyncSession = Depends(get_db),
     _: User = Depends(require_admin),
 ) -> dict:
-    """서류를 승인하고 cert_flag를 approved로 변경합니다."""
-    doc_result = await db.execute(select(Document).where(Document.document_id == document_id))
-    doc = doc_result.scalar_one_or_none()
-    if doc is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="서류를 찾을 수 없습니다."
-        )
-
-    user_result = await db.execute(select(User).where(User.user_id == doc.user_id))
+    """유저를 승인하고 cert_flag를 approved로 변경합니다."""
+    user_result = await db.execute(select(User).where(User.user_id == user_id))
     user = user_result.scalar_one_or_none()
     if user is None:
         raise HTTPException(
@@ -130,21 +137,14 @@ async def approve_document(
     return {"user_id": user.user_id, "cert_flag": user.cert_flag.value}
 
 
-@router.patch("/documents/{document_id}/reject", status_code=status.HTTP_200_OK)
-async def reject_document(
-    document_id: int,
+@router.patch("/users/{user_id}/reject", status_code=status.HTTP_200_OK)
+async def reject_user(
+    user_id: int,
     db: AsyncSession = Depends(get_db),
     _: User = Depends(require_admin),
 ) -> dict:
-    """서류를 반려하고 cert_flag를 rejected로 변경합니다."""
-    doc_result = await db.execute(select(Document).where(Document.document_id == document_id))
-    doc = doc_result.scalar_one_or_none()
-    if doc is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="서류를 찾을 수 없습니다."
-        )
-
-    user_result = await db.execute(select(User).where(User.user_id == doc.user_id))
+    """유저를 반려하고 cert_flag를 rejected로 변경합니다."""
+    user_result = await db.execute(select(User).where(User.user_id == user_id))
     user = user_result.scalar_one_or_none()
     if user is None:
         raise HTTPException(
@@ -181,9 +181,9 @@ async def list_recent_matches(
             "matching_id": m.matching_id,
             "volunteer_name": u.name,
             "senior_name": s.name,
-            "hosting_at": h.hosting_at.isoformat(),
+            "hosting_at": _fmt(h.hosting_at),
             "match_status": m.match_status.value,
-            "created_at": m.created_at.isoformat(),
+            "created_at": _fmt(m.created_at),
         }
         for m, u, h, s in rows
     ]
@@ -218,8 +218,8 @@ async def list_completed_matches(
             "matching_id": m.matching_id,
             "volunteer_name": u.name,
             "senior_name": s.name,
-            "check_in_time": m.check_in_time.isoformat() if m.check_in_time else None,
-            "check_out_time": m.check_out_time.isoformat(),
+            "check_in_time": _fmt(m.check_in_time),
+            "check_out_time": _fmt(m.check_out_time),
             "expected_minutes": (
                 int((h.hosting_end - h.hosting_at).total_seconds() // 60)
                 if h.hosting_end else None

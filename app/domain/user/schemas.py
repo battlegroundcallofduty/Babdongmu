@@ -52,6 +52,27 @@ class UserUpdateRequest(BaseModel):
     address: str | None = None
 
 
+class PasswordChangeRequest(BaseModel):
+    """비밀번호 변경 요청 (마이페이지)"""
+
+    current_password: str
+    new_password: str
+    new_password_confirm: str
+
+    @field_validator("new_password")
+    @classmethod
+    def new_password_min_length(cls, v):
+        if len(v) < 8:
+            raise ValueError("비밀번호는 8자 이상이어야 합니다.")
+        return v
+
+    @model_validator(mode="after")
+    def passwords_match(self):
+        if self.new_password != self.new_password_confirm:
+            raise ValueError("새 비밀번호가 일치하지 않습니다.")
+        return self
+
+
 # ── 서류 요청 ────────────────
 
 class DocumentCreateRequest(BaseModel):

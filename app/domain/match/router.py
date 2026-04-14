@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.domain.match import service
-from app.domain.match.schemas import MatchResponse
+from app.domain.match.schemas import MatchResponse, MyMatchResponse
 from app.domain.user.dependency import get_current_user
 from app.domain.user.models import User, UserRole
 
@@ -29,14 +29,16 @@ async def create_match(
     return await service.create_match(db, hosting_id, current_user.user_id)
 
 
-@router.get("/my", response_model=list[MatchResponse])
+@router.get("/my", response_model=list[MyMatchResponse])
 async def list_my_matches(
+    is_completed: bool,
+    page: int = 1,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """내 매칭 목록을 조회합니다."""
+    """내 매칭 목록을 예정/완료 구분하여 조회합니다."""
     _require_volunteer(current_user)
-    return await service.list_matches_by_volunteer(db, current_user.user_id)
+    return await service.list_matches_by_volunteer(db, current_user.user_id, is_completed, page)
 
 
 @router.patch("/{matching_id}/cancel", response_model=MatchResponse)
@@ -50,12 +52,23 @@ async def cancel_match(
     return await service.cancel_match(db, matching_id, current_user.user_id)
 
 
-@router.patch("/{senior_id}/check", response_model=MatchResponse)
-async def check(
+@router.patch("/{senior_id}/checkin", response_model=MatchResponse)
+async def check_in(
     senior_id: int,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """QR 체크인/아웃합니다."""
+    """QR 체크인합니다."""
     _require_volunteer(current_user)
-    return await service.check(db, senior_id, current_user.user_id)
+    return await service.check_in(db, senior_id, current_user.user_id)
+
+
+@router.patch("/{senior_id}/checkout", response_model=MatchResponse)
+async def check_out(
+    senior_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """QR 체크아웃합니다."""
+    _require_volunteer(current_user)
+    return await service.check_out(db, senior_id, current_user.user_id)

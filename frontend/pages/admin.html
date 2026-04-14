@@ -336,7 +336,7 @@
 
     async function approveDoc(documentId, userId) {
       try {
-        await api(`/admin/documents/${documentId}/approve`, { method: 'PATCH' });
+        await api(`/admin/users/${userId}/approve`, { method: 'PATCH' });
         document.getElementById(`doc-${documentId}`)?.remove();
         showToast('승인되었어요', 'success');
         checkDocEmpty();
@@ -349,7 +349,7 @@
     async function rejectDoc(documentId, userId) {
       if (!confirm('반려하면 봉사자에게 서류 재업로드가 요청됩니다. 계속할까요?')) return;
       try {
-        await api(`/admin/documents/${documentId}/reject`, { method: 'PATCH' });
+        await api(`/admin/users/${userId}/reject`, { method: 'PATCH' });
         document.getElementById(`doc-${documentId}`)?.remove();
         showToast('반려되었어요', 'error');
         checkDocEmpty();
