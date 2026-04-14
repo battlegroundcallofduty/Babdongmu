@@ -13,7 +13,7 @@
 | 테이블 | 설명 | ORM 모델 위치 |
 |--------|------|---------------|
 | `users` | 회원 (봉사자 / 보호자 / 관리자) | `app/domain/user/models.py` → `User` |
-| `documents` | 봉사자 신원 서류 | `app/domain/user/models.py` → `Document` |
+| `documents` | 회원 신원 서류 (봉사자/보호자) | `app/domain/user/models.py` → `Document` |
 | `seniors` | 어르신 정보 | `app/domain/senior/models.py` → `Senior` |
 | `hostings` | 호스팅 (어르신이 개설하는 밥자리) | `app/domain/hosting/models.py` → `Hosting` |
 | `matching_info` | 매칭 신청 정보 | `app/domain/match/models.py` → `MatchingInfo` |
@@ -36,6 +36,7 @@
 | address | VARCHAR | 주소 |
 | user_role | ENUM | 역할 (`volunteer` / `guardian` / `admin`) |
 | cert_flag | ENUM | 인증 여부 (`pending` / `approved` / `rejected`). 기본값 `pending` |
+| cert_reject_reason | VARCHAR(500) nullable | 서류 반려 사유. 반려 시 입력, 승인 시 NULL |
 | created_at | TIMESTAMP | 가입일 |
 | updated_at | TIMESTAMP nullable | 수정일 |
 
@@ -53,7 +54,7 @@
 | created_at | TIMESTAMP | 등록일 |
 | updated_at | TIMESTAMP nullable | 수정일 |
 
-> 서류 심사 결과는 `users.cert_flag`로 관리  
+> 서류 심사 결과는 `users.cert_flag`로 관리. 반려 사유는 `users.cert_reject_reason`에 기록  
 > `criminal_record`: 봉사자 범죄경력조회서 / `welfare_cert`: 보호자 복지관 인증서류 / `family_cert`: 보호자 가족관계증명서
 
 ---
@@ -99,7 +100,7 @@
 | hosting_id | FK → hostings | 호스팅 |
 | vt_id | FK → users | 봉사자 |
 | senior_id | FK → seniors | 어르신 |
-| match_status | ENUM | 매칭 상태 (`pending` / `approved` / `rejected` / `cancelled`). 기본값 `approved` |
+| match_status | ENUM | 매칭 상태 (`approved` / `cancelled`). 기본값 `approved`. `pending` / `rejected`는 예비값(미사용) |
 | check_in_time | TIMESTAMP nullable | 체크인 시간 |
 | check_out_time | TIMESTAMP nullable | 체크아웃 시간 |
 | actual_volunteer_time | INT nullable | 실봉사시간 (관리자 최종 부여, 분 단위) |
