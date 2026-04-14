@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: str = ""
     GEMINI_MODEL: str = "gemini-3.1-flash-preview"
 
+    # 개발 모드 (True일 때만 테스트 라우터 등록)
+    DEBUG: bool = False
+
     class Config:
         env_file = ".env"
         extra = "ignore"
