@@ -27,9 +27,13 @@ async function api(path, options = {}) {
     headers,
   });
 
-  if (!response.ok) {
+  if (!response.ok) { // 문자열로 오든, 배열로 오든 문자열값 보여주도록 수정
     const error = await response.json().catch(() => ({ detail: '요청에 실패했어요.' }));
-    throw new Error(error.detail || '요청에 실패했어요.');
+    const detail = error.detail;
+    const message = Array.isArray(detail)
+      ? detail.map(d => d.msg.replace(/^Value error,\s*/i, '')).join(', ')
+      : (detail || '요청에 실패했어요.');
+    throw new Error(message);
   }
 
   return response.json();
