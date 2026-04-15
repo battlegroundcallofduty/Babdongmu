@@ -116,8 +116,12 @@ class UserResponse(BaseModel):
     address: str
     cert_flag: CertFlag
     created_at: datetime
+    is_social_login: bool
 
+    # sqlalchemy orm 객체를 pydantic 스키마로 변환할때 객체 속성 읽게해줌
+    # 이 설정 때문에 @property도 읽을수있음
     model_config = {"from_attributes": True}
+
 
 
 class TokenResponse(BaseModel):

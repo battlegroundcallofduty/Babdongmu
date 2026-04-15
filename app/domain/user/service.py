@@ -75,10 +75,12 @@ async def change_password(user_id: int, current_password: str, new_password: str
     user = await get_user_by_id(user_id, db)
     if user is None:
         return False  # 원래는 404 에러 직접 던지는게 맞지만 service는 순수 파이썬 영역으로 두기 위해 ^^
+    if user.password is None:
+        return False
     if not verify_password(current_password, user.password):
         # 현재 비밀번호가 틀리면 변경 거부
         return False
-    user.password = hash_password(new_password)
+    user.password = hash_password(new_password)  # 해싱(security.py)
     user.updated_at = datetime.now(timezone.utc)
     await db.commit()
     return True

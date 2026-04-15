@@ -66,7 +66,7 @@ async def login(body: UserLoginRequest, db: AsyncSession = Depends(get_db)):
 @router.get("/me", response_model=UserResponse)
 async def get_me(current_user: User = Depends(get_current_user)):
     """현재 로그인한 유저 정보 반환"""
-    return current_user
+    return current_user  # orm 객체: db 테이블의 한 행을 python 객체로 감싼것
 
 
 @router.patch("/me/password", status_code=status.HTTP_204_NO_CONTENT)
@@ -76,6 +76,11 @@ async def update_password(
     db: AsyncSession = Depends(get_db),
 ):
     """마이페이지: 비밀번호 변경"""
+    if current_user.password is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="소셜 로그인 계정은 비밀번호를 변경할 수 없습니다.",
+        )
     success = await change_password(current_user.user_id, body.current_password, body.new_password, db)
     if not success:
         raise HTTPException(

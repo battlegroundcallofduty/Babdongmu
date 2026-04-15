@@ -1,3 +1,11 @@
+// 페이지 진입 시 유저 정보 로드
+(async () => {
+  const me = await api('/users/me');
+  if (me.is_social_login) {
+    document.querySelector('.detail-section:has(#password-form)')?.remove();
+  }
+})();
+
 // 비밀번호 변경 폼 제출 처리
 // password-form 제출되면 이 함수 실행
 document.querySelector('#password-form')?.addEventListener('submit', async (e) => {
