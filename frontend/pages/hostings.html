@@ -47,7 +47,8 @@
         <h1>호스팅 목록</h1>
         <p>내 근처 어르신의 호스팅을 찾아보세요</p>
       </div>
-      <button id="open-hosting-modal" class="btn btn-primary hidden" type="button">+ 호스팅 등록</button>
+      <!-- 정책 결정 사항: 유저 롤 가드 없이 상시 노출. 변경하려면 별도 결정 필요 (자동 복원 금지) -->
+      <button id="open-hosting-modal" class="btn btn-primary" type="button">+ 호스팅 등록</button>
     </div>
 
     <!-- Filters -->
@@ -268,10 +269,12 @@
     document.getElementById('filter-district')?.addEventListener('change', filterHostings);
     document.getElementById('filter-status')?.addEventListener('change', filterHostings);
 
-    // ── 호스팅 등록 모달 (보호자 전용) ──────────────────────
+    // ── 호스팅 등록 모달 ──────────────────────
     let seniorsCache = [];
 
-    // 페이지 진입 시 보호자만 등록 버튼 노출
+    // TODO: 유저 롤 가드 정책 미정. 현재는 버튼 상시 노출 + 이 함수 호출 안 함.
+    //   정책 결정 후 활성화하려면 (1) 위 버튼에 'hidden' 클래스 부여 + 안내 주석 제거
+    //   (2) 파일 하단의 gateGuardianButton() 호출 라인 주석 해제
     async function gateGuardianButton() {
       if (!isLoggedIn()) return;
       try {
@@ -299,8 +302,14 @@
     }
 
     // 어르신 목록 로드 (최초 1회)
+    // TODO: 유저 롤 가드 정책 결정 전까지 비로그인/401 상태에서는 조용히 빈 상태 카드 표시.
+    //   정책 확정 후 catch 블록을 alert(err.message)로 되돌릴 것.
     async function loadSeniors() {
       if (seniorsCache.length > 0) {
+        renderSeniorOptions();
+        return;
+      }
+      if (!isLoggedIn()) {
         renderSeniorOptions();
         return;
       }
@@ -308,8 +317,8 @@
         const seniors = await api('/seniors/');
         seniorsCache = seniors.filter(s => s.active_flag);
         renderSeniorOptions();
-      } catch (err) {
-        alert(err.message);
+      } catch {
+        renderSeniorOptions();
       }
     }
 
@@ -395,7 +404,8 @@
     // 초기화
     buildTimeOptions(document.querySelector('#hosting-start-time'), 12, 20);
     buildTimeOptions(document.querySelector('#hosting-end-time'), 13, 22, 9);
-    gateGuardianButton();
+    // TODO: 유저 롤 가드 정책 결정 후 아래 호출 주석 해제 + 위 버튼 마크업 'hidden' 클래스 복원
+    // gateGuardianButton();
   </script>
 </body>
 </html>
