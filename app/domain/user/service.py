@@ -22,7 +22,7 @@ async def get_user_by_id(user_id: int, db: AsyncSession) -> User | None:
 
 async def get_user_by_email(email: str, db: AsyncSession) -> User | None:
     """이메일로 유저 조회"""
-    statement = select(User).where(User.email == email)
+    statement = select(User).where(User.email == email.lower())
     result = await db.execute(statement)
     return result.scalar_one_or_none()
 
@@ -31,7 +31,7 @@ async def create_user(email: str, password: str, name: str,
     phone_number: str, user_role: UserRole, address: str, db: AsyncSession,) -> User:
     """회원가입: 유저 생성"""
     user = User(
-        email=email,
+        email=email.lower(),
         password=hash_password(password),
         name=name,
         phone_number=phone_number,
@@ -128,6 +128,7 @@ async def delete_document(document_id: int, db: AsyncSession) -> None:
 # ── 카카오 ─────────
 async def get_or_create_kakao_user(kakao_id: str, email: str, name: str, db: AsyncSession) -> User:
     """카카오 로그인/회원가입 통합: kakao_id로 유저를 조회하고, 없으면 생성"""
+    # email.lower() 잊지말고 넣어라
     pass
 
 
