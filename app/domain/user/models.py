@@ -42,6 +42,7 @@ class User(Base):
         nullable=True,
     )
 
+    # 카카오 로그인 유저 구분하기 위해 추가(비밀번호 관련)
     @property  # 메서드인데 속성처럼 쓸수있게 해줌(db 컬럼 아님)
     def is_social_login(self) -> bool:
         return self.password is None
