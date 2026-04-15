@@ -32,8 +32,8 @@
     <div class="profile-card slide-up stagger-1">
       <div class="profile-avatar">홍</div>
       <div class="profile-details">
-        <h2>홍길동</h2>
-        <p>봉사자 · 성북구 정릉동</p>
+        <h2>김상혁</h2>
+        <p>봉사자 · 고양시 덕양구 내유동</p>
         <p>example@email.com · 010-1234-5678</p>
       </div>
     </div>
@@ -81,7 +81,28 @@
       </div>
     </div>
 
-    <button id="logout-btn" class="btn btn-ghost w-full mt-xl slide-up stagger-4">로그아웃</button>
+    <div class="detail-section slide-up stagger-4">
+      <h3>비밀번호 변경</h3>
+      <form id="password-form">
+        <div class="form-group">
+          <label class="form-label" for="current-password">현재 비밀번호</label>
+          <input class="form-input" type="password" id="current-password" placeholder="현재 비밀번호를 입력하세요">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="new-password">새 비밀번호</label>
+          <input class="form-input" type="password" id="new-password" placeholder="8자 이상 입력하세요">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="new-password-confirm">새 비밀번호 확인</label>
+          <input class="form-input" type="password" id="new-password-confirm" placeholder="새 비밀번호를 한 번 더 입력하세요">
+        </div>
+        <div id="password-error" class="alert alert-error hidden"></div>
+        <div id="password-success" class="alert alert-success hidden"></div>
+        <button type="submit" class="btn btn-primary w-full mt-md">비밀번호 변경</button>
+      </form>
+    </div>
+
+    <button id="logout-btn" class="btn btn-ghost w-full mt-xl slide-up stagger-5">로그아웃</button>
   </main>
 
   <footer class="footer">
@@ -89,6 +110,7 @@
   </footer>
 
   <script src="/js/api.js"></script>
+  <script src="/js/mypage.js"></script>
   <script>
     function toggleNav(){const t=document.querySelector('.nav-toggle'),d=document.getElementById('navDrawer');t.classList.toggle('active');d.classList.toggle('open');document.body.style.overflow=d.classList.contains('open')?'hidden':'';}
     function closeNav(e){if(e.target===e.currentTarget)toggleNav();}
