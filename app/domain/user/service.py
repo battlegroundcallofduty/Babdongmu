@@ -112,17 +112,36 @@ async def get_documents_by_user_id(user_id: int, db: AsyncSession) -> list[Docum
 
 async def create_document(user_id: int, document_type: str, document_url: str, db: AsyncSession) -> Document:
     """서류 업로드"""
-    pass
+    document = Document(
+        user_id=user_id,
+        document_type=document_type,
+        document_url=document_url,
+    )
+    db.add(document)
+    await db.commit()
+    await db.refresh(document)
+    return document
 
 
 async def update_document(document_id: int, document_url: str, db: AsyncSession) -> Document | None:
     """서류 수정"""
-    pass
+    document = await get_document_by_id(document_id, db)
+    if document is None:
+        return None
+    document.document_url = document_url
+    document.updated_at = datetime.now(timezone.utc)
+    await db.commit()
+    await db.refresh(document)
+    return document
 
 
 async def delete_document(document_id: int, db: AsyncSession) -> None:
     """서류 삭제"""
-    pass
+    document = await get_document_by_id(document_id, db)
+    if document is None:
+        return  # 이미 서류 없으면 조용히 종료
+    await db.delete(document)
+    await db.commit()
 
 
 # ── 카카오 ─────────
