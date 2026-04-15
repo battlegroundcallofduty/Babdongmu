@@ -97,13 +97,17 @@ async def delete_user(user_id: int, db: AsyncSession) -> None:
 
 # ── 서류 ───────────
 async def get_document_by_id(document_id: int, db: AsyncSession) -> Document | None:
-    """ID로 서류 조회"""
-    pass
+    """document_id(PK)에 해당되는 서류 조회"""
+    statement = select(Document).where(Document.document_id == document_id)
+    result = await db.execute(statement)
+    return result.scalar_one_or_none()
 
 
 async def get_documents_by_user_id(user_id: int, db: AsyncSession) -> list[Document]:
     """마이페이지: 유저의 서류 목록 조회"""
-    pass
+    statement = select(Document).where(Document.user_id == user_id)
+    result = await db.execute(statement)
+    return list(result.scalars().all())  # 유저당 서류는 여러개니깐/ 결과 없으면 빈 리스트 반환
 
 
 async def create_document(user_id: int, document_type: str, document_url: str, db: AsyncSession) -> Document:
