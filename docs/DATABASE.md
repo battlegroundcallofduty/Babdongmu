@@ -49,13 +49,13 @@
 |------|------|------|
 | document_id | PK | 서류 ID |
 | user_id | FK → users | 회원 |
-| document_type | ENUM | 서류 타입 (`criminal_record` / `welfare_cert` / `family_cert`) |
-| document_url | VARCHAR | 서류 파일 URL |
+| document_type | ENUM | 서류 타입 (`criminal_record` / `welfare_cert` / `family_cert` / `identity_copy`) |
+| document_url | VARCHAR | 서류 파일 URL (Cloudflare R2 저장 후 URL 기록) |
 | created_at | TIMESTAMP | 등록일 |
 | updated_at | TIMESTAMP nullable | 수정일 |
 
 > 서류 심사 결과는 `users.cert_flag`로 관리. 반려 사유는 `users.cert_reject_reason`에 기록  
-> `criminal_record`: 봉사자 범죄경력조회서 / `welfare_cert`: 보호자 복지관 인증서류 / `family_cert`: 보호자 가족관계증명서
+> `criminal_record`: 봉사자 범죄경력조회서 / `welfare_cert`: 보호자 복지관 인증서류 / `family_cert`: 보호자 가족관계증명서 / `identity_copy`: 공통 신분증 사본
 
 ---
 
@@ -127,7 +127,7 @@
 |------|------|------|
 | image_id | PK | 이미지 ID |
 | review_id | FK → reviews (index) | 후기 |
-| image_url | VARCHAR | 이미지 URL |
+| image_url | VARCHAR | 이미지 URL (Cloudflare R2 저장 후 URL 기록) |
 | created_at | TIMESTAMP | 등록일 |
 
 > 후기당 최대 5개
@@ -141,11 +141,12 @@
 | hosting_id | FK → hostings | 관련 호스팅 |
 | receiver_id | FK → users | 수신자 |
 | is_send | BOOLEAN | 발송 성공 여부 |
-| alarm_type | ENUM | 알람 구분 (`match` / `checkin` / `checkout` / `update`) |
+| alarm_type | ENUM | 알람 구분 (`match` / `checkin` / `checkout` / `update` / `delete`) |
 | contents | TEXT | 발송 내용 |
 | created_at | TIMESTAMP | 발송일 |
 
-> 수신자가 여러 명인 경우 수신자별로 row 생성 (예: 호스팅 수정 시 신청한 봉사자 전원)
+> 수신자가 여러 명인 경우 수신자별로 row 생성 (예: 호스팅 삭제 시 신청한 봉사자 전원)  
+> `update`는 미사용, 확장 가능성으로 삭제하지 않음.
 
 ---
 
@@ -156,7 +157,8 @@
 | `match` | 봉사자가 호스팅 신청 시 | 보호자 |
 | `checkin` | 봉사자가 방문 체크인 시 | 보호자 |
 | `checkout` | 봉사자가 방문 체크아웃 시 | 보호자 |
-| `update` | 호스팅 정보 수정 시 | 신청한 봉사자 전원 |
+| `delete` | 호스팅 삭제 시 | 신청한 봉사자 전원 |
+| `update` | (미사용) | 신청한 봉사자 전원 |
 
 ---
 
