@@ -7,6 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.security import hash_password, verify_password
 from app.domain.user.models import Document, User, UserRole
 
+ALLOWED_UPDATE_FIELDS = {"name", "phone_number", "address"} # update_user 허용 리스트
+
 
 # —— 유저 ─────────
 async def get_user_by_id(user_id: int, db: AsyncSession) -> User | None:
@@ -59,11 +61,27 @@ async def update_user(user_id: int, db: AsyncSession, **kwargs) -> User | None:
     if user is None:
         return None
     for field, value in kwargs.items():
+        if field not in ALLOWED_UPDATE_FIELDS:
+            continue  # setattr 실행 안 하고 다음 필드로
         setattr(user, field, value) # 들어온것 업데이트
     user.updated_at = datetime.now(timezone.utc)
     await db.commit()
     await db.refresh(user)
     return user
+
+
+async def change_password(user_id: int, current_password: str, new_password: str, db: AsyncSession) -> bool:
+    """마이페이지: 비밀번호 변경 (불일치 에러는 router.py에서)"""
+    user = await get_user_by_id(user_id, db)
+    if user is None:
+        return False  # 원래는 404 에러 직접 던지는게 맞지만 service는 순수 파이썬 영역으로 두기 위해 ^^
+    if not verify_password(current_password, user.password):
+        # 현재 비밀번호가 틀리면 변경 거부
+        return False
+    user.password = hash_password(new_password)
+    user.updated_at = datetime.now(timezone.utc)
+    await db.commit()
+    return True
 
 
 async def delete_user(user_id: int, db: AsyncSession) -> None:

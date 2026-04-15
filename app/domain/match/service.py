@@ -1,13 +1,16 @@
 """매칭 비즈니스 로직."""
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 from fastapi import HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domain.hosting.models import Hosting, HostingStatus
+from app.domain.hosting.models import AlarmType, Hosting, HostingStatus
 from app.domain.match.models import MatchingInfo, MatchStatus
+from app.domain.match.schemas import MyMatchResponse
+from app.domain.senior.models import Senior
+from app.services.sms import send_sms
 
 
 async def create_match(db: AsyncSession, hosting_id: int, vt_id: int) -> MatchingInfo:
@@ -61,15 +64,49 @@ async def create_match(db: AsyncSession, hosting_id: int, vt_id: int) -> Matchin
     return match
 
 
-async def list_matches_by_volunteer(db: AsyncSession, vt_id: int) -> list[MatchingInfo]:
-    """봉사자의 매칭 목록을 조회합니다."""
-    result = await db.execute(
-        select(MatchingInfo).where(
+async def list_matches_by_volunteer(
+    db: AsyncSession,
+    vt_id: int,
+    is_completed: bool,
+    page: int = 1,
+    size: int = 10,
+) -> list[MyMatchResponse]:
+    """봉사자의 매칭 목록을 예정/완료 구분 및 페이징하여 조회합니다."""
+    query = (
+        select(MatchingInfo, Hosting, Senior)
+        .join(Hosting, MatchingInfo.hosting_id == Hosting.hosting_id)
+        .join(Senior, MatchingInfo.senior_id == Senior.senior_id)
+        .where(
             MatchingInfo.vt_id == vt_id,
             MatchingInfo.match_status != MatchStatus.CANCELLED,
         )
     )
-    return result.scalars().all()
+
+    # 체크아웃 여부로 예정/완료 구분
+    if is_completed:
+        query = query.where(MatchingInfo.check_out_time.isnot(None))
+    else:
+        query = query.where(MatchingInfo.check_out_time.is_(None))
+
+    query = query.offset((page - 1) * size).limit(size)
+
+    result = await db.execute(query)
+    rows = result.all()
+
+    return [
+        MyMatchResponse(
+            matching_id=match.matching_id,
+            match_status=match.match_status,
+            check_in_time=match.check_in_time,
+            check_out_time=match.check_out_time,
+            hosting_id=hosting.hosting_id,
+            menu=hosting.menu,
+            hosting_at=hosting.hosting_at,
+            senior_id=senior.senior_id,
+            senior_name=senior.name,
+        )
+        for match, hosting, senior in rows
+    ]
 
 
 async def cancel_match(db: AsyncSession, matching_id: int, vt_id: int) -> MatchingInfo:
@@ -107,29 +144,77 @@ async def cancel_match(db: AsyncSession, matching_id: int, vt_id: int) -> Matchi
     return match
 
 
-async def check(db: AsyncSession, senior_id: int, vt_id: int) -> MatchingInfo:
-    """체크인 안 됐으면 체크인, 됐으면 체크아웃 갱신."""
+async def _get_approved_match(db: AsyncSession, senior_id: int, vt_id: int) -> MatchingInfo:
+    """승인된 매칭을 조회합니다."""
     result = await db.execute(
-        select(MatchingInfo).where(
+        select(MatchingInfo)
+        .join(Hosting, MatchingInfo.hosting_id == Hosting.hosting_id)
+        .where(
             MatchingInfo.senior_id == senior_id,
             MatchingInfo.vt_id == vt_id,
             MatchingInfo.match_status == MatchStatus.APPROVED,
+            func.date(Hosting.hosting_at) == date.today(),
         )
     )
     match = result.scalar_one_or_none()
-
     if not match:
         raise HTTPException(status_code=404, detail="존재하지 않는 매칭입니다.")
+    return match
 
-    # 체크아웃 완료된 매칭 재요청 방어
+
+async def _get_guardian_id(db: AsyncSession, senior_id: int) -> int:
+    """시니어 담당 보호자 ID를 조회합니다."""
+    senior = await db.get(Senior, senior_id)
+    return senior.guardian_id
+
+
+async def check_in(db: AsyncSession, senior_id: int, vt_id: int) -> MatchingInfo:
+    """체크인합니다."""
+    match = await _get_approved_match(db, senior_id, vt_id)
+
+    # 버튼을 여러 번 누르는 실수를 방지하기 위해 중복 체크인 차단
+    if match.check_in_time:
+        raise HTTPException(status_code=400, detail="이미 체크인 완료된 매칭입니다.")
+
+    match.check_in_time = datetime.now(timezone.utc)
+    await db.commit()
+    await db.refresh(match)
+
+    guardian_id = await _get_guardian_id(db, senior_id)
+    await send_sms(
+        db=db,
+        hosting_id=match.hosting_id,
+        receiver_id=guardian_id,
+        alarm_type=AlarmType.CHECKIN,
+        volunteer_id=vt_id,
+    )
+
+    return match
+
+
+async def check_out(db: AsyncSession, senior_id: int, vt_id: int) -> MatchingInfo:
+    """체크아웃합니다."""
+    match = await _get_approved_match(db, senior_id, vt_id)
+
+    # 체크인 없이 체크아웃하면 봉사 시간 계산이 불가능하므로 순서 강제
+    if not match.check_in_time:
+        raise HTTPException(status_code=400, detail="체크인 후 체크아웃할 수 있습니다.")
+
+    # 버튼을 여러 번 누르는 실수를 방지하기 위해 중복 체크아웃 차단
     if match.check_out_time:
         raise HTTPException(status_code=400, detail="이미 체크아웃 완료된 매칭입니다.")
 
-    if not match.check_in_time:
-        match.check_in_time = datetime.now(timezone.utc)
-    else:
-        match.check_out_time = datetime.now(timezone.utc)
-
+    match.check_out_time = datetime.now(timezone.utc)
     await db.commit()
     await db.refresh(match)
+
+    guardian_id = await _get_guardian_id(db, senior_id)
+    await send_sms(
+        db=db,
+        hosting_id=match.hosting_id,
+        receiver_id=guardian_id,
+        alarm_type=AlarmType.CHECKOUT,
+        volunteer_id=vt_id,
+    )
+
     return match

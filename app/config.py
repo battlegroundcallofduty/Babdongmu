@@ -19,7 +19,10 @@ class Settings(BaseSettings):
 
     # Gemini (AI 요약 기능)
     GEMINI_API_KEY: str = ""
-    GEMINI_MODEL: str = "gemini-3.1-flash-preview"
+    GEMINI_MODEL: str = "gemini-3.1-flash-lite-preview"
+
+    # 개발 모드 (True일 때만 테스트 라우터 등록)
+    DEBUG: bool = False
 
     class Config:
         env_file = ".env"

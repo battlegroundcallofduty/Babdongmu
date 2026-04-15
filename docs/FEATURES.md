@@ -28,11 +28,11 @@
 | 로그인 / 로그아웃 | 이메일 + 비밀번호, JWT 발급 |
 | JWT 발급 및 검증 | Access Token 기반 인증 |
 | 신원검증 | 휴대폰 인증 (CoolSMS/Solapi 또는 알리고 활용) |
-| 서류 업로드 | 봉사자 가입 시 필수. 파일 1개, `documents` 테이블에 저장 |
+| 서류 업로드 | 봉사자/보호자 가입 시 필수. `documents` 테이블에 저장 |
 
 **비즈니스 로직**
 - 서류 업로드 후 관리자가 승인하면 `users.cert_flag = approved`로 변경
-- 반려 시 `cert_flag = rejected`로 변경, 기존 서류 삭제 후 재업로드 필요
+- 반려 시 `cert_flag = rejected`로 변경, 반려 사유는 `users.cert_reject_reason`에 저장. 기존 서류 삭제 후 재업로드 필요
 - `cert_flag = approved` 상태인 봉사자만 호스팅 신청 가능
 
 ---
@@ -134,7 +134,7 @@
 
 | 기능 | 설명 |
 |------|------|
-| 신원검증 승인 / 반려 | 봉사자 서류 확인 후 승인 → `users.cert_flag` 변경 |
+| 신원검증 승인 / 반려 | 봉사자/보호자 서류 확인 후 승인 → `users.cert_flag` 변경. 반려 시 `users.cert_reject_reason` 저장 |
 | 봉사시간 최종 부여 | 체크인/체크아웃 기록 및 호스팅 `volunteer_time`을 참고해 운영자가 판단 후 `matching_info.actual_volunteer_time` 직접 입력 |
 | 대시보드 통계 조회 | 유효 등록자별 방문 횟수, 봉사시간 합계 등 유의미한 데이터 파악 |
 

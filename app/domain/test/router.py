@@ -5,18 +5,15 @@
 """
 
 from datetime import datetime, timedelta, timezone
-from unittest.mock import patch
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.domain.hosting.models import AlarmType, Hosting
 from app.domain.senior.models import GenderEnum, Senior
 from app.domain.user.models import CertFlag, User, UserRole
-from app.services import sms as sms_service
 from app.services.sms import send_auth_sms, send_sms
 
 router = APIRouter()
@@ -118,42 +115,20 @@ async def test_auth_sms(payload: AuthSmsRequest) -> dict:
     return {"success": True}
 
 
-async def _db_get_user_by_id(db: AsyncSession, user_id: int) -> dict | None:
-    """get_user_by_id stub 우회용 임시 조회 함수."""
-    result = await db.execute(select(User).where(User.user_id == int(user_id)))
-    user = result.scalar_one_or_none()
-    if not user:
-        return None
-    return {
-        "user_id": user.user_id,
-        "name": user.name,
-        "phone_number": user.phone_number,
-    }
-
-
 @router.post("/sms/notification")
 async def test_notification_sms(
     payload: NotificationSmsRequest,
     db: AsyncSession = Depends(get_db),
 ) -> dict:
-    """호스팅 알림 SMS 발송 테스트 (DB에 hosting/user 데이터 필요).
-
-    `app.domain.user.service.get_user_by_id`가 아직 stub이므로 테스트 동안만
-    DB 직접 조회 함수로 모킹합니다. 실제 구현이 들어오면 이 모킹은 자동으로 무의미해집니다.
-    """
-
-    async def _patched(user_id):  # noqa: ANN001 - 원본 시그니처 유지
-        return await _db_get_user_by_id(db, user_id)
-
-    with patch.object(sms_service, "get_user_by_id", _patched):
-        ok = await send_sms(
-            db=db,
-            hosting_id=payload.hosting_id,
-            receiver_id=payload.receiver_id,
-            alarm_type=payload.alarm_type,
-            volunteer_id=payload.volunteer_id,
-            use_long_message=payload.use_long_message,
-        )
+    """호스팅 알림 SMS 발송 테스트 (DB에 hosting/user 데이터 필요)."""
+    ok = await send_sms(
+        db=db,
+        hosting_id=payload.hosting_id,
+        receiver_id=payload.receiver_id,
+        alarm_type=payload.alarm_type,
+        volunteer_id=payload.volunteer_id,
+        use_long_message=payload.use_long_message,
+    )
     if not ok:
         raise HTTPException(status_code=500, detail="SMS 발송 실패 (수신자 정보/발송 오류 확인)")
     return {"success": True}
