@@ -20,7 +20,8 @@ class AlarmType(enum.Enum):
     MATCH = "match"
     CHECKIN = "checkin"
     CHECKOUT = "checkout"
-    UPDATE = "update"
+    UPDATE = "update"   # 사용x, 확장성 위해 유지
+    DELETE = "delete"
 
 
 class Hosting(Base):
@@ -32,7 +33,7 @@ class Hosting(Base):
     hosting_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True))
     hosting_end: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
     # seniors.max_people이 기본값, 수정 가능
-    max_people: Mapped[int] = mapped_column(Integer, default=2)  
+    max_people: Mapped[int] = mapped_column(Integer, default=2)
     hosting_status: Mapped[HostingStatus] = mapped_column(
         Enum(HostingStatus), default=HostingStatus.OPEN
     )
