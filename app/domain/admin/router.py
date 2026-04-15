@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -145,7 +145,7 @@ async def approve_user(
 
 
 class RejectBody(BaseModel):
-    cert_reject_reason: str | None = None
+    cert_reject_reason: str | None = Field(default=None, max_length=500)
 
 
 @router.patch("/users/{user_id}/reject", status_code=status.HTTP_200_OK)
