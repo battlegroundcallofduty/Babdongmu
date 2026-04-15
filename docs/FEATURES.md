@@ -57,11 +57,16 @@
 | 어르신 등록 / 수정 / 삭제 | 보호자만 가능. 이름, 성별, 나이, 주소, 특이사항, 수용인원 입력 |
 | 어르신 활성 상태 관리 | `active_flag`로 활성/비활성 관리 |
 | Gemini AI 소개글 생성 | 후기 3건 이상 누적 시 후기 기반으로 자동 생성. `seniors.ai_summary`에 저장 |
-| QR 코드 생성 | 어르신 등록 시 `senior_id` 기반으로 QR 코드 생성 후 `seniors.qr_code`(URL)에 저장 |
+| QR 코드 생성 | 어르신 등록 시 UUID 자동 생성 후 `seniors.qr_code`에 저장 |
 
 **QR 코드 용도**
 - 봉사자가 방문 현장에서 QR을 스캔해 체크인 / 체크아웃 API 호출에 활용
-- QR에는 `senior_id`가 인코딩되어 있으며, 매칭된 호스팅을 식별하는 데 사용
+- QR URL — 백엔드에서 UUID로 `senior_id` 역조회
+
+**QR UUID 조건**
+- 어르신 1명당 UUID 1개 (1:1 고정)
+- 어르신 등록 시 자동 생성 (`uuid.uuid4()`)
+- `senior_id` 대신 UUID를 사용해 순차 접근으로 타인 체크인하는 것을 방지
 
 ---
 
@@ -117,7 +122,6 @@
 **체크인 / 체크아웃 API 동작 원칙**
 - API는 시간 **기록**만 담당 (`check_in_time` / `check_out_time` 저장)
 - `actual_volunteer_time`(최종 봉사시간)은 관리자가 어드민 페이지에서 별도 부여
-- 체크인/체크아웃 API는 민지님 담당
 
 **비즈니스 로직**
 - 신청 시 → 보호자에게 SMS 발송 (`alarm_type: match`)

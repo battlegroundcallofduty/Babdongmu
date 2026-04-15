@@ -72,7 +72,7 @@
 | active_flag | BOOLEAN | 활성 상태. 기본값 `true` |
 | ai_summary | TEXT nullable | Gemini AI 생성 소개글 |
 | max_people | INT | 수용 가능 인원 (호스팅 기본값으로 사용) |
-| qr_code | VARCHAR nullable | QR 코드 이미지 URL (senior_id 기반 생성 후 저장) |
+| qr_code | VARCHAR nullable | UUID (어르신 등록 시 자동 생성. 체크인/체크아웃 URL 토큰으로 사용) |
 | created_at | TIMESTAMP | 등록일 |
 
 ---
