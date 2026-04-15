@@ -21,10 +21,7 @@ from app.domain.senior.service import (
 from app.domain.user.dependency import get_current_guardian
 
 
-router = APIRouter(
-    prefix="/seniors",
-    tags=["seniors"],
-)
+router = APIRouter()
 
 
 @router.post(
