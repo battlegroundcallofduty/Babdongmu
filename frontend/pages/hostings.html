@@ -47,8 +47,7 @@
         <h1>호스팅 목록</h1>
         <p>내 근처 어르신의 호스팅을 찾아보세요</p>
       </div>
-      <!-- TODO: 개발 중 상시 노출 상태. DB 스키마 정비 후 'hidden' 클래스 복원 + gateGuardianButton() 활성화 필요 (아래 script 블록 참고) -->
-      <button id="open-hosting-modal" class="btn btn-primary" type="button">+ 호스팅 등록</button>
+      <button id="open-hosting-modal" class="btn btn-primary hidden" type="button">+ 호스팅 등록</button>
     </div>
 
     <!-- Filters -->
@@ -272,10 +271,7 @@
     // ── 호스팅 등록 모달 (보호자 전용) ──────────────────────
     let seniorsCache = [];
 
-    // TODO: [권한 가드 임시 비활성화] DB 스키마(users.cert_reject_reason 등) 정비 완료 후
-    //   1) 위 버튼 마크업에서 'hidden' 클래스 복원
-    //   2) 파일 하단의 gateGuardianButton() 호출 라인 주석 해제
-    // 하여 보호자(user_role === 'guardian')만 버튼이 보이도록 되돌려야 함.
+    // 페이지 진입 시 보호자만 등록 버튼 노출
     async function gateGuardianButton() {
       if (!isLoggedIn()) return;
       try {
@@ -303,15 +299,8 @@
     }
 
     // 어르신 목록 로드 (최초 1회)
-    // TODO: [비로그인 graceful fallback 임시 처리] 현재 비로그인/401 상태에서는 조용히 빈 상태 카드를 표시.
-    //   DB 스키마 정비 + 권한 가드 복원 이후에는 catch 블록을 alert(err.message)로 되돌려
-    //   실제 에러를 사용자에게 노출하도록 변경 필요.
     async function loadSeniors() {
       if (seniorsCache.length > 0) {
-        renderSeniorOptions();
-        return;
-      }
-      if (!isLoggedIn()) {
         renderSeniorOptions();
         return;
       }
@@ -319,8 +308,8 @@
         const seniors = await api('/seniors/');
         seniorsCache = seniors.filter(s => s.active_flag);
         renderSeniorOptions();
-      } catch {
-        renderSeniorOptions();
+      } catch (err) {
+        alert(err.message);
       }
     }
 
@@ -406,8 +395,7 @@
     // 초기화
     buildTimeOptions(document.querySelector('#hosting-start-time'), 12, 20);
     buildTimeOptions(document.querySelector('#hosting-end-time'), 13, 22, 9);
-    // TODO: [권한 가드 복원 지점] DB 스키마 정비 후 아래 호출 주석 해제 + 위 버튼 마크업의 'hidden' 클래스 복원
-    // gateGuardianButton();
+    gateGuardianButton();
   </script>
 </body>
 </html>
