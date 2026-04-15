@@ -38,5 +38,9 @@ class MyMatchResponse(BaseModel):
     # 시니어 정보
     senior_id: int
     senior_name: str
+    senior_address: str
+
+    # 봉사시간
+    actual_volunteer_time: int | None
 
     model_config = {"from_attributes": False}
