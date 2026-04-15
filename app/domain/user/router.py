@@ -8,20 +8,32 @@ from app.database import get_db
 from app.domain.user.dependency import get_current_user
 from app.domain.user.models import User, UserRole
 from app.domain.user.schemas import (
+    DocumentCreateRequest,
+    DocumentResponse,
     PasswordChangeRequest,
+    RegisterResponse,
     TokenResponse,
     UserLoginRequest,
     UserRegisterRequest,
     UserResponse,
 )
-from app.domain.user.service import authenticate_user, change_password, create_user, get_user_by_email
+from app.domain.user.service import (
+    authenticate_user,
+    change_password,
+    create_user,
+    create_document,
+    delete_document,
+    get_document_by_id,
+    get_documents_by_user_id,
+    get_user_by_email,
+)
 
 router = APIRouter()
 
 
-@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/register", response_model=RegisterResponse, status_code=status.HTTP_201_CREATED)
 async def register(body: UserRegisterRequest, db: AsyncSession = Depends(get_db)):
-    """회원가입"""
+    """회원가입 (유저 정보 + 토큰 반환 -> 가입 시 서류 업로드 때 토큰 필요)"""
     # admin 역할로는 가입 불가 — admin은 seed 스크립트로 별도 생성
     if body.user_role == UserRole.ADMIN:
         raise HTTPException(
@@ -45,7 +57,8 @@ async def register(body: UserRegisterRequest, db: AsyncSession = Depends(get_db)
         address=body.address,
         db=db,
     )
-    return user
+    access_token = create_access_token({"sub": str(user.user_id)})
+    return RegisterResponse(user=user, access_token=access_token)
 
 
 @router.post("/login", response_model=TokenResponse)
@@ -87,3 +100,51 @@ async def update_password(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="현재 비밀번호가 올바르지 않습니다.",
         )
+
+
+# ── 서류 ───────────────────
+@router.post("/me/documents", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
+async def upload_document(
+    body: DocumentCreateRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """서류 업로드"""
+    document = await create_document(
+        user_id=current_user.user_id,
+        document_type=body.document_type,
+        document_url=body.document_url,
+        db=db,
+    )
+    return document
+
+
+@router.get("/me/documents", response_model=list[DocumentResponse])
+async def get_my_documents(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """마이페이지: 내 서류 목록 조회"""
+    return await get_documents_by_user_id(current_user.user_id, db)
+
+
+# 204: 삭제 후 응답 바디가 없음(성공했지만 삭제라서 돌려줄 내용이 없음)
+@router.delete("/me/documents/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def remove_document(
+    document_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """서류 삭제"""
+    document = await get_document_by_id(document_id, db)
+    if document is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="서류를 찾을 수 없습니다.",
+        )
+    if document.user_id != current_user.user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="본인의 서류만 삭제할 수 있습니다.",
+        )
+    await delete_document(document_id, db)

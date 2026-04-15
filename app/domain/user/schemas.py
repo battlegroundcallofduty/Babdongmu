@@ -131,6 +131,14 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
 
 
+class RegisterResponse(BaseModel):
+    """회원가입 성공 시 유저 정보 + 토큰 반환"""
+
+    user: UserResponse
+    access_token: str
+    token_type: str = "bearer"
+
+
 # ── 서류 응답 ────────────────────
 
 class DocumentResponse(BaseModel):

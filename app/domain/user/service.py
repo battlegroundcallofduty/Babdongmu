@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import hash_password, verify_password
-from app.domain.user.models import Document, User, UserRole
+from app.domain.user.models import Document, DocumentType, User, UserRole
 
 ALLOWED_UPDATE_FIELDS = {"name", "phone_number", "address"} # update_user 허용 리스트
 
@@ -110,7 +110,7 @@ async def get_documents_by_user_id(user_id: int, db: AsyncSession) -> list[Docum
     return list(result.scalars().all())  # 유저당 서류는 여러개니깐/ 결과 없으면 빈 리스트 반환
 
 
-async def create_document(user_id: int, document_type: str, document_url: str, db: AsyncSession) -> Document:
+async def create_document(user_id: int, document_type: DocumentType, document_url: str, db: AsyncSession) -> Document:
     """서류 업로드"""
     document = Document(
         user_id=user_id,
