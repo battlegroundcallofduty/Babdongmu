@@ -31,7 +31,7 @@ async def send_sms(
         db: 데이터베이스 세션
         hosting_id: 호스팅 ID
         receiver_id: 수신자 ID (보호자 등)
-        alarm_type: AlarmType Enum (MATCH / CHECKIN / CHECKOUT / UPDATE)
+        alarm_type: AlarmType Enum (MATCH / CHECKIN / CHECKOUT / UPDATE / DELETE)
         volunteer_id: 봉사자 ID (MATCH, CHECKIN, CHECKOUT에서 필요)
         use_long_message: True면 장문(LMS), False면 단문(SMS)
     """
@@ -93,6 +93,7 @@ async def send_sms(
             message = f"[밥동무] {volunteer_name}님이 방문 체크인했습니다."
 
     elif alarm_type == AlarmType.UPDATE:
+        # if) 호스팅 수정 기능 추가 시 활성화
         if use_long_message and hosting:
             time_str = hosting_at_kst.strftime("%m월 %d일 %H:%M")
             message = (
@@ -104,6 +105,17 @@ async def send_sms(
             )
         else:
             message = "[밥동무] 호스팅 정보가 수정되었습니다. 확인해주세요."
+
+    elif alarm_type == AlarmType.DELETE:
+        if use_long_message and hosting:
+            time_str = hosting_at_kst.strftime("%m월 %d일 %H:%M")
+            message = (
+                "[밥동무 호스팅 취소]\n\n"
+                "신청하신 호스팅이 취소되었습니다.\n\n"
+                "다른 호스팅을 확인해보세요."
+            )
+        else:
+            message = "[밥동무] 신청하신 호스팅이 취소되었습니다. 확인해주세요."
 
     elif alarm_type == AlarmType.CHECKOUT:
         volunteer_name = "봉사자"

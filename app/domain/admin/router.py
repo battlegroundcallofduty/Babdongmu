@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -98,22 +98,29 @@ async def list_pending_documents(
         select(Document, User)
         .join(User, Document.user_id == User.user_id)
         .where(User.cert_flag == CertFlag.PENDING)
-        .order_by(Document.created_at.asc())
+        .order_by(User.created_at.asc(), Document.created_at.asc())
     )
     rows = result.all()
 
-    return [
-        {
+    # 유저별로 서류를 묶어서 반환
+    grouped: dict[int, dict] = {}
+    for doc, user in rows:
+        if user.user_id not in grouped:
+            grouped[user.user_id] = {
+                "user_id": user.user_id,
+                "user_name": user.name,
+                "user_email": user.email,
+                "user_role": user.user_role.value,
+                "created_at": _fmt(user.created_at),
+                "documents": [],
+            }
+        grouped[user.user_id]["documents"].append({
             "document_id": doc.document_id,
-            "user_id": user.user_id,
-            "user_name": user.name,
-            "user_email": user.email,
             "document_type": doc.document_type.value,
             "document_url": doc.document_url,
-            "created_at": _fmt(doc.created_at),
-        }
-        for doc, user in rows
-    ]
+        })
+
+    return list(grouped.values())
 
 
 @router.patch("/users/{user_id}/approve", status_code=status.HTTP_200_OK)
@@ -137,9 +144,14 @@ async def approve_user(
     return {"user_id": user.user_id, "cert_flag": user.cert_flag.value}
 
 
+class RejectBody(BaseModel):
+    cert_reject_reason: str | None = Field(default=None, max_length=500)
+
+
 @router.patch("/users/{user_id}/reject", status_code=status.HTTP_200_OK)
 async def reject_user(
     user_id: int,
+    body: RejectBody = RejectBody(),
     db: AsyncSession = Depends(get_db),
     _: User = Depends(require_admin),
 ) -> dict:
@@ -152,6 +164,7 @@ async def reject_user(
         )
 
     user.cert_flag = CertFlag.REJECTED
+    user.cert_reject_reason = body.cert_reject_reason
     user.updated_at = datetime.now(timezone.utc)
     await db.commit()
 
