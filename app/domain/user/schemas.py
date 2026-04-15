@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr, field_validator, model_validator
+from pydantic import BaseModel, EmailStr, HttpUrl, field_validator, model_validator
 
 from app.domain.user.models import CertFlag, DocumentType, UserRole
 
@@ -79,13 +79,14 @@ class DocumentCreateRequest(BaseModel):
     """서류 업로드 요청"""
 
     document_type: DocumentType
-    document_url: str
+    # HttpUrl로 스킴/형식 검증 (javascript:, data: 등 차단). 렌더링 시 textContent 사용 권장
+    document_url: HttpUrl
 
 
 class DocumentUpdateRequest(BaseModel):
     """서류 수정 요청"""
 
-    document_url: str
+    document_url: HttpUrl
 
 
 # ── SMS 요청 ───────────────

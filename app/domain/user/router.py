@@ -113,7 +113,7 @@ async def upload_document(
     document = await create_document(
         user_id=current_user.user_id,
         document_type=body.document_type,
-        document_url=body.document_url,
+        document_url=str(body.document_url),  # Pydantic HttpUrl → str 변환 (DB 저장용)
         db=db,
     )
     return document

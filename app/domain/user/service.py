@@ -123,6 +123,8 @@ async def create_document(user_id: int, document_type: DocumentType, document_ur
     return document
 
 
+# TODO: PATCH /me/documents/{id} 라우터가 없어 현재 호출 지점 없음.
+#   서류 수정 UX가 필요한지 판단 후 라우터를 추가하거나 이 함수를 제거할 것.
 async def update_document(document_id: int, document_url: str, db: AsyncSession) -> Document | None:
     """서류 수정"""
     document = await get_document_by_id(document_id, db)
