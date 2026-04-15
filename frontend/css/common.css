@@ -1422,3 +1422,67 @@ h3 { font-size: 18px; line-height: 1.4; }
   color: var(--muted);
   margin-top: var(--space-xs);
 }
+
+/* ── 페이지 헤더 좌우 분할 (제목 + 액션 버튼) ───── */
+.page-header.with-action {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-md);
+}
+
+.page-header.with-action > div {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 639px) {
+  .page-header.with-action {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .page-header.with-action .btn {
+    width: 100%;
+  }
+}
+
+/* ── 시간 범위 선택 (시작 ~ 종료) ───── */
+.time-range {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+}
+
+.time-range > span {
+  white-space: nowrap;
+  color: var(--text-soft);
+}
+
+/* ── 모달 모바일 풀스크린 (기존 .modal 확장) ───── */
+@media (max-width: 639px) {
+  .modal {
+    width: 100%;
+    max-width: 100%;
+    max-height: 100dvh;
+    height: 100dvh;
+    border-radius: 0;
+    padding: var(--space-lg);
+  }
+}
+
+/* 모달 안내 카드 (어르신 0명 빈 상태 등) */
+.modal-notice {
+  text-align: center;
+  padding: var(--space-lg) 0;
+}
+
+.modal-notice p {
+  color: var(--text);
+  font-size: 15px;
+  margin-bottom: var(--space-xs);
+}
+
+.modal-notice p.text-sm {
+  color: var(--text-soft);
+  font-size: 14px;
+}

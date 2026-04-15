@@ -21,10 +21,7 @@ from app.domain.senior.service import (
 from app.domain.user.dependency import require_guardian
 
 
-router = APIRouter(
-    prefix="/seniors",
-    tags=["seniors"],
-)
+router = APIRouter(tags=["seniors"])
 
 
 @router.post(

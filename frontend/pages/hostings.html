@@ -42,9 +42,13 @@
   </div>
 
   <main class="container">
-    <div class="page-header slide-up">
-      <h1>호스팅 목록</h1>
-      <p>내 근처 어르신의 호스팅을 찾아보세요</p>
+    <div class="page-header with-action slide-up">
+      <div>
+        <h1>호스팅 목록</h1>
+        <p>내 근처 어르신의 호스팅을 찾아보세요</p>
+      </div>
+      <!-- TODO: 개발 중 상시 노출 상태. DB 스키마 정비 후 'hidden' 클래스 복원 + gateGuardianButton() 활성화 필요 (아래 script 블록 참고) -->
+      <button id="open-hosting-modal" class="btn btn-primary" type="button">+ 호스팅 등록</button>
     </div>
 
     <!-- Filters -->
@@ -159,6 +163,59 @@
     </div>
   </main>
 
+  <!-- 호스팅 등록 모달 (보호자 전용) -->
+  <div class="modal-overlay" id="hosting-modal" role="dialog" aria-modal="true" aria-labelledby="hosting-modal-title">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="hosting-modal-title">호스팅 등록</h3>
+        <button class="modal-close" id="hosting-modal-close" type="button" aria-label="닫기">✕</button>
+      </div>
+
+      <!-- 어르신 0명일 때 안내 -->
+      <div id="senior-empty" class="modal-notice hidden">
+        <p>등록된 어르신이 없어요.</p>
+        <p class="text-sm">호스팅을 등록하려면 먼저 어르신을 등록해주세요.</p>
+        <a href="/pages/guardian.html" class="btn btn-primary mt-md">어르신 등록하러 가기</a>
+      </div>
+
+      <form id="hosting-form">
+        <div class="form-group">
+          <label class="form-label" for="hosting-senior">어르신</label>
+          <select class="form-input" id="hosting-senior" required></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="hosting-date">날짜</label>
+          <input class="form-input" type="date" id="hosting-date" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">시간대</label>
+          <div class="time-range">
+            <select class="form-input" id="hosting-start-time" required></select>
+            <span>~</span>
+            <select class="form-input" id="hosting-end-time" required></select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="hosting-menu">메뉴</label>
+          <input class="form-input" type="text" id="hosting-menu" placeholder="된장찌개" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="hosting-guests">모집 인원</label>
+          <select class="form-input" id="hosting-guests" required>
+            <option value="2">2명</option>
+            <option value="3">3명</option>
+            <option value="4">4명</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="hosting-note">비고</label>
+          <input class="form-input" type="text" id="hosting-note" placeholder="추가 안내사항">
+        </div>
+        <button type="submit" class="btn btn-primary w-full">등록하기</button>
+      </form>
+    </div>
+  </div>
+
   <!-- Footer -->
   <footer class="footer">
     <div class="footer-inner">
@@ -211,6 +268,146 @@
 
     document.getElementById('filter-district')?.addEventListener('change', filterHostings);
     document.getElementById('filter-status')?.addEventListener('change', filterHostings);
+
+    // ── 호스팅 등록 모달 (보호자 전용) ──────────────────────
+    let seniorsCache = [];
+
+    // TODO: [권한 가드 임시 비활성화] DB 스키마(users.cert_reject_reason 등) 정비 완료 후
+    //   1) 위 버튼 마크업에서 'hidden' 클래스 복원
+    //   2) 파일 하단의 gateGuardianButton() 호출 라인 주석 해제
+    // 하여 보호자(user_role === 'guardian')만 버튼이 보이도록 되돌려야 함.
+    async function gateGuardianButton() {
+      if (!isLoggedIn()) return;
+      try {
+        const me = await api('/users/me');
+        if (me.user_role === 'guardian') {
+          document.querySelector('#open-hosting-modal').classList.remove('hidden');
+        }
+      } catch {
+        // 토큰 만료/네트워크 실패 — 버튼 숨김 유지
+      }
+    }
+
+    // 30분 단위 시간 옵션 생성
+    function buildTimeOptions(selectEl, defaultHour, maxHour, minHour = 7) {
+      for (let h = minHour; h <= maxHour; h++) {
+        for (let m = 0; m < 60; m += 30) {
+          if (h === maxHour && m > 0) break;
+          const label = `${h}시 ${m === 0 ? '00' : m}분`;
+          const value = `${String(h).padStart(2, '0')}:${m === 0 ? '00' : '30'}`;
+          const opt = new Option(label, value);
+          if (h === defaultHour && m === 0) opt.selected = true;
+          selectEl.appendChild(opt);
+        }
+      }
+    }
+
+    // 어르신 목록 로드 (최초 1회)
+    // TODO: [비로그인 graceful fallback 임시 처리] 현재 비로그인/401 상태에서는 조용히 빈 상태 카드를 표시.
+    //   DB 스키마 정비 + 권한 가드 복원 이후에는 catch 블록을 alert(err.message)로 되돌려
+    //   실제 에러를 사용자에게 노출하도록 변경 필요.
+    async function loadSeniors() {
+      if (seniorsCache.length > 0) {
+        renderSeniorOptions();
+        return;
+      }
+      if (!isLoggedIn()) {
+        renderSeniorOptions();
+        return;
+      }
+      try {
+        const seniors = await api('/seniors/');
+        seniorsCache = seniors.filter(s => s.active_flag);
+        renderSeniorOptions();
+      } catch {
+        renderSeniorOptions();
+      }
+    }
+
+    function renderSeniorOptions() {
+      const select = document.querySelector('#hosting-senior');
+      const empty = document.querySelector('#senior-empty');
+      const form = document.querySelector('#hosting-form');
+
+      if (seniorsCache.length === 0) {
+        empty.classList.remove('hidden');
+        form.classList.add('hidden');
+        return;
+      }
+      empty.classList.add('hidden');
+      form.classList.remove('hidden');
+
+      select.innerHTML = seniorsCache.length > 1
+        ? '<option value="">어르신을 선택해주세요</option>'
+        : '';
+      seniorsCache.forEach(s => {
+        const district = s.address.split(' ').slice(0, 2).join(' ');
+        select.appendChild(new Option(
+          `${s.name} 어르신 (${s.age}세, ${district})`,
+          s.senior_id,
+        ));
+      });
+
+      // 1명이면 자동 선택 + 모집 인원 자동 채움
+      if (seniorsCache.length === 1) {
+        select.value = seniorsCache[0].senior_id;
+        document.querySelector('#hosting-guests').value = seniorsCache[0].max_people;
+      }
+    }
+
+    // 어르신 변경 시 모집 인원 자동 채움
+    document.querySelector('#hosting-senior')?.addEventListener('change', (e) => {
+      const senior = seniorsCache.find(s => String(s.senior_id) === e.target.value);
+      if (senior) {
+        document.querySelector('#hosting-guests').value = senior.max_people;
+      }
+    });
+
+    function openHostingModal() {
+      document.querySelector('#hosting-modal').classList.add('open');
+      document.body.style.overflow = 'hidden';
+      loadSeniors();
+    }
+
+    function closeHostingModal() {
+      document.querySelector('#hosting-modal').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    document.querySelector('#open-hosting-modal')?.addEventListener('click', openHostingModal);
+    document.querySelector('#hosting-modal-close')?.addEventListener('click', closeHostingModal);
+    document.querySelector('#hosting-modal')?.addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) closeHostingModal();
+    });
+    document.addEventListener('keydown', (e) => {
+      const modal = document.querySelector('#hosting-modal');
+      if (e.key === 'Escape' && modal.classList.contains('open')) {
+        closeHostingModal();
+      }
+    });
+
+    // 폼 submit — 백엔드 API 미구현, payload 콘솔 출력 + 안내
+    document.querySelector('#hosting-form')?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const date = document.querySelector('#hosting-date').value;
+      const payload = {
+        senior_id: Number(document.querySelector('#hosting-senior').value),
+        hosting_at: `${date}T${document.querySelector('#hosting-start-time').value}:00`,
+        hosting_end: `${date}T${document.querySelector('#hosting-end-time').value}:00`,
+        menu: document.querySelector('#hosting-menu').value,
+        max_people: Number(document.querySelector('#hosting-guests').value),
+        note: document.querySelector('#hosting-note').value,
+      };
+      console.log('[호스팅 등록 payload]', payload);
+      alert('호스팅 등록 UI 완료 (백엔드 연동 대기 중)');
+      closeHostingModal();
+    });
+
+    // 초기화
+    buildTimeOptions(document.querySelector('#hosting-start-time'), 12, 20);
+    buildTimeOptions(document.querySelector('#hosting-end-time'), 13, 22, 9);
+    // TODO: [권한 가드 복원 지점] DB 스키마 정비 후 아래 호출 주석 해제 + 위 버튼 마크업의 'hidden' 클래스 복원
+    // gateGuardianButton();
   </script>
 </body>
 </html>
