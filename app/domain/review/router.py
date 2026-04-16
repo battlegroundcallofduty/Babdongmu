@@ -8,7 +8,7 @@ from app.domain.review import service
 from app.domain.review.schemas import ReviewResponse, ReviewUpdateRequest
 from app.domain.user.dependency import get_current_user
 from app.domain.user.models import User, UserRole
-from app.services.r2 import upload_image
+from app.services.r2 import BucketType, upload_image
 
 router = APIRouter()
 
@@ -37,7 +37,7 @@ async def create_review(
     image_urls = []
     for image in images:
         if image.filename:
-            url = await upload_image(image, folder="reviews")
+            url = await upload_image(image, folder="reviews", bucket=BucketType.PUBLIC)
             image_urls.append(url)
 
     return await service.create_review(
@@ -95,7 +95,7 @@ async def add_review_image(
 ) -> ReviewResponse:
     """후기에 이미지를 추가합니다."""
     _require_volunteer(current_user)
-    image_url = await upload_image(image, folder="reviews")
+    image_url = await upload_image(image, folder="reviews", bucket=BucketType.PUBLIC)
     return await service.add_review_image(
         db=db,
         review_id=review_id,

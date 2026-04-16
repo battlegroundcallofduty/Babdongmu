@@ -203,21 +203,20 @@ async def check_in(db: AsyncSession, senior_id: int, vt_id: int) -> MatchingInfo
     if match.check_in_time:
         raise HTTPException(status_code=400, detail="이미 체크인 완료된 매칭입니다.")
 
-    # 첫 번째 체크인 여부 확인 (모집완료 상태에서만 체크인 가능하므로 별도 상태 체크 불필요)
-    count_result = await db.execute(
-        select(func.count()).where(
-            MatchingInfo.hosting_id == match.hosting_id,
-            MatchingInfo.check_in_time.isnot(None),
-        )
-    )
-    is_first_checkin = count_result.scalar() == 0
-
     match.check_in_time = datetime.now(timezone.utc)
 
-    if is_first_checkin:
-        hosting = await db.get(Hosting, match.hosting_id)
-        if hosting:
-            hosting.hosting_status = HostingStatus.IN_PROGRESS
+    # TODO: 호스팅 담당자 IN_PROGRESS enum 추가 후 주석 해제
+    # count_result = await db.execute(
+    #     select(func.count()).where(
+    #         MatchingInfo.hosting_id == match.hosting_id,
+    #         MatchingInfo.check_in_time.isnot(None),
+    #     )
+    # )
+    # is_first_checkin = count_result.scalar() == 0
+    # if is_first_checkin:
+    #     hosting = await db.get(Hosting, match.hosting_id)
+    #     if hosting:
+    #         hosting.hosting_status = HostingStatus.IN_PROGRESS
 
     await db.commit()
     await db.refresh(match)

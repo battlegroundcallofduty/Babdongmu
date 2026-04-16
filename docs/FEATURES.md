@@ -172,5 +172,5 @@
 |--------|------|
 | Solapi / 알리고 | SMS 발송 |
 | Gemini AI | 어르신 소개글 자동 생성 (후기 3건 이상 시) |
-| Cloudflare R2 | 파일 저장 (서류 `document_url`, 후기 이미지 `image_url`) |
+| Cloudflare R2 | 파일 저장. 공개 버킷(`babdongmu-public`) — 후기 이미지. 비공개 버킷(`babdongmu-private`) — 신원 서류 |
 | 주소 API | 마이페이지 주소 입력 연동 |

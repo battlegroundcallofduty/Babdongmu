@@ -6,8 +6,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.match.models import MatchingInfo, MatchStatus
 from app.domain.review.models import Review, ReviewImg
-from app.domain.review.schemas import ReviewResponse, ReviewImageResponse
+from app.domain.review.schemas import ReviewImageResponse, ReviewResponse
 from app.services.ai import MIN_REVIEW_COUNT, update_senior_ai_summary
+from app.services.r2 import delete_image
 
 
 async def _get_review_or_raise(db: AsyncSession, review_id: int, vt_id: int) -> Review:
@@ -154,7 +155,8 @@ async def add_review_image(
     db.add(img)
     await db.commit()
 
-    images = await _get_images(db, review_id)
+    # 이미 조회한 목록에 추가해 재쿼리 방지
+    images.append(img)
     return _to_response(review, images)
 
 
@@ -172,7 +174,6 @@ async def delete_review_image(
         raise HTTPException(status_code=404, detail="존재하지 않는 이미지입니다.")
 
     # R2에서 파일 삭제
-    from app.services.r2 import delete_image
     await delete_image(img.image_url)
 
     await db.delete(img)
@@ -190,11 +191,11 @@ async def delete_review(
     """후기를 삭제합니다."""
     review = await _get_review_or_raise(db, review_id, vt_id)
 
-    # DB 삭제 전 R2 파일 먼저 제거 (cascade로 DB 행은 자동 삭제되지만 R2는 수동 삭제 필요)
-    from app.services.r2 import delete_image
+    # R2 파일 삭제 후 DB에서도 명시적으로 삭제 (SQLite는 CASCADE 미지원)
     images = await _get_images(db, review_id)
     for img in images:
         await delete_image(img.image_url)
+        await db.delete(img)
 
     await db.delete(review)
     await db.commit()
@@ -207,7 +208,10 @@ def _to_response(review: Review, images: list[ReviewImg]) -> ReviewResponse:
         matching_id=review.matching_id,
         vt_id=review.vt_id,
         contents=review.contents,
-        images=[ReviewImageResponse(image_id=img.image_id, image_url=img.image_url) for img in images],
+        images=[
+            ReviewImageResponse(image_id=img.image_id, image_url=img.image_url)
+            for img in images
+        ],
         created_at=review.created_at,
         updated_at=review.updated_at,
     )
