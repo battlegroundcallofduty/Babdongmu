@@ -34,6 +34,18 @@ uvicorn app.main:app --reload
 docker compose up --build
 ```
 
+### 모델/DB 스키마가 바뀐 직후 pull 받았을 때
+
+`create_all`은 기존 테이블에 새 컬럼을 추가하지 않습니다. 모델에 컬럼이 추가/변경됐다는 커밋을 pull 받은 뒤 `no such column` 같은 에러가 나면 로컬 SQLite를 재생성하세요.
+
+```bash
+# 서버 중지 후
+rm babdongmu.db
+uvicorn app.main:app --reload
+```
+
+로컬 데이터만 날아갑니다. 프로덕션 DB는 별도 마이그레이션 도입 전까지 수동 대응합니다.
+
 ## API 문서
 
 서버 실행 후 아래 주소에서 Swagger UI 확인:

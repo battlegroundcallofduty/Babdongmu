@@ -124,6 +124,41 @@
     .access-denied-icon { font-size: 48px; }
     .access-denied-title { font-size: 20px; font-weight: 700; color: var(--text); }
     .access-denied-sub { font-size: 14px; color: var(--muted); }
+
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 10000;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal-box {
+      background: var(--surface, #fff);
+      border-radius: var(--radius-lg, 12px);
+      padding: var(--space-xl, 24px);
+      width: min(480px, calc(100vw - 32px));
+      box-shadow: 0 8px 32px rgba(0,0,0,0.16);
+    }
+    .modal-title { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: var(--space-sm, 8px); }
+    .modal-desc { font-size: 13px; color: var(--muted); margin-bottom: var(--space-md, 16px); }
+    .modal-textarea {
+      width: 100%;
+      min-height: 96px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm, 6px);
+      font-family: inherit;
+      font-size: 14px;
+      resize: vertical;
+      background: var(--surface);
+      color: var(--text);
+      box-sizing: border-box;
+    }
+    .modal-textarea:focus { outline: none; border-color: var(--primary, #D4763C); }
+    .modal-actions { display: flex; justify-content: flex-end; gap: var(--space-sm, 8px); margin-top: var(--space-md, 16px); }
   </style>
 </head>
 <body>
@@ -231,6 +266,20 @@
   </footer>
 
   <div class="toast" id="toast"></div>
+
+  <!-- 반려사유 입력 모달 -->
+  <div class="modal-overlay" id="rejectModal">
+    <div class="modal-box">
+      <div class="modal-title">서류 반려</div>
+      <div class="modal-desc">반려 사유를 입력해주세요. 입력하지 않으면 사유 없이 반려됩니다.</div>
+      <textarea class="modal-textarea" id="rejectReasonInput" placeholder="예: 서류가 불명확하거나 내용이 누락되었습니다."></textarea>
+      <div class="modal-actions">
+        <button class="btn btn-ghost btn-sm" onclick="closeRejectModal()">취소</button>
+        <button class="btn btn-primary btn-sm" onclick="submitReject()">반려 확인</button>
+      </div>
+    </div>
+  </div>
+
   <div class="access-denied" id="accessDenied">
     <div class="access-denied-icon">🔒</div>
     <div class="access-denied-title">관리자 전용 페이지입니다</div>
@@ -312,16 +361,28 @@
             </div>`;
           return;
         }
-        wrap.innerHTML = docs.map(doc => `
-          <div class="doc-item" id="doc-${doc.document_id}">
+        const DOC_TYPE_LABEL = {
+          criminal_record: '범죄경력조회서',
+          welfare_cert: '복지관 인증서류',
+          family_cert: '가족관계증명서',
+          identity_copy: '신분증 사본',
+        };
+        wrap.innerHTML = docs.map(user => `
+          <div class="doc-item" id="doc-user-${user.user_id}">
             <div class="doc-info">
-              <div class="doc-name">${doc.user_name}</div>
-              <div class="doc-meta">${doc.user_email} · 가입일 ${formatDate(doc.created_at)}</div>
+              <div class="doc-name">${user.user_name}</div>
+              <div class="doc-meta">${user.user_email} · 가입일 ${formatDate(user.created_at)}</div>
+              <div style="display:flex; gap:var(--space-sm); flex-wrap:wrap; margin-top:6px;">
+                ${user.documents.map(d => `
+                  <a class="doc-link" href="${d.document_url}" target="_blank" rel="noopener">
+                    ${DOC_TYPE_LABEL[d.document_type] ?? d.document_type}
+                  </a>
+                `).join('')}
+              </div>
             </div>
-            <a class="doc-link" href="${doc.document_url}" target="_blank" rel="noopener">서류 보기</a>
             <div class="doc-actions">
-              <button class="btn btn-primary btn-sm" onclick="approveDoc(${doc.document_id}, ${doc.user_id})">승인</button>
-              <button class="btn btn-ghost btn-sm" onclick="rejectDoc(${doc.document_id}, ${doc.user_id})">반려</button>
+              <button class="btn btn-primary btn-sm" onclick="approveDoc(${user.user_id})">승인</button>
+              <button class="btn btn-ghost btn-sm" onclick="rejectDoc(${user.user_id})">반려</button>
             </div>
           </div>
         `).join('');
@@ -334,10 +395,10 @@
       }
     }
 
-    async function approveDoc(documentId, userId) {
+    async function approveDoc(userId) {
       try {
         await api(`/admin/users/${userId}/approve`, { method: 'PATCH' });
-        document.getElementById(`doc-${documentId}`)?.remove();
+        document.getElementById(`doc-user-${userId}`)?.remove();
         showToast('승인되었어요', 'success');
         checkDocEmpty();
         loadStats();
@@ -346,11 +407,35 @@
       }
     }
 
-    async function rejectDoc(documentId, userId) {
-      if (!confirm('반려하면 봉사자에게 서류 재업로드가 요청됩니다. 계속할까요?')) return;
+    // 반려 모달 상태
+    let _rejectDocId = null;
+    let _rejectUserId = null;
+
+    function rejectDoc(userId) {
+      _rejectDocId = null;
+      _rejectUserId = userId;
+      document.getElementById('rejectReasonInput').value = '';
+      document.getElementById('rejectModal').classList.add('show');
+      document.getElementById('rejectReasonInput').focus();
+    }
+
+    function closeRejectModal() {
+      document.getElementById('rejectModal').classList.remove('show');
+      _rejectDocId = null;
+      _rejectUserId = null;
+    }
+
+    async function submitReject() {
+      const reason = document.getElementById('rejectReasonInput').value.trim();
+      const documentId = _rejectDocId;
+      const userId = _rejectUserId;
+      closeRejectModal();
       try {
-        await api(`/admin/users/${userId}/reject`, { method: 'PATCH' });
-        document.getElementById(`doc-${documentId}`)?.remove();
+        await api(`/admin/users/${userId}/reject`, {
+          method: 'PATCH',
+          body: JSON.stringify({ cert_reject_reason: reason || null }),
+        });
+        document.getElementById(`doc-user-${userId}`)?.remove();
         showToast('반려되었어요', 'error');
         checkDocEmpty();
         loadStats();
