@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import hash_password, verify_password
-from app.domain.user.models import Document, User, UserRole
+from app.domain.user.models import Document, DocumentType, User, UserRole
 
 ALLOWED_UPDATE_FIELDS = {"name", "phone_number", "address"} # update_user 허용 리스트
 
@@ -22,7 +22,7 @@ async def get_user_by_id(user_id: int, db: AsyncSession) -> User | None:
 
 async def get_user_by_email(email: str, db: AsyncSession) -> User | None:
     """이메일로 유저 조회"""
-    statement = select(User).where(User.email == email)
+    statement = select(User).where(User.email == email.lower())
     result = await db.execute(statement)
     return result.scalar_one_or_none()
 
@@ -31,7 +31,7 @@ async def create_user(email: str, password: str, name: str,
     phone_number: str, user_role: UserRole, address: str, db: AsyncSession,) -> User:
     """회원가입: 유저 생성"""
     user = User(
-        email=email,
+        email=email.lower(),
         password=hash_password(password),
         name=name,
         phone_number=phone_number,
@@ -75,10 +75,12 @@ async def change_password(user_id: int, current_password: str, new_password: str
     user = await get_user_by_id(user_id, db)
     if user is None:
         return False  # 원래는 404 에러 직접 던지는게 맞지만 service는 순수 파이썬 영역으로 두기 위해 ^^
+    if user.password is None:
+        return False
     if not verify_password(current_password, user.password):
         # 현재 비밀번호가 틀리면 변경 거부
         return False
-    user.password = hash_password(new_password)
+    user.password = hash_password(new_password)  # 해싱(security.py)
     user.updated_at = datetime.now(timezone.utc)
     await db.commit()
     return True
@@ -95,33 +97,59 @@ async def delete_user(user_id: int, db: AsyncSession) -> None:
 
 # ── 서류 ───────────
 async def get_document_by_id(document_id: int, db: AsyncSession) -> Document | None:
-    """ID로 서류 조회"""
-    pass
+    """document_id(PK)에 해당되는 서류 조회"""
+    statement = select(Document).where(Document.document_id == document_id)
+    result = await db.execute(statement)
+    return result.scalar_one_or_none()
 
 
 async def get_documents_by_user_id(user_id: int, db: AsyncSession) -> list[Document]:
     """마이페이지: 유저의 서류 목록 조회"""
-    pass
+    statement = select(Document).where(Document.user_id == user_id)
+    result = await db.execute(statement)
+    return list(result.scalars().all())  # 유저당 서류는 여러개니깐/ 결과 없으면 빈 리스트 반환
 
 
-async def create_document(user_id: int, document_type: str, document_url: str, db: AsyncSession) -> Document:
+async def create_document(user_id: int, document_type: DocumentType, document_url: str, db: AsyncSession) -> Document:
     """서류 업로드"""
-    pass
+    document = Document(
+        user_id=user_id,
+        document_type=document_type,
+        document_url=document_url,
+    )
+    db.add(document)
+    await db.commit()
+    await db.refresh(document)
+    return document
 
 
+# TODO: PATCH /me/documents/{id} 라우터가 없어 현재 호출 지점 없음.
+#   서류 수정 UX가 필요한지 판단 후 라우터를 추가하거나 이 함수를 제거할 것.
 async def update_document(document_id: int, document_url: str, db: AsyncSession) -> Document | None:
     """서류 수정"""
-    pass
+    document = await get_document_by_id(document_id, db)
+    if document is None:
+        return None
+    document.document_url = document_url
+    document.updated_at = datetime.now(timezone.utc)
+    await db.commit()
+    await db.refresh(document)
+    return document
 
 
 async def delete_document(document_id: int, db: AsyncSession) -> None:
     """서류 삭제"""
-    pass
+    document = await get_document_by_id(document_id, db)
+    if document is None:
+        return  # 이미 서류 없으면 조용히 종료
+    await db.delete(document)
+    await db.commit()
 
 
 # ── 카카오 ─────────
 async def get_or_create_kakao_user(kakao_id: str, email: str, name: str, db: AsyncSession) -> User:
     """카카오 로그인/회원가입 통합: kakao_id로 유저를 조회하고, 없으면 생성"""
+    # email.lower() 잊지말고 넣어라
     pass
 
 

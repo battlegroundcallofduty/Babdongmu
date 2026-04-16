@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr, field_validator, model_validator
+from pydantic import BaseModel, EmailStr, HttpUrl, field_validator, model_validator
 
 from app.domain.user.models import CertFlag, DocumentType, UserRole
 
@@ -79,13 +79,14 @@ class DocumentCreateRequest(BaseModel):
     """서류 업로드 요청"""
 
     document_type: DocumentType
-    document_url: str
+    # HttpUrl로 스킴/형식 검증 (javascript:, data: 등 차단). 렌더링 시 textContent 사용 권장
+    document_url: HttpUrl
 
 
 class DocumentUpdateRequest(BaseModel):
     """서류 수정 요청"""
 
-    document_url: str
+    document_url: HttpUrl
 
 
 # ── SMS 요청 ───────────────
@@ -116,13 +117,25 @@ class UserResponse(BaseModel):
     address: str
     cert_flag: CertFlag
     created_at: datetime
+    is_social_login: bool
 
+    # sqlalchemy orm 객체를 pydantic 스키마로 변환할때 객체 속성 읽게해줌
+    # 이 설정 때문에 @property도 읽을수있음
     model_config = {"from_attributes": True}
+
 
 
 class TokenResponse(BaseModel):
     """로그인 성공 시 토큰 반환"""
 
+    access_token: str
+    token_type: str = "bearer"
+
+
+class RegisterResponse(BaseModel):
+    """회원가입 성공 시 유저 정보 + 토큰 반환"""
+
+    user: UserResponse
     access_token: str
     token_type: str = "bearer"
 

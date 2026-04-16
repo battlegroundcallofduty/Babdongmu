@@ -104,6 +104,8 @@ async def list_matches_by_volunteer(
             hosting_at=hosting.hosting_at,
             senior_id=senior.senior_id,
             senior_name=senior.name,
+            senior_address=senior.address,
+            actual_volunteer_time=match.actual_volunteer_time,
         )
         for match, hosting, senior in rows
     ]

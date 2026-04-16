@@ -35,57 +35,7 @@
       <button class="tab" data-tab="completed">완료</button>
     </div>
 
-    <div id="tab-scheduled">
-      <div class="card match-card mb-md slide-up stagger-2">
-        <div class="card-body">
-          <div class="match-info">
-            <h3>김순자 어르신 · 된장찌개</h3>
-            <p class="match-meta">4월 15일 (화) · 점심 · 성북구 정릉동</p>
-          </div>
-          <div class="match-actions">
-            <button class="btn btn-primary btn-sm">체크인</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="card match-card mb-md slide-up stagger-3">
-        <div class="card-body">
-          <div class="match-info">
-            <h3>박영희 어르신 · 김치전</h3>
-            <p class="match-meta">4월 16일 (수) · 저녁 · 성북구 길음동</p>
-          </div>
-          <div class="match-actions">
-            <span class="badge badge-open">예정</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div id="tab-completed" class="hidden">
-      <div class="card match-card mb-md">
-        <div class="card-body">
-          <div class="match-info">
-            <h3>이정자 어르신 · 잔치국수</h3>
-            <p class="match-meta">4월 10일 (목) · 점심 · 2.5시간</p>
-          </div>
-          <div class="match-actions">
-            <button class="btn btn-ghost btn-sm review-btn" data-match-id="1" data-title="이정자 어르신 · 잔치국수">후기 작성</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="card match-card mb-md">
-        <div class="card-body">
-          <div class="match-info">
-            <h3>김순자 어르신 · 김치찌개</h3>
-            <p class="match-meta">4월 3일 (목) · 점심 · 3.0시간</p>
-          </div>
-          <div class="match-actions">
-            <span class="badge badge-done">후기 완료</span>
-          </div>
-        </div>
-      </div>
-    </div>
+    <div id="match-list"></div>
 
     <div id="empty-state" class="empty-state hidden">
       <svg class="empty-state-icon" viewBox="0 0 80 80" fill="none"><circle cx="40" cy="40" r="36" fill="currentColor" opacity="0.06"/><path d="M24 44c0-8.8 7.2-16 16-16s16 7.2 16 16" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><path d="M20 44h40v2c0 6.6-5.4 12-12 12H32c-6.6 0-12-5.4-12-12v-2z" fill="currentColor" opacity="0.08"/></svg>
@@ -136,16 +86,150 @@
     function toggleNav(){const t=document.querySelector('.nav-toggle'),d=document.getElementById('navDrawer');t.classList.toggle('active');d.classList.toggle('open');document.body.style.overflow=d.classList.contains('open')?'hidden':'';}
     function closeNav(e){if(e.target===e.currentTarget)toggleNav();}
 
+    let currentTab = 'scheduled';
+
+    // 날짜 포맷: "4월 15일 (화) · 점심"
+    function formatDate(datetimeStr) {
+      const d = new Date(datetimeStr);
+      const days = ['일', '월', '화', '수', '목', '금', '토'];
+      const hour = d.getHours();
+      const mealTime = hour < 15 ? '점심' : '저녁';
+      return `${d.getMonth() + 1}월 ${d.getDate()}일 (${days[d.getDay()]}) · ${mealTime}`;
+    }
+
+    // 봉사시간 포맷
+    function formatVolunteerTime(match) {
+      if (match.actual_volunteer_time !== null && match.actual_volunteer_time !== undefined) {
+        return `${(match.actual_volunteer_time / 60).toFixed(1)}시간`;
+      }
+      if (match.check_in_time && match.check_out_time) {
+        const diff = new Date(match.check_out_time) - new Date(match.check_in_time);
+        const hours = (diff / 1000 / 60 / 60).toFixed(1);
+        return `예상 ${hours}시간`;
+      }
+      return null;
+    }
+
+    // 매칭 카드 HTML 생성
+    function createMatchCard(match, isCompleted) {
+      const dateStr = formatDate(match.hosting_at);
+      const hasCheckIn = !!match.check_in_time;
+
+      if (isCompleted) {
+        const timeStr = formatVolunteerTime(match);
+        const meta = timeStr ? `${dateStr} · ${timeStr}` : dateStr;
+
+        // 완료 탭: 후기 작성 버튼 또는 후기 완료 배지
+        const action = match.has_review
+          ? `<span class="badge badge-done">후기 완료</span>`
+          : `<button class="btn btn-ghost btn-sm review-btn"
+               data-match-id="${match.matching_id}"
+               data-title="${match.senior_name} 어르신 · ${match.menu}">후기 작성</button>`;
+
+        return `
+          <div class="card match-card mb-md">
+            <div class="card-body">
+              <div class="match-info">
+                <h3>${match.senior_name} 어르신 · ${match.menu}</h3>
+                <p class="match-meta">${meta}</p>
+              </div>
+              <div class="match-actions">${action}</div>
+            </div>
+          </div>`;
+      } else {
+        const address = match.senior_address || '';
+        const meta = address ? `${dateStr} · ${address}` : dateStr;
+
+        // 예정 탭: 체크인 or 체크아웃 버튼
+        let action;
+        if (!hasCheckIn) {
+          action = `<button class="btn btn-primary btn-sm checkin-btn" data-senior-id="${match.senior_id}" data-matching-id="${match.matching_id}">체크인</button>`;
+        } else {
+          action = `<button class="btn btn-primary btn-sm checkout-btn" data-senior-id="${match.senior_id}" data-matching-id="${match.matching_id}">체크아웃</button>`;
+        }
+
+        return `
+          <div class="card match-card mb-md">
+            <div class="card-body">
+              <div class="match-info">
+                <h3>${match.senior_name} 어르신 · ${match.menu}</h3>
+                <p class="match-meta">${meta}</p>
+              </div>
+              <div class="match-actions">${action}</div>
+            </div>
+          </div>`;
+      }
+    }
+
+    // 매칭 목록 로드
+    async function loadMatches(isCompleted) {
+      const list = document.getElementById('match-list');
+      const empty = document.getElementById('empty-state');
+      list.innerHTML = '';
+      empty.classList.add('hidden');
+
+      try {
+        const matches = await api(`/matches/my?is_completed=${isCompleted}&page=1`);
+
+        if (!matches || matches.length === 0) {
+          empty.classList.remove('hidden');
+          return;
+        }
+
+        list.innerHTML = matches.map(m => createMatchCard(m, isCompleted)).join('');
+        bindCardEvents();
+      } catch (err) {
+        list.innerHTML = `<p style="color:var(--error)">${err.message}</p>`;
+      }
+    }
+
+    // 카드 버튼 이벤트 바인딩
+    function bindCardEvents() {
+      // 체크인
+      document.querySelectorAll('.checkin-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const seniorId = btn.dataset.seniorId;
+          try {
+            await api(`/matches/${seniorId}/checkin`, { method: 'PATCH' });
+            await loadMatches(false);
+          } catch (err) {
+            alert(err.message);
+          }
+        });
+      });
+
+      // 체크아웃
+      document.querySelectorAll('.checkout-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const seniorId = btn.dataset.seniorId;
+          try {
+            await api(`/matches/${seniorId}/checkout`, { method: 'PATCH' });
+            await loadMatches(false);
+          } catch (err) {
+            alert(err.message);
+          }
+        });
+      });
+
+      // 후기 작성
+      document.querySelectorAll('.review-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          openReviewModal(btn.dataset.matchId, btn.dataset.title);
+        });
+      });
+    }
+
+    // 탭 전환
     document.querySelectorAll('.tab[data-tab]').forEach(tab => {
       tab.addEventListener('click', () => {
         document.querySelectorAll('.tab[data-tab]').forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
-        document.getElementById('tab-scheduled').classList.toggle('hidden', tab.dataset.tab !== 'scheduled');
-        document.getElementById('tab-completed').classList.toggle('hidden', tab.dataset.tab !== 'completed');
+        currentTab = tab.dataset.tab;
+        loadMatches(currentTab === 'completed');
       });
     });
 
-    // 모달 열기/닫기
+    // 후기 모달
     function openReviewModal(matchId, title) {
       document.getElementById('review-match-id').value = matchId;
       document.getElementById('review-modal-title').textContent = title + ' 후기';
@@ -161,7 +245,6 @@
       document.body.style.overflow = '';
     }
 
-    // 이미지 선택 (최대 5장 제한)
     document.getElementById('review-images')?.addEventListener('change', (e) => {
       const files = [...e.target.files];
       if (files.length > 5) {
@@ -179,7 +262,6 @@
       });
     });
 
-    // 폼 제출
     document.getElementById('review-form')?.addEventListener('submit', async (e) => {
       e.preventDefault();
       const errorEl = document.getElementById('review-error');
@@ -207,27 +289,21 @@
           throw new Error(data.detail || '등록 실패');
         }
 
-        // 성공: 해당 카드의 버튼을 "후기 완료" 배지로 교체
-        const btn = document.querySelector(`[data-match-id="${matchId}"].review-btn`);
-        if (btn) btn.outerHTML = '<span class="badge badge-done">후기 완료</span>';
         closeReviewModal();
+        await loadMatches(true);
       } catch (err) {
         errorEl.textContent = err.message;
         errorEl.classList.remove('hidden');
       }
     });
 
-    // 버튼 이벤트 연결
-    document.querySelectorAll('.review-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        openReviewModal(btn.dataset.matchId, btn.dataset.title);
-      });
-    });
-
     document.getElementById('review-modal-close')?.addEventListener('click', closeReviewModal);
     document.getElementById('review-modal-overlay')?.addEventListener('click', (e) => {
       if (e.target === e.currentTarget) closeReviewModal();
     });
+
+    // 초기 로드
+    loadMatches(false);
   </script>
 </body>
 </html>

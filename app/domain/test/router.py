@@ -11,6 +11,7 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
+from app.core.security import hash_password
 from app.domain.hosting.models import AlarmType, Hosting
 from app.domain.senior.models import GenderEnum, Senior
 from app.domain.user.models import CertFlag, User, UserRole
@@ -35,6 +36,72 @@ class NotificationSmsRequest(BaseModel):
 class SeedRequest(BaseModel):
     receiver_phone: str  # 보호자(수신자) 실제 번호 — 본인 번호 권장
     volunteer_phone: str | None = None
+
+
+@router.post("/match/seed")
+async def seed_match_test_data(
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """매칭 테스트용 더미 데이터를 생성합니다.
+
+    봉사자 User → 보호자 User → 어르신 Senior → 호스팅 Hosting 순으로 만들고
+    로그인 정보와 생성된 ID들을 반환합니다.
+    """
+    suffix = datetime.now().strftime("%Y%m%d%H%M%S")
+    password = "test1234"
+
+    volunteer = User(
+        name="테스트봉사자",
+        email=f"test-vt-{suffix}@example.com",
+        password=hash_password(password),
+        phone_number="01000000000",
+        address="테스트 주소",
+        user_role=UserRole.VOLUNTEER,
+        cert_flag=CertFlag.APPROVED,
+    )
+    db.add(volunteer)
+
+    guardian = User(
+        name="테스트보호자",
+        email=f"test-guardian-{suffix}@example.com",
+        password=hash_password(password),
+        phone_number="01011111111",
+        address="테스트 주소",
+        user_role=UserRole.GUARDIAN,
+        cert_flag=CertFlag.APPROVED,
+    )
+    db.add(guardian)
+    await db.flush()
+
+    senior = Senior(
+        guardian_id=guardian.user_id,
+        name="테스트어르신",
+        gender=GenderEnum.FEMALE,
+        age=80,
+        address="테스트 주소",
+        max_people=2,
+    )
+    db.add(senior)
+    await db.flush()
+
+    hosting = Hosting(
+        senior_id=senior.senior_id,
+        menu="된장찌개",
+        hosting_at=datetime.now(timezone.utc),
+        max_people=2,
+    )
+    db.add(hosting)
+    await db.flush()
+
+    await db.commit()
+
+    return {
+        "volunteer_email": volunteer.email,
+        "volunteer_password": password,
+        "volunteer_id": volunteer.user_id,
+        "hosting_id": hosting.hosting_id,
+        "senior_id": senior.senior_id,
+    }
 
 
 @router.post("/sms/seed")
