@@ -45,9 +45,9 @@ async def create_review(
     if not match.check_out_time:
         raise HTTPException(status_code=400, detail="체크아웃 완료 후 후기를 작성할 수 있습니다.")
 
-    # 취소된 매칭은 후기 불가
-    if match.match_status == MatchStatus.CANCELLED:
-        raise HTTPException(status_code=400, detail="취소된 매칭에는 후기를 작성할 수 없습니다.")
+    # 취소 또는 미방문 매칭은 후기 불가
+    if match.match_status in (MatchStatus.CANCELLED, MatchStatus.NOT_VISITED):
+        raise HTTPException(status_code=400, detail="후기를 작성할 수 없는 매칭입니다.")
 
     # 중복 후기 방지
     result = await db.execute(
@@ -189,6 +189,13 @@ async def delete_review(
 ) -> None:
     """후기를 삭제합니다."""
     review = await _get_review_or_raise(db, review_id, vt_id)
+
+    # DB 삭제 전 R2 파일 먼저 제거 (cascade로 DB 행은 자동 삭제되지만 R2는 수동 삭제 필요)
+    from app.services.r2 import delete_image
+    images = await _get_images(db, review_id)
+    for img in images:
+        await delete_image(img.image_url)
+
     await db.delete(review)
     await db.commit()
 

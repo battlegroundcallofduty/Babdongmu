@@ -100,7 +100,7 @@
 | hosting_id | FK → hostings | 호스팅 |
 | vt_id | FK → users | 봉사자 |
 | senior_id | FK → seniors | 어르신 |
-| match_status | ENUM | 매칭 상태 (`approved` / `cancelled`). 기본값 `approved`. `pending` / `rejected`는 예비값(미사용) |
+| match_status | ENUM | 매칭 상태 (`approved` / `cancelled` / `not_visited`). 기본값 `approved`. `pending` / `rejected`는 예비값(미사용) |
 | check_in_time | TIMESTAMP nullable | 체크인 시간 |
 | check_out_time | TIMESTAMP nullable | 체크아웃 시간 |
 | actual_volunteer_time | INT nullable | 실봉사시간 (관리자 최종 부여, 분 단위) |

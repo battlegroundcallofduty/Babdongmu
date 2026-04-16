@@ -130,12 +130,17 @@
         const timeStr = formatVolunteerTime(match);
         const meta = timeStr ? `${dateStr} · ${timeStr}` : dateStr;
 
-        // 완료 탭: 후기 있으면 후기 페이지로, 없으면 후기 작성 버튼
-        const action = match.has_review
-          ? `<a href="/pages/review-detail.html?review_id=${match.review_id}" class="btn btn-ghost btn-sm">후기 완료</a>`
-          : `<button class="btn btn-ghost btn-sm review-btn"
+        // 완료 탭: 미방문이면 배지, 후기 있으면 후기 페이지로, 없으면 후기 작성 버튼
+        let action;
+        if (match.match_status === 'not_visited') {
+          action = `<span style="display:inline-block; padding:4px 12px; border-radius:20px; background:var(--error); color:#fff; font-size:13px; font-weight:600;">미방문</span>`;
+        } else if (match.has_review) {
+          action = `<a href="/pages/review-detail.html?review_id=${match.review_id}" class="btn btn-ghost btn-sm">후기 완료</a>`;
+        } else {
+          action = `<button class="btn btn-ghost btn-sm review-btn"
                data-match-id="${match.matching_id}"
                data-title="${match.senior_name} 어르신 · ${match.menu}">후기 작성</button>`;
+        }
 
         return `
           <div class="card match-card mb-md">
