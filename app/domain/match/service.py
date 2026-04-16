@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.domain.hosting.models import AlarmType, Hosting, HostingStatus
 from app.domain.match.models import MatchingInfo, MatchStatus
 from app.domain.match.schemas import MyMatchResponse
+from app.domain.review.models import Review
 from app.domain.senior.models import Senior
 from app.services.sms import send_sms
 
@@ -93,6 +94,17 @@ async def list_matches_by_volunteer(
     result = await db.execute(query)
     rows = result.all()
 
+    # 후기 여부 조회 (matching_id → review_id 맵)
+    matching_ids = [match.matching_id for match, _, _ in rows]
+    review_id_map: dict[int, int] = {}
+    if matching_ids:
+        review_result = await db.execute(
+            select(Review.matching_id, Review.review_id).where(
+                Review.matching_id.in_(matching_ids)
+            )
+        )
+        review_id_map = {row.matching_id: row.review_id for row in review_result.all()}
+
     return [
         MyMatchResponse(
             matching_id=match.matching_id,
@@ -106,6 +118,8 @@ async def list_matches_by_volunteer(
             senior_name=senior.name,
             senior_address=senior.address,
             actual_volunteer_time=match.actual_volunteer_time,
+            has_review=review_id_map.get(match.matching_id) is not None,
+            review_id=review_id_map.get(match.matching_id),
         )
         for match, hosting, senior in rows
     ]

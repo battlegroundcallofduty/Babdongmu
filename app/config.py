@@ -21,6 +21,12 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: str = ""
     GEMINI_MODEL: str = "gemini-3.1-flash-lite-preview"
 
+    # Cloudflare R2 (이미지 저장)
+    R2_ENDPOINT: str = ""
+    R2_ACCESS_KEY_ID: str = ""
+    R2_SECRET_ACCESS_KEY: str = ""
+    R2_BUCKET_NAME: str = ""
+
     # 개발 모드 (True일 때만 테스트 라우터 등록)
     DEBUG: bool = False
 

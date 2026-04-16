@@ -43,4 +43,8 @@ class MyMatchResponse(BaseModel):
     # 봉사시간
     actual_volunteer_time: int | None
 
+    # 후기
+    has_review: bool
+    review_id: int | None
+
     model_config = {"from_attributes": False}
