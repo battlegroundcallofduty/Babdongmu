@@ -78,9 +78,17 @@
 
 | 상태 | 설명 |
 |------|------|
-| `신청가능` | 모집 중 |
-| `모집완료` | 정원 마감 |
-| `신청불가` | 취소 또는 비활성 |
+| `OPEN : 신청가능` | 모집 중 |
+| `FULL : 모집완료` | 정원 마감 and Check in 전 상태|
+| `FAILED: 보호자 취소 또는 호스팅 시작 -12시간 시점까지 모집 미달로 무산` | 호스팅 무산 |
+| `IN_PROGRESS: 호스팅 진행 중` | check in 상태|
+| `CLOSED : 정상완료` | IN_PROGRESS -> CLOSED 그 외의 CASE	-> FAILED
+
+스케줄러 작업
+FAILED : 호스팅 시작 시간 -12시간 시점에 체크하여 FULL -> FAILED
+CLOSED : 호스팅 종료 시간 시점에 체크하여  
+				IN_PROGRESS -> CLOSED 
+				그 외의 CASE	-> FAILED 
 
 **비즈니스 로직**
 - 호스팅 수정 시 → 신청한 봉사자 전원에게 SMS 발송 (`alarm_type: update`)

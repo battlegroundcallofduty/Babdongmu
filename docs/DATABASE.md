@@ -84,12 +84,11 @@
 | senior_id | FK → seniors | 어르신 |
 | menu | VARCHAR | 메뉴 |
 | hosting_at | TIMESTAMP | 호스팅 시작 일시 |
-| hosting_end | TIMESTAMP nullable | 호스팅 종료 일시 |
+| hosting_end | TIMESTAMP | 호스팅 종료 일시 |
 | max_people | INT | 모집 가능 인원 (seniors.max_people이 기본값, 수정 가능) |
 | hosting_status | ENUM | 모집 상태 (`신청가능` / `모집완료` / `신청불가`). 기본값 `신청가능` |
 | created_at | TIMESTAMP | 생성일 |
 | updated_at | TIMESTAMP nullable | 수정일 |
-| visited_at | TIMESTAMP nullable | 방문일 |
 
 ---
 
