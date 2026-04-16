@@ -289,6 +289,13 @@
   <script src="/js/api.js"></script>
   <script src="/js/admin.js"></script>
   <script>
+    // ── XSS 방어 헬퍼 ───────────────────────────────────────
+    // href 속성에 javascript: URI 삽입 방지
+    function safeUrl(url) {
+      if (!url || /^javascript:/i.test(String(url).trim())) return '#';
+      return url;
+    }
+
     // ── 네비게이션 ──────────────────────────────────────────
     function toggleNav() {
       const t = document.querySelector('.nav-toggle');
@@ -330,15 +337,34 @@
             </div>`;
           return;
         }
-        wrap.innerHTML = matches.map(m => `
-          <div class="match-item">
-            <div class="match-info">
-              <div class="match-name">${m.volunteer_name} → ${m.senior_name} 어르신</div>
-              <div class="match-meta">호스팅 ${formatDatetime(m.hosting_at)} · 신청 ${formatDatetime(m.created_at)}</div>
-            </div>
-            <span class="badge ${STATUS_BADGE[m.match_status] ?? ''}">${STATUS_LABEL[m.match_status] ?? m.match_status}</span>
-          </div>
-        `).join('');
+        const frag = document.createDocumentFragment();
+        for (const m of matches) {
+          const item = document.createElement('div');
+          item.className = 'match-item';
+
+          const info = document.createElement('div');
+          info.className = 'match-info';
+
+          const nameDiv = document.createElement('div');
+          nameDiv.className = 'match-name';
+          nameDiv.textContent = `${m.volunteer_name} → ${m.senior_name} 어르신`;
+
+          const metaDiv = document.createElement('div');
+          metaDiv.className = 'match-meta';
+          metaDiv.textContent = `호스팅 ${formatDatetime(m.hosting_at)} · 신청 ${formatDatetime(m.created_at)}`;
+
+          info.appendChild(nameDiv);
+          info.appendChild(metaDiv);
+
+          const badge = document.createElement('span');
+          badge.className = `badge ${STATUS_BADGE[m.match_status] ?? ''}`;
+          badge.textContent = STATUS_LABEL[m.match_status] ?? m.match_status;
+
+          item.appendChild(info);
+          item.appendChild(badge);
+          frag.appendChild(item);
+        }
+        wrap.replaceChildren(frag);
       } catch {
         wrap.innerHTML = `
           <div class="empty-state" style="padding: var(--space-xl) 0;">
@@ -367,25 +393,61 @@
           family_cert: '가족관계증명서',
           identity_copy: '신분증 사본',
         };
-        wrap.innerHTML = docs.map(user => `
-          <div class="doc-item" id="doc-user-${user.user_id}">
-            <div class="doc-info">
-              <div class="doc-name">${user.user_name}</div>
-              <div class="doc-meta">${user.user_email} · 가입일 ${formatDate(user.created_at)}</div>
-              <div style="display:flex; gap:var(--space-sm); flex-wrap:wrap; margin-top:6px;">
-                ${user.documents.map(d => `
-                  <a class="doc-link" href="${d.document_url}" target="_blank" rel="noopener">
-                    ${DOC_TYPE_LABEL[d.document_type] ?? d.document_type}
-                  </a>
-                `).join('')}
-              </div>
-            </div>
-            <div class="doc-actions">
-              <button class="btn btn-primary btn-sm" onclick="approveDoc(${user.user_id})">승인</button>
-              <button class="btn btn-ghost btn-sm" onclick="rejectDoc(${user.user_id})">반려</button>
-            </div>
-          </div>
-        `).join('');
+        const frag = document.createDocumentFragment();
+        for (const user of docs) {
+          const item = document.createElement('div');
+          item.className = 'doc-item';
+          item.id = `doc-user-${user.user_id}`;
+
+          const info = document.createElement('div');
+          info.className = 'doc-info';
+
+          const nameDiv = document.createElement('div');
+          nameDiv.className = 'doc-name';
+          nameDiv.textContent = user.user_name;
+
+          const metaDiv = document.createElement('div');
+          metaDiv.className = 'doc-meta';
+          metaDiv.textContent = `${user.user_email} · 가입일 ${formatDate(user.created_at)}`;
+
+          const linksDiv = document.createElement('div');
+          linksDiv.style.cssText = 'display:flex; gap:var(--space-sm); flex-wrap:wrap; margin-top:6px;';
+
+          for (const d of user.documents) {
+            const a = document.createElement('a');
+            a.className = 'doc-link';
+            a.href = safeUrl(d.document_url);
+            a.target = '_blank';
+            a.rel = 'noopener';
+            a.textContent = DOC_TYPE_LABEL[d.document_type] ?? d.document_type;
+            linksDiv.appendChild(a);
+          }
+
+          info.appendChild(nameDiv);
+          info.appendChild(metaDiv);
+          info.appendChild(linksDiv);
+
+          const actions = document.createElement('div');
+          actions.className = 'doc-actions';
+
+          const approveBtn = document.createElement('button');
+          approveBtn.className = 'btn btn-primary btn-sm';
+          approveBtn.textContent = '승인';
+          approveBtn.onclick = () => approveDoc(user.user_id);
+
+          const rejectBtn = document.createElement('button');
+          rejectBtn.className = 'btn btn-ghost btn-sm';
+          rejectBtn.textContent = '반려';
+          rejectBtn.onclick = () => rejectDoc(user.user_id);
+
+          actions.appendChild(approveBtn);
+          actions.appendChild(rejectBtn);
+
+          item.appendChild(info);
+          item.appendChild(actions);
+          frag.appendChild(item);
+        }
+        wrap.replaceChildren(frag);
       } catch {
         wrap.innerHTML = `
           <div class="empty-state" style="padding: var(--space-xl) 0;">
@@ -468,22 +530,55 @@
             </div>`;
           return;
         }
-        wrap.innerHTML = matches.map(m => `
-          <div class="time-item" id="match-${m.matching_id}">
-            <div class="time-info">
-              <div class="time-name">${m.volunteer_name} → ${m.senior_name} 어르신</div>
-              <div class="time-meta">
-                체크인 ${formatDatetime(m.check_in_time)} · 체크아웃 ${formatDatetime(m.check_out_time)}
-                · 호스팅 기준 ${m.expected_minutes ?? '-'}분
-              </div>
-            </div>
-            <div class="time-input-wrap">
-              <input class="time-input" type="number" min="0" placeholder="0" id="time-input-${m.matching_id}" value="${m.expected_minutes ?? ''}">
-              <span class="time-unit">분</span>
-              <button class="btn btn-primary btn-sm" onclick="grantTime(${m.matching_id})">부여</button>
-            </div>
-          </div>
-        `).join('');
+        const frag = document.createDocumentFragment();
+        for (const m of matches) {
+          const item = document.createElement('div');
+          item.className = 'time-item';
+          item.id = `match-${m.matching_id}`;
+
+          const info = document.createElement('div');
+          info.className = 'time-info';
+
+          const nameDiv = document.createElement('div');
+          nameDiv.className = 'time-name';
+          nameDiv.textContent = `${m.volunteer_name} → ${m.senior_name} 어르신`;
+
+          const metaDiv = document.createElement('div');
+          metaDiv.className = 'time-meta';
+          metaDiv.textContent = `체크인 ${formatDatetime(m.check_in_time)} · 체크아웃 ${formatDatetime(m.check_out_time)} · 호스팅 기준 ${m.expected_minutes ?? '-'}분`;
+
+          info.appendChild(nameDiv);
+          info.appendChild(metaDiv);
+
+          const inputWrap = document.createElement('div');
+          inputWrap.className = 'time-input-wrap';
+
+          const input = document.createElement('input');
+          input.className = 'time-input';
+          input.type = 'number';
+          input.min = '0';
+          input.placeholder = '0';
+          input.id = `time-input-${m.matching_id}`;
+          if (m.expected_minutes != null) input.value = m.expected_minutes;
+
+          const unit = document.createElement('span');
+          unit.className = 'time-unit';
+          unit.textContent = '분';
+
+          const btn = document.createElement('button');
+          btn.className = 'btn btn-primary btn-sm';
+          btn.textContent = '부여';
+          btn.onclick = () => grantTime(m.matching_id);
+
+          inputWrap.appendChild(input);
+          inputWrap.appendChild(unit);
+          inputWrap.appendChild(btn);
+
+          item.appendChild(info);
+          item.appendChild(inputWrap);
+          frag.appendChild(item);
+        }
+        wrap.replaceChildren(frag);
       } catch {
         wrap.innerHTML = `
           <div class="empty-state" style="padding: var(--space-xl) 0;">
