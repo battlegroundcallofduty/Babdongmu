@@ -10,8 +10,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import get_db
 from app.core.security import hash_password
+from app.database import get_db
 from app.domain.hosting.models import AlarmType, Hosting
 from app.domain.senior.models import GenderEnum, Senior
 from app.domain.user.models import CertFlag, User, UserRole

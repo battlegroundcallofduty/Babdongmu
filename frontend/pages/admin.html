@@ -543,9 +543,14 @@
           nameDiv.className = 'time-name';
           nameDiv.textContent = `${m.volunteer_name} → ${m.senior_name} 어르신`;
 
+          // 실제 체크인→체크아웃 경과 시간 계산
+          const actualMinutes = (m.check_in_time && m.check_out_time)
+            ? Math.floor((new Date(m.check_out_time) - new Date(m.check_in_time)) / 60000)
+            : null;
+
           const metaDiv = document.createElement('div');
           metaDiv.className = 'time-meta';
-          metaDiv.textContent = `체크인 ${formatDatetime(m.check_in_time)} · 체크아웃 ${formatDatetime(m.check_out_time)} · 호스팅 기준 ${m.expected_minutes ?? '-'}분`;
+          metaDiv.textContent = `체크인 ${formatDatetime(m.check_in_time)} · 체크아웃 ${formatDatetime(m.check_out_time)} · 실제 ${actualMinutes ?? '-'}분`;
 
           info.appendChild(nameDiv);
           info.appendChild(metaDiv);
@@ -559,7 +564,7 @@
           input.min = '0';
           input.placeholder = '0';
           input.id = `time-input-${m.matching_id}`;
-          if (m.expected_minutes != null) input.value = m.expected_minutes;
+          if (actualMinutes != null) input.value = actualMinutes;
 
           const unit = document.createElement('span');
           unit.className = 'time-unit';
