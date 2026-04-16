@@ -83,12 +83,6 @@ class DocumentCreateRequest(BaseModel):
     document_url: HttpUrl
 
 
-class DocumentUpdateRequest(BaseModel):
-    """서류 수정 요청"""
-
-    document_url: HttpUrl
-
-
 # ── SMS 요청 ───────────────
 
 class SmsSendRequest(BaseModel):
