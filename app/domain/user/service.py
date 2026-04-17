@@ -1,5 +1,4 @@
 """유저 비즈니스 로직."""
-
 from datetime import datetime, timezone
 
 from sqlalchemy import select
@@ -8,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.security import hash_password, verify_password
 from app.domain.user.models import Document, DocumentType, User, UserRole
 
-ALLOWED_UPDATE_FIELDS = {"name", "phone_number", "address"}  # update_user 허용 리스트
+ALLOWED_UPDATE_FIELDS = {"name", "phone_number", "address"} # update_user 허용 리스트
 
 
 # —— 유저 ─────────
@@ -28,15 +27,8 @@ async def get_user_by_email(email: str, db: AsyncSession) -> User | None:
     return result.scalar_one_or_none()
 
 
-async def create_user(
-    email: str,
-    password: str,
-    name: str,
-    phone_number: str,
-    user_role: UserRole,
-    address: str,
-    db: AsyncSession,
-) -> User:
+async def create_user(email: str, password: str, name: str,
+    phone_number: str, user_role: UserRole, address: str, db: AsyncSession,) -> User:
     """회원가입: 유저 생성"""
     user = User(
         email=email.lower(),
@@ -44,8 +36,7 @@ async def create_user(
         name=name,
         phone_number=phone_number,
         user_role=user_role,
-        address=address,
-    )
+        address=address,)
     db.add(user)
     await db.commit()
     await db.refresh(user)
@@ -72,16 +63,14 @@ async def update_user(user_id: int, db: AsyncSession, **kwargs) -> User | None:
     for field, value in kwargs.items():
         if field not in ALLOWED_UPDATE_FIELDS:
             continue  # setattr 실행 안 하고 다음 필드로
-        setattr(user, field, value)  # 들어온것 업데이트
+        setattr(user, field, value) # 들어온것 업데이트
     user.updated_at = datetime.now(timezone.utc)
     await db.commit()
     await db.refresh(user)
     return user
 
 
-async def change_password(
-    user_id: int, current_password: str, new_password: str, db: AsyncSession
-) -> bool:
+async def change_password(user_id: int, current_password: str, new_password: str, db: AsyncSession) -> bool:
     """마이페이지: 비밀번호 변경 (불일치 에러는 router.py에서)"""
     user = await get_user_by_id(user_id, db)
     if user is None:
@@ -101,7 +90,7 @@ async def delete_user(user_id: int, db: AsyncSession) -> None:
     """탈퇴: 유저를 db에서 삭제"""
     user = await get_user_by_id(user_id, db)
     if user is None:
-        return  # 여기서 함수 종료하라는 뜻(return None과 같음)
+        return # 여기서 함수 종료하라는 뜻(return None과 같음)
     await db.delete(user)
     await db.commit()
 
@@ -121,9 +110,7 @@ async def get_documents_by_user_id(user_id: int, db: AsyncSession) -> list[Docum
     return list(result.scalars().all())  # 유저당 서류는 여러개니깐/ 결과 없으면 빈 리스트 반환
 
 
-async def create_document(
-    user_id: int, document_type: DocumentType, document_url: str, db: AsyncSession
-) -> Document:
+async def create_document(user_id: int, document_type: DocumentType, document_url: str, db: AsyncSession) -> Document:
     """서류 업로드"""
     document = Document(
         user_id=user_id,

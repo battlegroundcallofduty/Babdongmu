@@ -27,9 +27,7 @@ class User(Base):
     user_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(100))
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
-    password: Mapped[str | None] = mapped_column(
-        String(255), nullable=True
-    )  # 카카오 로그인 시 None
+    password: Mapped[str | None] = mapped_column(String(255), nullable=True)  # 카카오 로그인 시 None
     phone_number: Mapped[str] = mapped_column(String(20))
     address: Mapped[str] = mapped_column(String(255))
     user_role: Mapped[UserRole] = mapped_column(Enum(UserRole))
@@ -51,10 +49,10 @@ class User(Base):
 
 
 class DocumentType(enum.Enum):
-    CRIMINAL_RECORD = "criminal_record"  # 봉사자: 범죄경력조회서
-    WELFARE_CERT = "welfare_cert"  # 보호자: 복지관 인증서류
-    FAMILY_CERT = "family_cert"  # 보호자: 가족관계증명서
-    IDENTITY_COPY = "identity_copy"  # 공통: 신분증 사본
+    CRIMINAL_RECORD = "criminal_record"   # 봉사자: 범죄경력조회서
+    WELFARE_CERT = "welfare_cert"         # 보호자: 복지관 인증서류
+    FAMILY_CERT = "family_cert"           # 보호자: 가족관계증명서
+    IDENTITY_COPY = "identity_copy"       # 공통: 신분증 사본
 
 
 class Document(Base):

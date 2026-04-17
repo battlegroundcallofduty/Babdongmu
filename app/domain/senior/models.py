@@ -14,19 +14,19 @@ class GenderEnum(str, enum.Enum):
     FEMALE = "female"
     OTHER = "other"
 
-
 class Senior(Base):
     """어르신 정보를 저장하는 모델입니다."""
-
     __tablename__ = "seniors"
     __table_args__ = (
         CheckConstraint("age >= 65", name="ck_senior_age"),
-        CheckConstraint("max_people >= 2", name="ck_senior_max_people"),
+        CheckConstraint("max_people >= 2", name="ck_senior_max_people")
     )
 
     senior_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    guardian_id: Mapped[int] = mapped_column(
-        ForeignKey("users.user_id", ondelete="RESTRICT"), nullable=False, index=True
+    guardian_id : Mapped[int] = mapped_column(
+        ForeignKey("users.user_id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True
     )
 
     name: Mapped[str] = mapped_column(String(100), nullable=False)

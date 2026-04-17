@@ -20,6 +20,7 @@ from app.domain.senior.service import (
 )
 from app.domain.user.dependency import require_guardian
 
+
 router = APIRouter(tags=["seniors"])
 
 

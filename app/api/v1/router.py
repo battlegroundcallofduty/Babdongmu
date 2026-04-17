@@ -21,5 +21,4 @@ api_router.include_router(admin_router, prefix="/admin", tags=["admin"])
 
 if settings.DEBUG:
     from app.domain.test.router import router as test_router
-
     api_router.include_router(test_router, prefix="/test", tags=["test"])

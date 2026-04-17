@@ -20,7 +20,7 @@ class AlarmType(enum.Enum):
     MATCH = "match"
     CHECKIN = "checkin"
     CHECKOUT = "checkout"
-    UPDATE = "update"  # 사용x, 확장성 위해 유지
+    UPDATE = "update"   # 사용x, 확장성 위해 유지
     DELETE = "delete"
 
 
