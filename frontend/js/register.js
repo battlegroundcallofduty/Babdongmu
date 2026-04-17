@@ -1,3 +1,9 @@
+// 보호자 서류 종류 셀렉트 변경 시 파일 업로드 라벨 동기화
+document.querySelector('#doc-guardian-type')?.addEventListener('change', (e) => {
+  const label = document.querySelector('#doc-family-label');
+  label.textContent = e.target.options[e.target.selectedIndex].text;
+});
+
 // 봉사자, 보호자 탭 전환 및 서류 필드 토글
 document.querySelectorAll('.tab[data-role]').forEach(tab => {
   tab.addEventListener('click', () => {

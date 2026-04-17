@@ -6,9 +6,9 @@ from pydantic import BaseModel, EmailStr, HttpUrl, field_validator, model_valida
 
 from app.domain.user.models import CertFlag, DocumentType, UserRole
 
-
 # (요청: 클라이언트가 서버에 body로 데이터를 보낼때)
 # ── 유저 요청 ──────────────
+
 
 class UserRegisterRequest(BaseModel):
     """회원가입 요청"""
@@ -18,18 +18,18 @@ class UserRegisterRequest(BaseModel):
     password_confirm: str  # 비밀번호 확인(라우터에서 넘길필요없음~)
     name: str
     phone_number: str
-    user_role: UserRole    # volunteer | guardian
+    user_role: UserRole  # volunteer | guardian
     address: str
 
-    @field_validator("password") # 특정 필드 하나
+    @field_validator("password")  # 특정 필드 하나
     # 비번 필드 하나만 들어왔을때 실행되서 userregisterrequest 객체가 없는 상태
-    @classmethod # 그래서 self 객체 대신 클래스를 받는다(cls)
-    def password_min_length(cls, v): # v: password 입력값
+    @classmethod  # 그래서 self 객체 대신 클래스를 받는다(cls)
+    def password_min_length(cls, v):  # v: password 입력값
         if len(v) < 8:
             raise ValueError("비밀번호는 8자 이상이어야 합니다.")
         return v
-    
-    @model_validator(mode="after") # 모델 전체(비번, 비번확인 비교)
+
+    @model_validator(mode="after")  # 모델 전체(비번, 비번확인 비교)
     # mode="after": 모든 필드 처리 다 끝난 다음에 validator 실행 (self 가능)
     def passwords_match(self):
         if self.password != self.password_confirm:
@@ -75,6 +75,7 @@ class PasswordChangeRequest(BaseModel):
 
 # ── 서류 요청 ────────────────
 
+
 class DocumentCreateRequest(BaseModel):
     """서류 업로드 요청"""
 
@@ -83,13 +84,8 @@ class DocumentCreateRequest(BaseModel):
     document_url: HttpUrl
 
 
-class DocumentUpdateRequest(BaseModel):
-    """서류 수정 요청"""
-
-    document_url: HttpUrl
-
-
 # ── SMS 요청 ───────────────
+
 
 class SmsSendRequest(BaseModel):
     """SMS 인증 코드 발송 요청"""
@@ -105,6 +101,7 @@ class SmsVerifyRequest(BaseModel):
 
 
 # ── 유저 응답 ─────────────────
+
 
 class UserResponse(BaseModel):
     """유저 정보 반환 (비밀번호 제외)"""
@@ -124,7 +121,6 @@ class UserResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
-
 class TokenResponse(BaseModel):
     """로그인 성공 시 토큰 반환"""
 
@@ -141,6 +137,7 @@ class RegisterResponse(BaseModel):
 
 
 # ── 서류 응답 ────────────────────
+
 
 class DocumentResponse(BaseModel):
     """서류 정보 반환"""
