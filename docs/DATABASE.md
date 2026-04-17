@@ -8,6 +8,27 @@
 
 ---
 
+## 마이그레이션 운영 방법
+
+### 모델 변경 후 migration 생성
+```bash
+alembic revision --autogenerate -m "변경내용_간단히"
+alembic upgrade head  # 로컬 반영 (DEBUG=False인 경우)
+```
+
+### 자주 쓰는 명령어
+| 명령어 | 설명 |
+|--------|------|
+| `alembic upgrade head` | 최신 migration까지 적용 |
+| `alembic downgrade -1` | 한 단계 롤백 |
+| `alembic current` | 현재 적용된 migration 확인 |
+| `alembic history` | migration 히스토리 조회 |
+
+### 프로덕션 반영
+`deploy.yml`에서 서버 시작 전 `alembic upgrade head`가 자동 실행됩니다.
+
+---
+
 ## 테이블 목록
 
 | 테이블 | 설명 | ORM 모델 위치 |
