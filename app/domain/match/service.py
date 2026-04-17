@@ -149,7 +149,11 @@ async def cancel_match(db: AsyncSession, matching_id: int, vt_id: int) -> Matchi
     hosting = await db.get(Hosting, match.hosting_id)
 
     # 호스팅 12시간 전부터는 취소 불가
-    hosting_at = hosting.hosting_at if hosting.hosting_at.tzinfo else hosting.hosting_at.replace(tzinfo=timezone.utc)
+    hosting_at = (
+        hosting.hosting_at
+        if hosting.hosting_at.tzinfo
+        else hosting.hosting_at.replace(tzinfo=timezone.utc)
+    )
     if hosting and hosting_at - datetime.now(timezone.utc) <= timedelta(hours=12):
         raise HTTPException(status_code=400, detail="호스팅 12시간 전부터는 취소할 수 없습니다.")
 

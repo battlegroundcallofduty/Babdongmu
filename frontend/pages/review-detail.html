@@ -168,46 +168,51 @@
     // 후기 상세 이미지 렌더링
     function renderImages(images) {
       const container = document.querySelector('#review-images');
+      container.innerHTML = '';
       if (images && images.length > 0) {
-        container.innerHTML = images.map(img =>
-          `<div class="img-wrap">
-            <img src="${img.image_url}" alt="후기 이미지">
-          </div>`
-        ).join('');
-      } else {
-        container.innerHTML = '';
+        images.forEach(img => {
+          const wrap = document.createElement('div');
+          wrap.className = 'img-wrap';
+          const image = document.createElement('img');
+          image.src = img.image_url;
+          image.alt = '후기 이미지';
+          wrap.appendChild(image);
+          container.appendChild(wrap);
+        });
       }
     }
 
     // 수정 모달 이미지 렌더링 (X버튼 포함)
     function renderEditImages(images) {
       const container = document.querySelector('#edit-current-images');
+      container.innerHTML = '';
       if (images && images.length > 0) {
-        container.innerHTML = images.map(img =>
-          `<div class="img-wrap">
-            <img src="${img.image_url}" alt="후기 이미지">
-            <button type="button" class="img-delete-btn" data-image-id="${img.image_id}">✕</button>
-          </div>`
-        ).join('');
-
-        // X버튼 이벤트
-        container.querySelectorAll('.img-delete-btn').forEach(btn => {
+        images.forEach(img => {
+          const wrap = document.createElement('div');
+          wrap.className = 'img-wrap';
+          const image = document.createElement('img');
+          image.src = img.image_url;
+          image.alt = '후기 이미지';
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'img-delete-btn';
+          btn.dataset.imageId = img.image_id;
+          btn.textContent = '✕';
           btn.addEventListener('click', async () => {
-            const imageId = btn.dataset.imageId;
             try {
-              const updated = await api(`/reviews/${reviewId}/images/${imageId}`, { method: 'DELETE' });
+              const updated = await api(`/reviews/${reviewId}/images/${img.image_id}`, { method: 'DELETE' });
               currentReview = updated;
               renderEditImages(updated.images);
-              // 5장 미만이면 추가 버튼 표시
               document.querySelector('#add-image-section').style.display =
                 updated.images.length < 5 ? '' : 'none';
             } catch (err) {
               alert(err.message);
             }
           });
+          wrap.appendChild(image);
+          wrap.appendChild(btn);
+          container.appendChild(wrap);
         });
-      } else {
-        container.innerHTML = '';
       }
 
       // 5장이면 추가 버튼 숨김
