@@ -20,8 +20,8 @@ from app.domain.user.schemas import (
 from app.domain.user.service import (
     authenticate_user,
     change_password,
-    create_user,
     create_document,
+    create_user,
     delete_document,
     get_document_by_id,
     get_documents_by_user_id,
@@ -94,7 +94,9 @@ async def update_password(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="소셜 로그인 계정은 비밀번호를 변경할 수 없습니다.",
         )
-    success = await change_password(current_user.user_id, body.current_password, body.new_password, db)
+    success = await change_password(
+        current_user.user_id, body.current_password, body.new_password, db
+    )
     if not success:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

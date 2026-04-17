@@ -27,9 +27,7 @@ async def create_senior(
         address=request.address,
         special_note=request.special_note,
         active_flag=request.active_flag,
-        ai_summary=request.ai_summary,
         max_people=request.max_people,
-        qr_code=request.qr_code,
     )
 
     session.add(senior)
