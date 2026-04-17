@@ -10,11 +10,14 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import get_db
 from app.core.security import hash_password
+from app.database import get_db
 from app.domain.hosting.models import AlarmType, Hosting
+from app.domain.match.models import MatchingInfo, MatchStatus
+from app.domain.review.models import Review
 from app.domain.senior.models import GenderEnum, Senior
 from app.domain.user.models import CertFlag, User, UserRole
+from app.services.ai import update_senior_ai_summary
 from app.services.sms import send_auth_sms, send_sms
 
 router = APIRouter()
@@ -54,7 +57,7 @@ async def seed_match_test_data(
         name="테스트봉사자",
         email=f"test-vt-{suffix}@example.com",
         password=hash_password(password),
-        phone_number="01000000000",
+        phone_number="",
         address="테스트 주소",
         user_role=UserRole.VOLUNTEER,
         cert_flag=CertFlag.APPROVED,
@@ -65,7 +68,7 @@ async def seed_match_test_data(
         name="테스트보호자",
         email=f"test-guardian-{suffix}@example.com",
         password=hash_password(password),
-        phone_number="01011111111",
+        phone_number="",
         address="테스트 주소",
         user_role=UserRole.GUARDIAN,
         cert_flag=CertFlag.APPROVED,
@@ -101,6 +104,141 @@ async def seed_match_test_data(
         "volunteer_id": volunteer.user_id,
         "hosting_id": hosting.hosting_id,
         "senior_id": senior.senior_id,
+    }
+
+
+@router.post("/review/seed")
+async def seed_review_test_data(
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """AI 요약 테스트용 후기 3개 더미 데이터를 생성합니다."""
+    suffix = datetime.now().strftime("%Y%m%d%H%M%S")
+    password = "test1234"
+    now = datetime.now(timezone.utc)
+
+    volunteer = User(
+        name="테스트봉사자",
+        email=f"test-vt-{suffix}@example.com",
+        password=hash_password(password),
+        phone_number="",
+        address="테스트 주소",
+        user_role=UserRole.VOLUNTEER,
+        cert_flag=CertFlag.APPROVED,
+    )
+    db.add(volunteer)
+
+    guardian = User(
+        name="테스트보호자",
+        email=f"test-guardian-{suffix}@example.com",
+        password=hash_password(password),
+        phone_number="",
+        address="테스트 주소",
+        user_role=UserRole.GUARDIAN,
+        cert_flag=CertFlag.APPROVED,
+    )
+    db.add(guardian)
+    await db.flush()
+
+    senior = Senior(
+        guardian_id=guardian.user_id,
+        name="테스트어르신",
+        gender=GenderEnum.FEMALE,
+        age=80,
+        address="테스트 주소",
+        max_people=3,
+    )
+    db.add(senior)
+    await db.flush()
+
+    contents_list = [
+        "정말 따뜻하게 맞아주셔서 감사했습니다. 다음에 또 뵙고 싶어요.",
+        "어르신이 직접 만들어주신 음식이 너무 맛있었어요. 행복한 시간이었습니다.",
+        "혼자 계시는 게 안쓰러웠는데 제가 조금이나마 도움이 됐으면 좋겠어요.",
+    ]
+
+    for i, contents in enumerate(contents_list):
+        hosting = Hosting(
+            senior_id=senior.senior_id,
+            menu="된장찌개",
+            hosting_at=now - timedelta(days=i + 1),
+            max_people=3,
+        )
+        db.add(hosting)
+        await db.flush()
+
+        match = MatchingInfo(
+            hosting_id=hosting.hosting_id,
+            vt_id=volunteer.user_id,
+            senior_id=senior.senior_id,
+            match_status=MatchStatus.APPROVED,
+            check_in_time=now - timedelta(days=i + 1, hours=2),
+            check_out_time=now - timedelta(days=i + 1),
+        )
+        db.add(match)
+        await db.flush()
+
+        review = Review(
+            matching_id=match.matching_id,
+            vt_id=volunteer.user_id,
+            contents=contents,
+        )
+        db.add(review)
+        await db.flush()
+
+    await db.commit()
+
+    try:
+        await update_senior_ai_summary(senior.senior_id, db)
+    except Exception:
+        pass
+
+    return {
+        "senior_id": senior.senior_id,
+        "volunteer_email": volunteer.email,
+        "volunteer_password": password,
+        "message": "후기 3개 생성 완료. ai/seniors/{senior_id}/summary에서 확인하세요.",
+    }
+
+
+@router.post("/qr/seed")
+async def seed_qr_test_data(
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """QR 코드 테스트용 보호자 + 어르신 더미 데이터를 생성합니다."""
+    import uuid
+
+    suffix = datetime.now().strftime("%Y%m%d%H%M%S")
+    password = "test1234"
+
+    guardian = User(
+        name="테스트보호자",
+        email=f"test-guardian-{suffix}@example.com",
+        password=hash_password(password),
+        phone_number="",
+        address="테스트 주소",
+        user_role=UserRole.GUARDIAN,
+        cert_flag=CertFlag.APPROVED,
+    )
+    db.add(guardian)
+    await db.flush()
+
+    senior = Senior(
+        guardian_id=guardian.user_id,
+        name="테스트어르신",
+        gender=GenderEnum.FEMALE,
+        age=80,
+        address="테스트 주소",
+        max_people=2,
+        qr_code=str(uuid.uuid4()),
+    )
+    db.add(senior)
+    await db.commit()
+
+    return {
+        "guardian_email": guardian.email,
+        "guardian_password": password,
+        "senior_id": senior.senior_id,
+        "message": f"GET /api/v1/seniors/{senior.senior_id}/qr 로 QR 이미지 확인하세요.",
     }
 
 

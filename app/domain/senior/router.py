@@ -1,6 +1,7 @@
 """어르신 API 라우터."""
 
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -19,7 +20,7 @@ from app.domain.senior.service import (
     update_senior,
 )
 from app.domain.user.dependency import require_guardian
-
+from app.services.qr import generate_qr_image
 
 router = APIRouter()
 
@@ -137,6 +138,33 @@ async def activate_senior_endpoint(
         senior_id=senior_id,
     )
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get(
+    "/{senior_id}/qr",
+    status_code=status.HTTP_200_OK,
+)
+async def get_senior_qr_endpoint(
+    senior_id: int,
+    session: AsyncSession = Depends(get_db),
+    current_guardian=Depends(require_guardian),
+) -> StreamingResponse:
+    """어르신 QR 코드 이미지를 반환합니다."""
+    senior = await get_guardian_senior_by_id(
+        session=session,
+        guardian_id=current_guardian.user_id,
+        senior_id=senior_id,
+    )
+
+    if not senior.qr_code:
+        raise HTTPException(status_code=404, detail="QR 코드가 존재하지 않습니다.")
+
+    image_bytes = generate_qr_image(senior.qr_code)
+    return StreamingResponse(
+        iter([image_bytes]),
+        media_type="image/png",
+        headers={"Content-Disposition": f"inline; filename=senior_{senior_id}_qr.png"},
+    )
 
 
 @router.delete(
