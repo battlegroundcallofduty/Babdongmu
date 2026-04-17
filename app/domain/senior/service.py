@@ -65,9 +65,7 @@ async def get_senior_by_id(
 ) -> SeniorResponse:
     """ID로 어르신을 조회합니다."""
 
-    result = await session.execute(
-        select(Senior).where(Senior.senior_id == senior_id)
-    )
+    result = await session.execute(select(Senior).where(Senior.senior_id == senior_id))
     senior = result.scalar_one_or_none()
 
     if senior is None:

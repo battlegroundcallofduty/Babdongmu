@@ -17,7 +17,8 @@ class Review(Base):
         ForeignKey("matching_info.matching_id", ondelete="CASCADE"), index=True
     )
     vt_id: Mapped[int] = mapped_column(
-        ForeignKey("users.user_id", ondelete="CASCADE"), index=True  # 봉사자
+        ForeignKey("users.user_id", ondelete="CASCADE"),
+        index=True,  # 봉사자
     )
     contents: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(

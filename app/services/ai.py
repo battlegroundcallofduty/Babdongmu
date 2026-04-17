@@ -1,6 +1,5 @@
 """AI 요약 생성 서비스 (Gemini 기반)."""
 
-
 from google import genai
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -78,4 +77,3 @@ async def update_senior_ai_summary(senior_id: int, db: AsyncSession) -> str | No
     await db.commit()
 
     return summary
-

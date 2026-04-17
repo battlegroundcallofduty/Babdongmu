@@ -33,6 +33,7 @@ def _fmt(dt: datetime | None) -> str | None:
 
 # ── 통계 ──────────────────────────────────────────────────────────────────────
 
+
 @router.get("/stats")
 async def get_stats(
     db: AsyncSession = Depends(get_db),
@@ -46,19 +47,19 @@ async def get_stats(
         .where(User.cert_flag == CertFlag.PENDING)
     )
     approved_volunteers = await db.scalar(
-        select(func.count()).select_from(User)
+        select(func.count())
+        .select_from(User)
         .where(User.user_role == UserRole.VOLUNTEER, User.cert_flag == CertFlag.APPROVED)
     )
     total_volunteers = await db.scalar(
-        select(func.count()).select_from(User)
-        .where(User.user_role == UserRole.VOLUNTEER)
+        select(func.count()).select_from(User).where(User.user_role == UserRole.VOLUNTEER)
     )
     seniors = await db.scalar(
-        select(func.count()).select_from(Senior)
-        .where(Senior.active_flag.is_(True))
+        select(func.count()).select_from(Senior).where(Senior.active_flag.is_(True))
     )
     time_pending = await db.scalar(
-        select(func.count()).select_from(MatchingInfo)
+        select(func.count())
+        .select_from(MatchingInfo)
         .where(
             MatchingInfo.check_out_time.is_not(None),
             MatchingInfo.actual_volunteer_time.is_(None),
@@ -69,7 +70,8 @@ async def get_stats(
     today_start = datetime.now(_kst).replace(hour=0, minute=0, second=0, microsecond=0)
     today_end = today_start + timedelta(days=1)
     today_matches = await db.scalar(
-        select(func.count()).select_from(MatchingInfo)
+        select(func.count())
+        .select_from(MatchingInfo)
         .where(
             MatchingInfo.created_at >= today_start.astimezone(timezone.utc),
             MatchingInfo.created_at < today_end.astimezone(timezone.utc),
@@ -87,6 +89,7 @@ async def get_stats(
 
 
 # ── 서류 승인/반려 ──────────────────────────────────────────────────────────────
+
 
 @router.get("/documents/pending")
 async def list_pending_documents(
@@ -114,11 +117,13 @@ async def list_pending_documents(
                 "created_at": _fmt(user.created_at),
                 "documents": [],
             }
-        grouped[user.user_id]["documents"].append({
-            "document_id": doc.document_id,
-            "document_type": doc.document_type.value,
-            "document_url": doc.document_url,
-        })
+        grouped[user.user_id]["documents"].append(
+            {
+                "document_id": doc.document_id,
+                "document_type": doc.document_type.value,
+                "document_url": doc.document_url,
+            }
+        )
 
     return list(grouped.values())
 
@@ -173,6 +178,7 @@ async def reject_user(
 
 # ── 최근 매칭 신청 ────────────────────────────────────────────────────────────
 
+
 @router.get("/matches/recent")
 async def list_recent_matches(
     db: AsyncSession = Depends(get_db),
@@ -204,6 +210,7 @@ async def list_recent_matches(
 
 # ── 봉사시간 부여 ──────────────────────────────────────────────────────────────
 
+
 class VolunteerTimeRequest(BaseModel):
     actual_volunteer_time: int  # 분 단위
 
@@ -234,8 +241,7 @@ async def list_completed_matches(
             "check_in_time": _fmt(m.check_in_time),
             "check_out_time": _fmt(m.check_out_time),
             "expected_minutes": (
-                int((h.hosting_end - h.hosting_at).total_seconds() // 60)
-                if h.hosting_end else None
+                int((h.hosting_end - h.hosting_at).total_seconds() // 60) if h.hosting_end else None
             ),
         }
         for m, u, h, s in rows
