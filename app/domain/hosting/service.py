@@ -63,100 +63,77 @@ async def get_guardian_hosting_by_id(
     return hosting
 
 
-async def get_approved_match_count(
-    session: AsyncSession,
-    hosting_id: int,
-) -> int:
-    """호스팅의 승인된 매칭 인원 수를 조회합니다.
-
-    TODO:
-    match 도메인 모델이 연결되면 실제 승인된 매칭 수를 조회하도록 수정합니다.
-    현재는 hosting_status 재계산 구조만 먼저 잡아둔 상태입니다.
-    """
-
-    _ = session
-    _ = hosting_id
-    return 0
-
-
-async def has_check_in(
-    session: AsyncSession,
-    hosting_id: int,
-) -> bool:
-    """호스팅의 체크인 발생 여부를 조회합니다.
-
-    TODO:
-    match 도메인 모델이 연결되면 check_in_time 존재 여부를 조회하도록 수정합니다.
-    """
-
-    _ = session
-    _ = hosting_id
-    return False
-
-
-async def has_completed_check_out(
-    session: AsyncSession,
-    hosting_id: int,
-) -> bool:
-    """호스팅의 정상 체크아웃 완료 여부를 조회합니다.
-
-    TODO:
-    match 도메인 모델이 연결되면 check_out_time 존재 여부를 조회하도록 수정합니다.
-    """
-
-    _ = session
-    _ = hosting_id
-    return False
-
-
 def get_now_utc() -> datetime:
     """현재 UTC 시간을 반환합니다."""
 
     return datetime.now(timezone.utc)
 
 
-async def recalculate_hosting_status(
+async def process_hosting_status_by_time(
     session: AsyncSession,
     hosting: Hosting,
-) -> HostingStatus:
-    """호스팅 상태를 현재 시점 기준으로 재계산합니다."""
+) -> bool:
+    """호스팅 1건의 시간 기반 상태를 처리합니다."""
 
+    _ = session
     now = get_now_utc()
-    approved_match_count = await get_approved_match_count(session=session, hosting_id=hosting.hosting_id)
-    checked_in = await has_check_in(session=session, hosting_id=hosting.hosting_id)
-    checked_out = await has_completed_check_out(session=session, hosting_id=hosting.hosting_id)
-
-    if checked_out or now >= hosting.hosting_end:
-        return HostingStatus.CLOSED
-
-    if checked_in:
-        return HostingStatus.IN_PROGRESS
-
     deadline_at = hosting.hosting_at - timedelta(hours=12)
+    current_status = hosting.hosting_status
+    new_status = current_status
 
-    if now >= deadline_at and approved_match_count < hosting.max_people:
-        return HostingStatus.FAILED
+    if now >= hosting.hosting_end:
+        if current_status == HostingStatus.IN_PROGRESS:
+            new_status = HostingStatus.CLOSED
+        elif current_status != HostingStatus.CLOSED:
+            new_status = HostingStatus.FAILED
 
-    if approved_match_count >= hosting.max_people:
-        return HostingStatus.FULL
+    elif now >= deadline_at:
+        if current_status not in {
+            HostingStatus.FULL,
+            HostingStatus.IN_PROGRESS,
+            HostingStatus.CLOSED,
+        }:
+            new_status = HostingStatus.FAILED
 
-    return HostingStatus.OPEN
+    if new_status == current_status:
+        return False
+
+    hosting.hosting_status = new_status
+    return True
 
 
-async def sync_hosting_status(
+async def run_hosting_status_scheduler(
     session: AsyncSession,
-    hosting: Hosting,
-) -> Hosting:
-    """호스팅 상태를 재계산 후 DB에 반영합니다."""
+) -> int:
+    """시간 조건이 도래한 호스팅 상태를 일괄 처리합니다."""
 
-    new_status = await recalculate_hosting_status(session=session, hosting=hosting)
+    stmt = select(Hosting).where(
+        Hosting.hosting_status.in_(
+            [
+                HostingStatus.OPEN,
+                HostingStatus.FULL,
+                HostingStatus.IN_PROGRESS,
+            ]
+        )
+    )
 
-    if hosting.hosting_status != new_status:
-        hosting.hosting_status = new_status
+    result = await session.execute(stmt)
+    hostings = result.scalars().all()
+
+    changed_count = 0
+
+    for hosting in hostings:
+        is_changed = await process_hosting_status_by_time(
+            session=session,
+            hosting=hosting,
+        )
+        if is_changed:
+            changed_count += 1
+
+    if changed_count > 0:
         await session.commit()
-        await session.refresh(hosting)
 
-    return hosting
+    return changed_count
 
 
 async def create_hosting(
@@ -195,7 +172,6 @@ async def create_hosting(
     await session.commit()
     await session.refresh(hosting)
 
-    hosting = await sync_hosting_status(session=session, hosting=hosting)
     return HostingResponse.model_validate(hosting)
 
 
@@ -215,12 +191,7 @@ async def list_hostings_by_guardian(
     result = await session.execute(stmt)
     hostings = result.scalars().all()
 
-    responses: list[HostingResponse] = []
-    for hosting in hostings:
-        hosting = await sync_hosting_status(session=session, hosting=hosting)
-        responses.append(HostingResponse.model_validate(hosting))
-
-    return responses
+    return [HostingResponse.model_validate(hosting) for hosting in hostings]
 
 
 async def get_hosting_detail(
@@ -235,49 +206,16 @@ async def get_hosting_detail(
         guardian_id=guardian_id,
         hosting_id=hosting_id,
     )
-    hosting = await sync_hosting_status(session=session, hosting=hosting)
 
     return HostingResponse.model_validate(hosting)
 
 
-async def update_hosting(
-    session: AsyncSession,
-    guardian_id: int,
-    hosting_id: int,
-    request: HostingUpdateRequest,
-) -> HostingResponse:
-    """호스팅 정보를 수정합니다."""
-
-    hosting = await get_guardian_hosting_by_id(
-        session=session,
-        guardian_id=guardian_id,
-        hosting_id=hosting_id,
-    )
-
-    if hosting.hosting_status in {HostingStatus.IN_PROGRESS, HostingStatus.CLOSED, HostingStatus.FAILED}:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="진행 중이거나 종료된 호스팅은 수정할 수 없습니다.",
-        )
-
-    update_data = request.model_dump(exclude_unset=True)
-
-    for field_name, field_value in update_data.items():
-        setattr(hosting, field_name, field_value)
-
-    await session.commit()
-    await session.refresh(hosting)
-
-    hosting = await sync_hosting_status(session=session, hosting=hosting)
-    return HostingResponse.model_validate(hosting)
-
-
-async def fail_hosting(
+async def cancel_hosting(
     session: AsyncSession,
     guardian_id: int,
     hosting_id: int,
 ) -> HostingResponse:
-    """호스팅을 취소 또는 무산 상태로 변경합니다."""
+    """호스팅을 취소합니다."""
 
     hosting = await get_guardian_hosting_by_id(
         session=session,
@@ -296,90 +234,3 @@ async def fail_hosting(
     await session.refresh(hosting)
 
     return HostingResponse.model_validate(hosting)
-
-
-async def mark_hosting_in_progress(
-    session: AsyncSession,
-    hosting_id: int,
-) -> Hosting:
-    """호스팅을 진행 중 상태로 변경합니다.
-
-    TODO:
-    실제 check-in 로직에서 호출하도록 연결합니다.
-    """
-
-    result = await session.execute(select(Hosting).where(Hosting.hosting_id == hosting_id))
-    hosting = result.scalar_one_or_none()
-
-    if hosting is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="호스팅 정보를 찾을 수 없습니다.",
-        )
-
-    if hosting.hosting_status not in {HostingStatus.FULL, HostingStatus.OPEN}:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="현재 상태에서는 진행 시작 처리할 수 없습니다.",
-        )
-
-    hosting.hosting_status = HostingStatus.IN_PROGRESS
-    await session.commit()
-    await session.refresh(hosting)
-
-    return hosting
-
-
-async def mark_hosting_closed(
-    session: AsyncSession,
-    hosting_id: int,
-) -> Hosting:
-    """호스팅을 완료 상태로 변경합니다.
-
-    TODO:
-    실제 check-out 로직에서 호출하도록 연결합니다.
-    """
-
-    result = await session.execute(select(Hosting).where(Hosting.hosting_id == hosting_id))
-    hosting = result.scalar_one_or_none()
-
-    if hosting is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="호스팅 정보를 찾을 수 없습니다.",
-        )
-
-    if hosting.hosting_status != HostingStatus.IN_PROGRESS:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="진행 중인 호스팅만 완료 처리할 수 있습니다.",
-        )
-
-    hosting.hosting_status = HostingStatus.CLOSED
-    await session.commit()
-    await session.refresh(hosting)
-
-    return hosting
-
-
-async def delete_hosting(
-    session: AsyncSession,
-    guardian_id: int,
-    hosting_id: int,
-) -> None:
-    """호스팅을 삭제합니다."""
-
-    hosting = await get_guardian_hosting_by_id(
-        session=session,
-        guardian_id=guardian_id,
-        hosting_id=hosting_id,
-    )
-
-    if hosting.hosting_status == HostingStatus.IN_PROGRESS:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="진행 중인 호스팅은 삭제할 수 없습니다.",
-        )
-
-    await session.delete(hosting)
-    await session.commit()
