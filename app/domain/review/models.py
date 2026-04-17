@@ -1,7 +1,6 @@
 """후기 SQLAlchemy ORM 모델."""
 
 from datetime import datetime, timezone
-from typing import Optional
 
 from sqlalchemy import TIMESTAMP, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
@@ -24,7 +23,7 @@ class Review(Base):
         TIMESTAMP(timezone=True),
         default=lambda: datetime.now(timezone.utc),
     )
-    updated_at: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
+    updated_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
 
 
 class ReviewImg(Base):

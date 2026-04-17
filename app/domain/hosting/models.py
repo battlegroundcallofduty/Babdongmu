@@ -88,12 +88,21 @@ class SmsLog(Base):
     __tablename__ = "sms_logs"
 
     sms_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    hosting_id: Mapped[int] = mapped_column(ForeignKey("hostings.hosting_id", ondelete="CASCADE"))
-    receiver_id: Mapped[int] = mapped_column(ForeignKey("users.user_id", ondelete="CASCADE"))
-    is_send: Mapped[bool] = mapped_column(Boolean, default=False)
-    alarm_type: Mapped[AlarmType] = mapped_column(Enum(AlarmType))
-    contents: Mapped[str] = mapped_column(Text)
+    hosting_id: Mapped[int] = mapped_column(
+        ForeignKey("hostings.hosting_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    receiver_id: Mapped[int] = mapped_column(
+        ForeignKey("users.user_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    is_send: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    alarm_type: Mapped[AlarmType] = mapped_column(Enum(AlarmType), nullable=False)
+    contents: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True),
+        nullable=False,
         default=lambda: datetime.now(timezone.utc),
     )
