@@ -1,14 +1,13 @@
 """유저 API 엔드포인트."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import create_access_token
 from app.database import get_db
 from app.domain.user.dependency import get_current_user
-from app.domain.user.models import User, UserRole
+from app.domain.user.models import DocumentType, User, UserRole
 from app.domain.user.schemas import (
-    DocumentCreateRequest,
     DocumentResponse,
     PasswordChangeRequest,
     RegisterResponse,
@@ -27,6 +26,7 @@ from app.domain.user.service import (
     get_documents_by_user_id,
     get_user_by_email,
 )
+from app.services.r2 import DOCUMENT_CONTENT_TYPES, BucketType, upload_image
 
 router = APIRouter()
 
@@ -107,15 +107,24 @@ async def update_password(
 # ── 서류 ───────────────────
 @router.post("/me/documents", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
 async def upload_document(
-    body: DocumentCreateRequest,
+    document_type: DocumentType = Form(...),  # 텍스트 조각(서류유형)
+    file: UploadFile = File(...),             # 파일 조각(실제 파일 바이너리)
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """서류 업로드"""
+    """서류 업로드 (파일 → R2 업로드 → DB 저장)"""  # review-router 참고했습니다
+    # 1) 파일 R2 private 버킷에 올리고 URL 받기
+    document_url = await upload_image(
+        file,
+        folder="documents",
+        bucket=BucketType.PRIVATE,
+        allowed_types=DOCUMENT_CONTENT_TYPES
+    )
+    # 2) URL을 db에 저장
     document = await create_document(
         user_id=current_user.user_id,
-        document_type=body.document_type,
-        document_url=str(body.document_url),  # Pydantic HttpUrl → str 변환 (DB 저장용)
+        document_type=document_type,
+        document_url=document_url,
         db=db,
     )
     return document

@@ -10,8 +10,30 @@ from fastapi import HTTPException, UploadFile
 
 from app.config import settings
 
-ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png"}
+# 후기 이미지용(이미지만)
+IMAGE_CONTENT_TYPES = {"image/jpeg", "image/png"}
+
+# 신원 서류용(이미지 + 문서 형식)
+DOCUMENT_CONTENT_TYPES = {
+    "image/jpeg",
+    "image/png",
+    "application/pdf",
+    "application/x-hwp",         # 브라우저마다 다른 한글파일 2개(MIME 타입 2종류)
+    "application/haansoft-hwp",  # 마지막은 docx
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+}
+
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
+
+# 파일 형식이 늘어나서 딕셔너리로 변환
+CONTENT_TYPE_EXT = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "application/pdf": "pdf",
+    "application/x-hwp": "hwp",
+    "application/haansoft-hwp": "hwp",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+}
 
 
 class BucketType(enum.Enum):
@@ -31,7 +53,10 @@ def _get_client() -> BaseClient:
 
 
 async def upload_image(
-    file: UploadFile, folder: str, bucket: BucketType = BucketType.PUBLIC
+    file: UploadFile,
+    folder: str,
+    bucket: BucketType = BucketType.PUBLIC,
+    allowed_types: set[str] | None = None,  # None이면 기본값 적용
 ) -> str:
     """이미지를 R2에 업로드하고 URL을 반환합니다.
 
@@ -43,15 +68,17 @@ async def upload_image(
     Returns:
         업로드된 이미지의 URL
     """
-    if file.content_type not in ALLOWED_CONTENT_TYPES:
-        raise HTTPException(status_code=400, detail="jpg, png 파일만 업로드할 수 있습니다.")
+    # allowed_types 지정하면 지정한걸로 / 따로 지정안하면 기본: IMAGE_CONTENT_TYPES
+    types = allowed_types if allowed_types is not None else IMAGE_CONTENT_TYPES
+    if file.content_type not in types:
+        raise HTTPException(status_code=400, detail="허용되지 않는 파일 형식입니다.")
 
     contents = await file.read()
 
     if len(contents) > MAX_FILE_SIZE:
         raise HTTPException(status_code=400, detail="파일 크기는 최대 5MB까지 허용됩니다.")
 
-    ext = "jpg" if file.content_type == "image/jpeg" else "png"
+    ext = CONTENT_TYPE_EXT.get(file.content_type, "bin")
     key = f"{folder}/{uuid.uuid4().hex}.{ext}"
     bucket_name = (
         settings.R2_PUBLIC_BUCKET if bucket == BucketType.PUBLIC else settings.R2_PRIVATE_BUCKET
