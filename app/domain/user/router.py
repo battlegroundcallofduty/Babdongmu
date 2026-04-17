@@ -172,4 +172,5 @@ async def remove_document(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="본인의 서류만 삭제할 수 있습니다.",
         )
+    await delete_image(document.document_url)  # R2 파일 먼저 삭제
     await delete_document(document_id, db)
