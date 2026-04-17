@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.hosting.models import Hosting, HostingStatus
-from app.domain.hosting.schema import HostingCreateRequest, HostingResponse, HostingUpdateRequest
+from app.domain.hosting.schemas import HostingCreateRequest, HostingResponse, HostingUpdateRequest
 from app.domain.senior.models import Senior
 
 
@@ -70,12 +70,10 @@ def get_now_utc() -> datetime:
 
 
 async def process_hosting_status_by_time(
-    session: AsyncSession,
     hosting: Hosting,
 ) -> bool:
     """호스팅 1건의 시간 기반 상태를 처리합니다."""
 
-    _ = session
     now = get_now_utc()
     deadline_at = hosting.hosting_at - timedelta(hours=12)
     current_status = hosting.hosting_status
@@ -124,7 +122,6 @@ async def run_hosting_status_scheduler(
 
     for hosting in hostings:
         is_changed = await process_hosting_status_by_time(
-            session=session,
             hosting=hosting,
         )
         if is_changed:

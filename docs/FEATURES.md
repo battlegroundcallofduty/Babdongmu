@@ -89,11 +89,9 @@
 | `IN_PROGRESS: 호스팅 진행 중` | check in 상태|
 | `CLOSED : 정상완료` | IN_PROGRESS -> CLOSED 그 외의 CASE	-> FAILED
 
-스케줄러 작업
-FAILED : 호스팅 시작 시간 -12시간 시점에 체크하여 FULL -> FAILED
-CLOSED : 호스팅 종료 시간 시점에 체크하여  
-				IN_PROGRESS -> CLOSED 
-				그 외의 CASE -> FAILED 
+**스케줄러 작업**
+- FAILED : 호스팅 시작 시간 -12시간 시점에 체크하여 OPEN 이면 FAILED로 바꿈
+- CLOSED : 호스팅 종료 시간 시점에 체크하여	IN_PROGRESS ->CLOSED, 그 외의 CASE -> FAILED 
 
 **호스팅 시간 제약**
 - 시작 시간: 07:00 이후
