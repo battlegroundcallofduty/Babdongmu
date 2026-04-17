@@ -18,6 +18,14 @@ from app.domain.user.models import CertFlag, Document, User, UserRole
 router = APIRouter()
 
 
+class RejectBody(BaseModel):
+    cert_reject_reason: str | None = Field(default=None, max_length=500)
+
+
+class VolunteerTimeRequest(BaseModel):
+    actual_volunteer_time: int  # 분 단위
+
+
 def _fmt(dt: datetime | None) -> str | None:
     """datetime을 UTC aware isoformat으로 직렬화합니다.
 
@@ -144,10 +152,6 @@ async def approve_user(
     return {"user_id": user.user_id, "cert_flag": user.cert_flag.value}
 
 
-class RejectBody(BaseModel):
-    cert_reject_reason: str | None = Field(default=None, max_length=500)
-
-
 @router.patch("/users/{user_id}/reject", status_code=status.HTTP_200_OK)
 async def reject_user(
     user_id: int,
@@ -203,10 +207,6 @@ async def list_recent_matches(
 
 
 # ── 봉사시간 부여 ──────────────────────────────────────────────────────────────
-
-class VolunteerTimeRequest(BaseModel):
-    actual_volunteer_time: int  # 분 단위
-
 
 @router.get("/matches/completed")
 async def list_completed_matches(
