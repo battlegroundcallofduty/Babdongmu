@@ -15,7 +15,7 @@ IMAGE_CONTENT_TYPES = {"image/jpeg", "image/png"}
 
 # 신원 서류용(이미지 + 문서 형식)
 DOCUMENT_CONTENT_TYPES = {
-    "image/jpeg",
+    "image/jpeg",                # 브라우저가 서버에 보내는값(MIME 타입)
     "image/png",
     "application/pdf",
     "application/x-hwp",         # 브라우저마다 다른 한글파일 2개(MIME 타입 2종류)
@@ -27,7 +27,7 @@ MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 
 # 파일 형식이 늘어나서 딕셔너리로 변환
 CONTENT_TYPE_EXT = {
-    "image/jpeg": "jpg",
+    "image/jpeg": "jpg",         # R2에 저장할때 쓰는 확장자
     "image/png": "png",
     "application/pdf": "pdf",
     "application/x-hwp": "hwp",
@@ -71,7 +71,7 @@ async def upload_image(
     # allowed_types 지정하면 지정한걸로 / 따로 지정안하면 기본: IMAGE_CONTENT_TYPES
     types = allowed_types if allowed_types is not None else IMAGE_CONTENT_TYPES
     if file.content_type not in types:
-        raise HTTPException(status_code=400, detail="허용되지 않는 파일 형식입니다.")
+        raise HTTPException(status_code=400, detail=f"허용되지 않는 파일 형식입니다. (받은 타입: {file.content_type})")
 
     contents = await file.read()
 
