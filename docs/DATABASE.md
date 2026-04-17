@@ -84,12 +84,11 @@
 | senior_id | FK → seniors | 어르신 |
 | menu | VARCHAR | 메뉴 |
 | hosting_at | TIMESTAMP | 호스팅 시작 일시 |
-| hosting_end | TIMESTAMP nullable | 호스팅 종료 일시 |
+| hosting_end | TIMESTAMP | 호스팅 종료 일시 |
 | max_people | INT | 모집 가능 인원 (seniors.max_people이 기본값, 수정 가능) |
 | hosting_status | ENUM | 모집 상태 (`신청가능` / `모집완료` / `신청불가`). 기본값 `신청가능` |
 | created_at | TIMESTAMP | 생성일 |
 | updated_at | TIMESTAMP nullable | 수정일 |
-| visited_at | TIMESTAMP nullable | 방문일 |
 
 ---
 
@@ -100,7 +99,7 @@
 | hosting_id | FK → hostings | 호스팅 |
 | vt_id | FK → users | 봉사자 |
 | senior_id | FK → seniors | 어르신 |
-| match_status | ENUM | 매칭 상태 (`approved` / `cancelled`). 기본값 `approved`. `pending` / `rejected`는 예비값(미사용) |
+| match_status | ENUM | 매칭 상태 (`approved` / `cancelled` / `not_visited`). 기본값 `approved`. `pending` / `rejected`는 예비값(미사용) |
 | check_in_time | TIMESTAMP nullable | 체크인 시간 |
 | check_out_time | TIMESTAMP nullable | 체크아웃 시간 |
 | actual_volunteer_time | INT nullable | 실봉사시간 (관리자 최종 부여, 분 단위) |

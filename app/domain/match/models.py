@@ -12,6 +12,7 @@ from app.database import Base
 class MatchStatus(enum.Enum):
     APPROVED = "approved"
     CANCELLED = "cancelled"
+    NOT_VISITED = "not_visited"
 
 
 class MatchingInfo(Base):
