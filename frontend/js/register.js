@@ -84,6 +84,8 @@ document.querySelector('#register-form')?.addEventListener('submit', async (e) =
 
   errorMsg.classList.add('hidden');
 
+  let token = null; // catch에서 롤백 여부 판단하기 위해 try 바깥에 선언
+
   try {
     // 1) 회원가입 → 유저 정보 반환
     const result = await api('/users/register', {
@@ -100,8 +102,8 @@ document.querySelector('#register-form')?.addEventListener('submit', async (e) =
     });
 
     // 2) 토큰 저장 (서류 업로드 시 인증에 필요)
-    saveToken(result.access_token);  // localstorage에 토큰 저장
-    const token = result.access_token;
+    token = result.access_token; // 여기서 설정되면 회원가입 성공한 것
+    saveToken(token);
     const role = document.querySelector('#role').value;
 
     // 3) 신분증 사본 업로드 (공통 필수)
@@ -110,13 +112,12 @@ document.querySelector('#register-form')?.addEventListener('submit', async (e) =
     // 4) 역할별 추가 서류 업로드 (선택)
     if (role === 'volunteer') {
       const criminalFile = document.querySelector('#doc-criminal').files[0];
-      if (criminalFile) {  // 선택했을때만 업로드 (선택 안해도 가입가능)
+      if (criminalFile) {
         await uploadDocument(token, 'criminal_record', criminalFile);
       }
     } else if (role === 'guardian') {
       const guardianFile = document.querySelector('#doc-family').files[0];
       if (guardianFile) {
-        // 셀렉트박스 값이 DocumentType enum 값과 이름 똑같아서 그대로 넘김
         const guardianType = document.querySelector('#doc-guardian-type').value;
         await uploadDocument(token, guardianType, guardianFile);
       }
@@ -124,7 +125,16 @@ document.querySelector('#register-form')?.addEventListener('submit', async (e) =
 
     window.location.href = '/pages/login.html';
   } catch (err) {
-    errorMsg.textContent = err.message;
+    // token이 있다는 건 회원가입은 성공했지만 서류 업로드가 실패한 것
+    // → 유저 삭제 롤백
+    if (token) {
+      await api('/users/me', { method: 'DELETE' }).catch(() => {});
+      localStorage.removeItem('access_token');
+      token = null;
+      errorMsg.textContent = '서류 업로드에 실패했습니다. 파일을 다시 선택 후 재시도해주세요.';
+    } else {
+      errorMsg.textContent = err.message;
+    }
     errorMsg.classList.remove('hidden');
   }
 });

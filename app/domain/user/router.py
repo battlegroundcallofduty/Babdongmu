@@ -22,6 +22,7 @@ from app.domain.user.service import (
     create_document,
     create_user,
     delete_document,
+    delete_user,
     get_document_by_id,
     get_documents_by_user_id,
     get_user_by_email,
@@ -102,6 +103,15 @@ async def update_password(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="현재 비밀번호가 올바르지 않습니다.",
         )
+
+
+@router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_me(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """회원 탈퇴 (회원가입 중 서류 업로드 실패 시 롤백용으로도 사용)"""
+    await delete_user(current_user.user_id, db)
 
 
 # ── 서류 ───────────────────
