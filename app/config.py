@@ -21,6 +21,14 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: str = ""
     GEMINI_MODEL: str = "gemini-3.1-flash-lite-preview"
 
+    # Cloudflare R2 (이미지 저장)
+    R2_ENDPOINT: str = ""
+    R2_ACCESS_KEY_ID: str = ""
+    R2_SECRET_ACCESS_KEY: str = ""
+    R2_PUBLIC_BUCKET: str = ""   # 공개 버킷 (후기 이미지)
+    R2_PRIVATE_BUCKET: str = ""  # 비공개 버킷 (신원 서류)
+    R2_PUBLIC_URL: str = ""      # 공개 버킷 CDN URL
+
     # 개발 모드 (True일 때만 테스트 라우터 등록)
     DEBUG: bool = False
 

@@ -1,6 +1,6 @@
 """매칭 비즈니스 로직."""
 
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from fastapi import HTTPException
 from sqlalchemy import func, select
@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.domain.hosting.models import AlarmType, Hosting, HostingStatus
 from app.domain.match.models import MatchingInfo, MatchStatus
 from app.domain.match.schemas import MyMatchResponse
+from app.domain.review.models import Review
 from app.domain.senior.models import Senior
 from app.services.sms import send_sms
 
@@ -82,16 +83,33 @@ async def list_matches_by_volunteer(
         )
     )
 
-    # 체크아웃 여부로 예정/완료 구분
+    # NOT_VISITED는 체크아웃 없어도 완료 탭에 포함
     if is_completed:
-        query = query.where(MatchingInfo.check_out_time.isnot(None))
+        query = query.where(
+            (MatchingInfo.check_out_time.isnot(None))
+            | (MatchingInfo.match_status == MatchStatus.NOT_VISITED)
+        )
     else:
-        query = query.where(MatchingInfo.check_out_time.is_(None))
+        query = query.where(
+            MatchingInfo.check_out_time.is_(None),
+            MatchingInfo.match_status != MatchStatus.NOT_VISITED,
+        )
 
     query = query.offset((page - 1) * size).limit(size)
 
     result = await db.execute(query)
     rows = result.all()
+
+    # 후기 여부 조회 (matching_id → review_id 맵)
+    matching_ids = [match.matching_id for match, _, _ in rows]
+    review_id_map: dict[int, int] = {}
+    if matching_ids:
+        review_result = await db.execute(
+            select(Review.matching_id, Review.review_id).where(
+                Review.matching_id.in_(matching_ids)
+            )
+        )
+        review_id_map = {row.matching_id: row.review_id for row in review_result.all()}
 
     return [
         MyMatchResponse(
@@ -106,6 +124,8 @@ async def list_matches_by_volunteer(
             senior_name=senior.name,
             senior_address=senior.address,
             actual_volunteer_time=match.actual_volunteer_time,
+            has_review=review_id_map.get(match.matching_id) is not None,
+            review_id=review_id_map.get(match.matching_id),
         )
         for match, hosting, senior in rows
     ]
@@ -126,11 +146,17 @@ async def cancel_match(db: AsyncSession, matching_id: int, vt_id: int) -> Matchi
     if match.match_status == MatchStatus.CANCELLED:
         raise HTTPException(status_code=400, detail="이미 취소된 매칭입니다.")
 
+    hosting = await db.get(Hosting, match.hosting_id)
+
+    # 호스팅 12시간 전부터는 취소 불가
+    hosting_at = hosting.hosting_at if hosting.hosting_at.tzinfo else hosting.hosting_at.replace(tzinfo=timezone.utc)
+    if hosting and hosting_at - datetime.now(timezone.utc) <= timedelta(hours=12):
+        raise HTTPException(status_code=400, detail="호스팅 12시간 전부터는 취소할 수 없습니다.")
+
     match.match_status = MatchStatus.CANCELLED
     await db.flush()
 
     # 취소 후 승인 인원이 줄었으면 호스팅 다시 신청가능으로 복구
-    hosting = await db.get(Hosting, match.hosting_id)
     if hosting and hosting.hosting_status == HostingStatus.FULL:
         count_result = await db.execute(
             select(func.count()).where(
@@ -179,6 +205,20 @@ async def check_in(db: AsyncSession, senior_id: int, vt_id: int) -> MatchingInfo
         raise HTTPException(status_code=400, detail="이미 체크인 완료된 매칭입니다.")
 
     match.check_in_time = datetime.now(timezone.utc)
+
+    # TODO: 호스팅 담당자 IN_PROGRESS enum 추가 후 주석 해제
+    # count_result = await db.execute(
+    #     select(func.count()).where(
+    #         MatchingInfo.hosting_id == match.hosting_id,
+    #         MatchingInfo.check_in_time.isnot(None),
+    #     )
+    # )
+    # is_first_checkin = count_result.scalar() == 0
+    # if is_first_checkin:
+    #     hosting = await db.get(Hosting, match.hosting_id)
+    #     if hosting:
+    #         hosting.hosting_status = HostingStatus.IN_PROGRESS
+
     await db.commit()
     await db.refresh(match)
 
