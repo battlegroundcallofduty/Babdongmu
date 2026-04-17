@@ -21,6 +21,7 @@ DOCUMENT_CONTENT_TYPES = {
     "application/x-hwp",         # 브라우저마다 다른 한글파일 2개(MIME 타입 2종류)
     "application/haansoft-hwp",  # 마지막은 docx
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/haansoftdocx",
 }
 
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
@@ -33,6 +34,7 @@ CONTENT_TYPE_EXT = {
     "application/x-hwp": "hwp",
     "application/haansoft-hwp": "hwp",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+    "application/haansoftdocx": "docx",
 }
 
 
@@ -71,7 +73,7 @@ async def upload_image(
     # allowed_types 지정하면 지정한걸로 / 따로 지정안하면 기본: IMAGE_CONTENT_TYPES
     types = allowed_types if allowed_types is not None else IMAGE_CONTENT_TYPES
     if file.content_type not in types:
-        raise HTTPException(status_code=400, detail=f"허용되지 않는 파일 형식입니다. (받은 타입: {file.content_type})")
+        raise HTTPException(status_code=400, detail="허용되지 않는 파일 형식입니다.")
 
     contents = await file.read()
 

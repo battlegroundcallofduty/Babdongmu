@@ -27,7 +27,7 @@ from app.domain.user.service import (
     get_documents_by_user_id,
     get_user_by_email,
 )
-from app.services.r2 import DOCUMENT_CONTENT_TYPES, BucketType, upload_image
+from app.services.r2 import DOCUMENT_CONTENT_TYPES, BucketType, delete_image, upload_image
 
 router = APIRouter()
 
@@ -111,6 +111,10 @@ async def delete_me(
     db: AsyncSession = Depends(get_db),
 ):
     """회원 탈퇴 (회원가입 중 서류 업로드 실패 시 롤백용으로도 사용)"""
+    # R2 파일 먼저 삭제 (유저 삭제 후 CASCADE로 DB 레코드는 사라지지만 R2 파일은 안 사라짐)
+    documents = await get_documents_by_user_id(current_user.user_id, db)
+    for doc in documents:
+        await delete_image(doc.document_url)
     await delete_user(current_user.user_id, db)
 
 
