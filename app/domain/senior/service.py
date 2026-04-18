@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.senior.models import Senior
-from app.domain.senior.schema import (
+from app.domain.senior.schemas import (
     SeniorCreateRequest,
     SeniorResponse,
     SeniorUpdateRequest,

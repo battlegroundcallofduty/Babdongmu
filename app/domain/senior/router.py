@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.domain.senior.schema import (
+from app.domain.senior.schemas import (
     SeniorCreateRequest,
     SeniorResponse,
     SeniorUpdateRequest,
