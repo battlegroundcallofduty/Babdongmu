@@ -45,11 +45,12 @@ async function uploadDocument(token, documentType, file) {
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: '서류 업로드에 실패했어요.' }));
     const detail = error.detail;
-    // api() 에러 처리 그대로 가져옴
     const message = Array.isArray(detail)
       ? detail.map(d => d.msg.replace(/^Value error,\s*/i, '')).join(', ')
       : (detail || '서류 업로드에 실패했어요.');
-    throw new Error(message);
+    const err = new Error(message);
+    err.status = response.status;  // http 상태 코드를 에러 객체에 담음(catch에서 꺼내쓰려고)
+    throw err;
   }
   return response.json();
 }
@@ -131,7 +132,11 @@ document.querySelector('#register-form')?.addEventListener('submit', async (e) =
       await api('/users/me', { method: 'DELETE' }).catch(() => {});
       localStorage.removeItem('access_token');
       token = null;
-      errorMsg.textContent = '서류 업로드에 실패했습니다. 파일을 다시 선택 후 재시도해주세요.';
+      // 503: R2 서버 문제 → 기술 메시지 숨기고 안내 문구로 표시
+      // 400: 형식 오류/크기 초과 → 백엔드 메시지 그대로 (유저가 고칠수있도록 뭔지 알려줌)
+      errorMsg.textContent = err.status === 503 // 조건 ? 참일때값 : 거짓일때값
+        ? '서버 오류로 업로드에 실패했습니다. 잠시 후 다시 시도해주세요.'
+        : err.message;
     } else {
       errorMsg.textContent = err.message;
     }
