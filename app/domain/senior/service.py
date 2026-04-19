@@ -1,15 +1,54 @@
 """어르신 CRUD 로직."""
 
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.domain.hosting.models import Hosting, HostingStatus
 from app.domain.senior.models import Senior
 from app.domain.senior.schemas import (
     SeniorCreateRequest,
     SeniorResponse,
     SeniorUpdateRequest,
 )
+
+
+async def build_senior_response(
+    session: AsyncSession,
+    senior: Senior,
+) -> SeniorResponse:
+    """어르신 응답 데이터를 생성합니다."""
+
+    total_count_stmt = select(func.count(Hosting.hosting_id)).where(
+        Hosting.senior_id == senior.senior_id,
+    )
+    total_count_result = await session.execute(total_count_stmt)
+    total_hosting_count = total_count_result.scalar_one()
+
+    full_count_stmt = select(func.count(Hosting.hosting_id)).where(
+        Hosting.senior_id == senior.senior_id,
+        Hosting.hosting_status == HostingStatus.FULL,
+    )
+    full_count_result = await session.execute(full_count_stmt)
+    full_hosting_count = full_count_result.scalar_one()
+
+    return SeniorResponse(
+        senior_id=senior.senior_id,
+        guardian_id=senior.guardian_id,
+        name=senior.name,
+        gender=senior.gender,
+        age=senior.age,
+        address=senior.address,
+        special_note=senior.special_note,
+        active_flag=senior.active_flag,
+        ai_summary=senior.ai_summary,
+        max_people=senior.max_people,
+        qr_code=senior.qr_code,
+        full_hosting_count=full_hosting_count,
+        total_hosting_count=total_hosting_count,
+        created_at=senior.created_at,
+        updated_at=senior.updated_at,
+    )
 
 
 async def create_senior(
@@ -34,7 +73,10 @@ async def create_senior(
     await session.commit()
     await session.refresh(senior)
 
-    return SeniorResponse.model_validate(senior)
+    return await build_senior_response(
+        session=session,
+        senior=senior,
+    )
 
 
 async def list_seniors_by_guardian(
@@ -54,7 +96,16 @@ async def list_seniors_by_guardian(
     result = await session.execute(stmt)
     seniors = result.scalars().all()
 
-    return [SeniorResponse.model_validate(senior) for senior in seniors]
+    responses: list[SeniorResponse] = []
+
+    for senior in seniors:
+        response = await build_senior_response(
+            session=session,
+            senior=senior,
+        )
+        responses.append(response)
+
+    return responses
 
 
 async def get_senior_by_id(
@@ -74,7 +125,10 @@ async def get_senior_by_id(
             detail="어르신 정보를 찾을 수 없습니다.",
         )
 
-    return SeniorResponse.model_validate(senior)
+    return await build_senior_response(
+        session=session,
+        senior=senior,
+    )
 
 
 async def get_guardian_senior_by_id(
@@ -123,7 +177,10 @@ async def update_senior(
     await session.commit()
     await session.refresh(senior)
 
-    return SeniorResponse.model_validate(senior)
+    return await build_senior_response(
+        session=session,
+        senior=senior,
+    )
 
 
 async def deactivate_senior(

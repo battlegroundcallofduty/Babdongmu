@@ -45,8 +45,9 @@ class SeniorResponse(BaseModel):
     ai_summary: str | None
     max_people: int
     qr_code: str | None
+    full_hosting_count: int = 0
+    total_hosting_count: int = 0
     created_at: datetime
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
-

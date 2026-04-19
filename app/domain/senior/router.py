@@ -1,6 +1,6 @@
 """어르신 API 라우터."""
 
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import APIRouter, Depends, Query, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -49,6 +49,7 @@ async def create_senior_endpoint(
     status_code=status.HTTP_200_OK,
 )
 async def list_seniors_endpoint(
+    active_only: bool = Query(default=True),
     session: AsyncSession = Depends(get_db),
     current_guardian=Depends(require_guardian),
 ) -> list[SeniorResponse]:
@@ -57,6 +58,7 @@ async def list_seniors_endpoint(
     return await list_seniors_by_guardian(
         session=session,
         guardian_id=current_guardian.user_id,
+        active_only=active_only,
     )
 
 
