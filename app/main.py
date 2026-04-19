@@ -1,5 +1,5 @@
-from contextlib import asynccontextmanager
 import asyncio
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from app.api.v1.router import api_router
 from app.database import close_db, init_db
 from app.scheduler import hosting_scheduler_loop
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
