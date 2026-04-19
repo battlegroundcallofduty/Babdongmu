@@ -13,7 +13,6 @@ from app.domain.hosting.service import (
 )
 from app.domain.user.dependency import require_guardian
 
-
 router = APIRouter()
 
 

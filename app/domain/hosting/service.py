@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.hosting.models import Hosting, HostingStatus
-from app.domain.hosting.schemas import HostingCreateRequest, HostingResponse, HostingUpdateRequest
+from app.domain.hosting.schemas import HostingCreateRequest, HostingResponse
 from app.domain.match.models import MatchingInfo, MatchStatus
 from app.domain.senior.models import Senior
 
@@ -79,17 +79,20 @@ def process_hosting_status_by_time(
     deadline_at = hosting.hosting_at - timedelta(hours=12)
     current_status = hosting.hosting_status
 
+    # 1. 시작 12시간 전까지 모집 미달이면 실패
+    if now >= deadline_at and current_status == HostingStatus.OPEN:
+        return HostingStatus.FAILED
+
+    # 2. 종료 시점 처리
     if now >= hosting.hosting_end:
+        if current_status == HostingStatus.IN_PROGRESS:
+            return HostingStatus.CLOSED
+
         if current_status in {
             HostingStatus.OPEN,
             HostingStatus.FULL,
-            HostingStatus.IN_PROGRESS,
         }:
-            return HostingStatus.CLOSED
-        return None
-
-    if now >= deadline_at and current_status == HostingStatus.OPEN:
-        return HostingStatus.FAILED
+            return HostingStatus.FAILED
 
     return None
 
@@ -110,6 +113,9 @@ async def mark_matches_not_visited(
     changed_count = 0
 
     for match in matches:
+        # 체크아웃이 없으면 미방문 처리
+        # - 체크인 없음
+        # - 체크인만 있고 체크아웃 없음
         if match.check_out_time is None:
             match.match_status = MatchStatus.NOT_VISITED
             changed_count += 1
@@ -127,7 +133,6 @@ async def run_hosting_status_scheduler(
             [
                 HostingStatus.OPEN,
                 HostingStatus.FULL,
-                HostingStatus.FAILED,
                 HostingStatus.IN_PROGRESS,
             ]
         )
