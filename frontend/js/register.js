@@ -104,7 +104,7 @@ document.querySelector('#register-form')?.addEventListener('submit', async (e) =
 
     // 2) 토큰 저장 (서류 업로드 시 인증에 필요)
     token = result.access_token; // 여기서 설정되면 회원가입 성공한 것
-    saveToken(token);
+    // saveToken 삭제 → 회원가입 후 자동 로그인 방지, 서류 업로드엔 token 변수 직접 사용
     const role = document.querySelector('#role').value;
 
     // 3) 신분증 사본 업로드 (공통 필수)
@@ -129,14 +129,18 @@ document.querySelector('#register-form')?.addEventListener('submit', async (e) =
     // token이 있다는 건 회원가입은 성공했지만 서류 업로드가 실패한 것
     // → 유저 삭제 롤백
     if (token) {
-      await api('/users/me', { method: 'DELETE' }).catch(() => {});
+      // api()는 localStorage에서 토큰 읽는데 saveToken 안 했으니 직접 fetch로 토큰 넘김
+      await fetch('/api/v1/users/me', {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` },
+      }).catch(() => {});
       localStorage.removeItem('access_token');
       token = null;
       // 503: R2 서버 문제 → 기술 메시지 숨기고 안내 문구로 표시
       // 400: 형식 오류/크기 초과 → 백엔드 메시지 그대로 (유저가 고칠수있도록 뭔지 알려줌)
       errorMsg.textContent = err.status === 503 // 조건 ? 참일때값 : 거짓일때값
         ? '서버 오류로 업로드에 실패했습니다. 잠시 후 다시 시도해주세요.'
-        : err.message;
+        : `${err.message} 알맞은 파일을 다시 선택해주세요.`;  // f-string이랑 비슷
     } else {
       errorMsg.textContent = err.message;
     }
