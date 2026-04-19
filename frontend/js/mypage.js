@@ -63,3 +63,15 @@ document.querySelector('#password-form')?.addEventListener('submit', async (e) =
 document.querySelector('#logout-btn')?.addEventListener('click', () => {
   logout();  // logout도 api.js에 있음(토큰 삭제후 로그인 페이지 이동)
 });
+
+// 회원 탈퇴 버튼 클릭
+document.querySelector('#delete-btn')?.addEventListener('click', async () => {
+  if (!confirm('정말 탈퇴하시겠어요? 모든 정보가 삭제되며 복구할 수 없습니다.')) return;
+  try {
+    await api('/users/me', { method: 'DELETE' });
+    localStorage.removeItem('access_token');
+    window.location.href = '/pages/login.html';
+  } catch (err) {
+    alert(err.message);
+  }
+});

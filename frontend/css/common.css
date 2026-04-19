@@ -240,6 +240,16 @@ h3 { font-size: 18px; line-height: 1.4; }
   background: var(--primary);
   color: #fff;
 }
+/* 회원탈퇴 경고버튼 */
+.btn-danger {
+  background: rgba(255,255,255,0.6);
+  color: var(--error);
+  border: 2px solid var(--error);
+}
+.btn-danger:hover {
+  background: var(--error);
+  color: #fff;
+}
 
 .btn-lg {
   padding: 16px 36px;
