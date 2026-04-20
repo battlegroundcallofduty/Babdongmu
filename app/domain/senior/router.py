@@ -15,6 +15,7 @@ from app.domain.senior.service import (
     deactivate_senior,
     delete_senior,
     get_guardian_senior_by_id,
+    get_senior_by_id,
     list_seniors_by_guardian,
     update_senior,
 )
@@ -48,7 +49,7 @@ async def create_senior_endpoint(
     status_code=status.HTTP_200_OK,
 )
 async def list_seniors_endpoint(
-    active_only: bool = Query(default=True),
+    active_only: bool = Query(default=False),
     session: AsyncSession = Depends(get_db),
     current_guardian=Depends(require_guardian),
 ) -> list[SeniorResponse]:
@@ -73,12 +74,16 @@ async def get_senior_detail_endpoint(
 ) -> SeniorResponse:
     """보호자의 어르신 상세 정보를 조회합니다."""
 
-    senior = await get_guardian_senior_by_id(
+    await get_guardian_senior_by_id(
         session=session,
         guardian_id=current_guardian.user_id,
         senior_id=senior_id,
     )
-    return SeniorResponse.model_validate(senior)
+
+    return await get_senior_by_id(
+        session=session,
+        senior_id=senior_id,
+    )
 
 
 @router.patch(

@@ -290,59 +290,45 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="hosting-road-address">도로명 주소</label>
-          <input class="form-input" type="text" id="hosting-road-address" placeholder="서울특별시 종로구 ..." required>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label" for="hosting-detail-address">상세 주소</label>
-          <input class="form-input" type="text" id="hosting-detail-address" placeholder="101동 1001호" required>
+          <label class="form-label">호스팅 주소</label>
+          <div class="modal-notice">
+            <p id="hosting-address-preview">어르신을 선택하면 주소가 자동으로 표시돼요.</p>
+            <p class="text-sm mt-sm">호스팅 주소는 어르신 집으로 자동 고정돼요.</p>
+          </div>
         </div>
 
         <div class="address-grid">
           <div class="form-group">
-            <label class="form-label" for="hosting-sigungu">시군구</label>
-            <input class="form-input" type="text" id="hosting-sigungu" placeholder="종로구" required>
+            <label class="form-label">도로명 주소</label>
+            <input class="form-input" type="text" id="hosting-road-address" readonly>
           </div>
           <div class="form-group">
-            <label class="form-label" for="hosting-sido">시도</label>
-            <input class="form-input" type="text" id="hosting-sido" placeholder="서울특별시">
+            <label class="form-label">상세 주소</label>
+            <input class="form-input" type="text" id="hosting-detail-address" readonly>
           </div>
           <div class="form-group">
-            <label class="form-label" for="hosting-bname">법정동명</label>
-            <input class="form-input" type="text" id="hosting-bname" placeholder="청운동">
+            <label class="form-label">시군구</label>
+            <input class="form-input" type="text" id="hosting-sigungu" readonly>
           </div>
           <div class="form-group">
-            <label class="form-label" for="hosting-building-name">건물명</label>
-            <input class="form-input" type="text" id="hosting-building-name" placeholder="OO아파트">
+            <label class="form-label">시도</label>
+            <input class="form-input" type="text" id="hosting-sido" readonly>
           </div>
           <div class="form-group">
-            <label class="form-label" for="hosting-jibun-address">지번 주소</label>
-            <input class="form-input" type="text" id="hosting-jibun-address" placeholder="청운동 00-0">
+            <label class="form-label">법정동명</label>
+            <input class="form-input" type="text" id="hosting-bname" readonly>
           </div>
           <div class="form-group">
-            <label class="form-label" for="hosting-zonecode">우편번호</label>
-            <input class="form-input" type="text" id="hosting-zonecode" placeholder="03000">
+            <label class="form-label">건물명</label>
+            <input class="form-input" type="text" id="hosting-building-name" readonly>
           </div>
           <div class="form-group">
-            <label class="form-label" for="hosting-lat">위도</label>
-            <input class="form-input" type="number" step="any" id="hosting-lat" placeholder="37.0000">
+            <label class="form-label">지번 주소</label>
+            <input class="form-input" type="text" id="hosting-jibun-address" readonly>
           </div>
           <div class="form-group">
-            <label class="form-label" for="hosting-lng">경도</label>
-            <input class="form-input" type="number" step="any" id="hosting-lng" placeholder="127.0000">
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="hosting-sigungu-code">시군구 코드</label>
-            <input class="form-input" type="text" id="hosting-sigungu-code" placeholder="11110">
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="hosting-is-apartment">아파트 여부</label>
-            <select class="form-input" id="hosting-is-apartment">
-              <option value="">선택 안 함</option>
-              <option value="true">예</option>
-              <option value="false">아니오</option>
-            </select>
+            <label class="form-label">우편번호</label>
+            <input class="form-input" type="text" id="hosting-zonecode" readonly>
           </div>
         </div>
 
@@ -436,24 +422,42 @@
       const seniorName = senior?.name ? `${senior.name} 어르신` : `어르신 #${hosting.senior_id}`;
       const avatarText = senior?.name ? senior.name.charAt(0) : '어';
       const statusMeta = getStatusMeta(hosting.hosting_status);
-      const fullAddress = `${hosting.road_address} ${hosting.detail_address}`.trim();
+
+      const hostingRoadAddress = hosting.road_address ?? '';
+      const hostingDetailAddress = hosting.detail_address ?? '';
+      const hostingSigungu = hosting.sigungu ?? '';
+      const hostingBname = hosting.bname ?? '';
+
+      const fullAddress = [hostingRoadAddress, hostingDetailAddress]
+        .filter(Boolean)
+        .join(' ')
+        .trim();
+
       const cardElement = document.createElement('a');
       cardElement.href = `/pages/hosting-detail.html?id=${hosting.hosting_id}`;
       cardElement.className = 'card hosting-card slide-up';
-      cardElement.dataset.sigungu = hosting.sigungu ?? '';
+      cardElement.dataset.sigungu = hostingSigungu;
       cardElement.dataset.status = hosting.hosting_status ?? '';
-      cardElement.dataset.keyword = [hosting.menu, hosting.road_address, hosting.detail_address, hosting.sigungu, hosting.bname, senior?.name]
+      cardElement.dataset.keyword = [
+        hosting.menu,
+        hostingRoadAddress,
+        hostingDetailAddress,
+        hostingSigungu,
+        hostingBname,
+        senior?.name,
+      ]
         .filter(Boolean)
         .join(' ')
         .toLowerCase();
+
       cardElement.innerHTML = `
         <div class="card-body">
           <div class="hosting-header">
             <div class="hosting-avatar">${escapeHtml(avatarText)}</div>
             <div>
               <div class="hosting-name">${escapeHtml(seniorName)}</div>
-              <div class="hosting-address">${escapeHtml(fullAddress)}</div>
-              <div class="hosting-subtext">${escapeHtml(hosting.sigungu || '-')}</div>
+              <div class="hosting-address">${escapeHtml(fullAddress || '-')}</div>
+              <div class="hosting-subtext">${escapeHtml(hostingSigungu || '-')}</div>
             </div>
           </div>
           <div class="hosting-menu">${escapeHtml(hosting.menu)}</div>
@@ -478,11 +482,24 @@
     function renderSigunguOptions() {
       const sigunguSelectElement = document.querySelector('#filter-sigungu');
       const previousValue = sigunguSelectElement.value;
-      const sigunguSet = new Set(hostingItems.map((hosting) => hosting.sigungu).filter(Boolean));
+      const seniorMap = getSeniorMap();
+
+      const sigunguSet = new Set(
+        hostingItems
+          .map((hosting) => {
+            return hosting.sigungu ?? '';
+          })
+          .filter(Boolean)
+      );
+
       sigunguSelectElement.innerHTML = '<option value="">전체 시군구</option>';
-      [...sigunguSet].sort((left, right) => left.localeCompare(right, 'ko')).forEach((sigungu) => {
-        sigunguSelectElement.appendChild(new Option(sigungu, sigungu));
-      });
+
+      [...sigunguSet]
+        .sort((left, right) => left.localeCompare(right, 'ko'))
+        .forEach((sigungu) => {
+          sigunguSelectElement.appendChild(new Option(sigungu, sigungu));
+        });
+
       sigunguSelectElement.value = [...sigunguSet].includes(previousValue) ? previousValue : '';
     }
 
@@ -560,26 +577,41 @@
       }
     }
 
+    function buildSeniorAddressText(senior) {
+      return [senior?.road_address, senior?.detail_address]
+        .filter(Boolean)
+        .join(' ')
+        .trim();
+    }
+
     function fillAddressFieldsFromSenior(senior) {
+      const addressPreviewElement = document.querySelector('#hosting-address-preview');
+
       if (!senior) {
+        document.querySelector('#hosting-road-address').value = '';
+        document.querySelector('#hosting-detail-address').value = '';
+        document.querySelector('#hosting-sido').value = '';
+        document.querySelector('#hosting-sigungu').value = '';
+        document.querySelector('#hosting-bname').value = '';
+        document.querySelector('#hosting-building-name').value = '';
+        document.querySelector('#hosting-jibun-address').value = '';
+        document.querySelector('#hosting-zonecode').value = '';
+        addressPreviewElement.textContent = '어르신을 선택하면 주소가 자동으로 표시돼요.';
         return;
       }
-      const addressTokens = String(senior.address ?? '').trim().split(/\s+/).filter(Boolean);
-      const guessedSido = addressTokens[0] ?? '';
-      const guessedSigungu = addressTokens[1] ?? '';
-      document.querySelector('#hosting-road-address').value = senior.address ?? '';
-      document.querySelector('#hosting-detail-address').value = document.querySelector('#hosting-detail-address').value || '';
-      document.querySelector('#hosting-sido').value = guessedSido;
-      document.querySelector('#hosting-sigungu').value = guessedSigungu;
-      document.querySelector('#hosting-bname').value = addressTokens[2] ?? '';
-      document.querySelector('#hosting-building-name').value = '';
-      document.querySelector('#hosting-jibun-address').value = '';
-      document.querySelector('#hosting-zonecode').value = '';
-      document.querySelector('#hosting-lat').value = '';
-      document.querySelector('#hosting-lng').value = '';
-      document.querySelector('#hosting-sigungu-code').value = '';
-      document.querySelector('#hosting-is-apartment').value = '';
+
+      document.querySelector('#hosting-road-address').value = senior.road_address ?? '';
+      document.querySelector('#hosting-detail-address').value = senior.detail_address ?? '';
+      document.querySelector('#hosting-sido').value = senior.sido ?? '';
+      document.querySelector('#hosting-sigungu').value = senior.sigungu ?? '';
+      document.querySelector('#hosting-bname').value = senior.bname ?? '';
+      document.querySelector('#hosting-building-name').value = senior.building_name ?? '';
+      document.querySelector('#hosting-jibun-address').value = senior.jibun_address ?? '';
+      document.querySelector('#hosting-zonecode').value = senior.zonecode ?? '';
       document.querySelector('#hosting-guests').value = String(senior.max_people ?? 2);
+
+      addressPreviewElement.textContent =
+        buildSeniorAddressText(senior) || '등록된 주소 정보가 없어요.';
     }
 
     function renderSeniorOptions() {
@@ -609,12 +641,14 @@
       if (seniorsCache.length === 1) {
         seniorSelectElement.value = String(seniorsCache[0].senior_id);
         fillAddressFieldsFromSenior(seniorsCache[0]);
+      } else {
+        fillAddressFieldsFromSenior(null);
       }
     }
 
     async function loadSeniors() {
-      const seniors = await api('/seniors/');
-      seniorsCache = seniors.filter((senior) => senior.active_flag);
+      const seniors = await api('/seniors/?active_only=true');
+      seniorsCache = seniors;
       renderSeniorOptions();
     }
 
@@ -638,57 +672,32 @@
       document.querySelector('#hosting-form').reset();
       document.querySelector('#hosting-submit-button').disabled = false;
       updateDateConstraints();
+
       if (seniorsCache.length === 1) {
         document.querySelector('#hosting-senior').value = String(seniorsCache[0].senior_id);
         fillAddressFieldsFromSenior(seniorsCache[0]);
+      } else {
+        fillAddressFieldsFromSenior(null);
       }
     }
 
     function buildHostingPayload() {
+      const seniorIdValue = document.querySelector('#hosting-senior').value;
       const dateValue = document.querySelector('#hosting-date').value;
       const startTimeValue = document.querySelector('#hosting-start-time').value;
       const endTimeValue = document.querySelector('#hosting-end-time').value;
-      const apartmentRawValue = document.querySelector('#hosting-is-apartment').value;
-      const latValue = document.querySelector('#hosting-lat').value;
-      const lngValue = document.querySelector('#hosting-lng').value;
 
-      const payload = {
-        senior_id: Number(document.querySelector('#hosting-senior').value),
+      if (!seniorIdValue) {
+        throw new Error('어르신을 먼저 선택해 주세요.');
+      }
+
+      return {
+        senior_id: Number(seniorIdValue),
         menu: document.querySelector('#hosting-menu').value.trim(),
         hosting_at: `${dateValue}T${startTimeValue}:00+09:00`,
         hosting_end: `${dateValue}T${endTimeValue}:00+09:00`,
         max_people: Number(document.querySelector('#hosting-guests').value),
-        road_address: document.querySelector('#hosting-road-address').value.trim(),
-        detail_address: document.querySelector('#hosting-detail-address').value.trim(),
-        sigungu: document.querySelector('#hosting-sigungu').value.trim(),
       };
-
-      const optionalFields = {
-        jibun_address: document.querySelector('#hosting-jibun-address').value.trim(),
-        zonecode: document.querySelector('#hosting-zonecode').value.trim(),
-        bname: document.querySelector('#hosting-bname').value.trim(),
-        sido: document.querySelector('#hosting-sido').value.trim(),
-        building_name: document.querySelector('#hosting-building-name').value.trim(),
-        sigungu_code: document.querySelector('#hosting-sigungu-code').value.trim(),
-      };
-
-      Object.entries(optionalFields).forEach(([fieldName, fieldValue]) => {
-        if (fieldValue) {
-          payload[fieldName] = fieldValue;
-        }
-      });
-
-      if (apartmentRawValue !== '') {
-        payload.is_apartment = apartmentRawValue === 'true';
-      }
-      if (latValue !== '') {
-        payload.lat = Number(latValue);
-      }
-      if (lngValue !== '') {
-        payload.lng = Number(lngValue);
-      }
-
-      return payload;
     }
 
     async function initializePage() {

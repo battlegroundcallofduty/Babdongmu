@@ -69,12 +69,15 @@ def get_now_utc() -> datetime:
 
     return datetime.now(timezone.utc)
 
+
+
 def ensure_utc_aware(dt: datetime) -> datetime:
     """datetime을 UTC aware 형태로 맞춥니다."""
 
     if dt.tzinfo is None:
         return dt.replace(tzinfo=timezone.utc)
     return dt.astimezone(timezone.utc)
+
 
 
 def process_hosting_status_by_time(
@@ -202,7 +205,7 @@ async def create_hosting(
         hosting_max_people = senior.max_people
 
     hosting_at = ensure_utc_aware(request.hosting_at)
-    hosting_end = ensure_utc_aware(request.hosting_end)    
+    hosting_end = ensure_utc_aware(request.hosting_end)
 
     hosting = Hosting(
         senior_id=senior.senior_id,
@@ -210,18 +213,18 @@ async def create_hosting(
         hosting_at=hosting_at,
         hosting_end=hosting_end,
         max_people=hosting_max_people,
-        road_address=request.road_address,
-        jibun_address=request.jibun_address,
-        zonecode=request.zonecode,
-        sigungu=request.sigungu,
-        bname=request.bname,
-        detail_address=request.detail_address,
-        sido=request.sido,
-        building_name=request.building_name,
-        is_apartment=request.is_apartment,
-        lat=float(request.lat) if request.lat is not None else None,
-        lng=float(request.lng) if request.lng is not None else None,
-        sigungu_code=request.sigungu_code,
+        road_address=senior.road_address,
+        jibun_address=senior.jibun_address,
+        zonecode=senior.zonecode,
+        sigungu=senior.sigungu,
+        bname=senior.bname,
+        detail_address=senior.detail_address,
+        sido=senior.sido,
+        building_name=senior.building_name,
+        is_apartment=senior.is_apartment,
+        lat=senior.lat,
+        lng=senior.lng,
+        sigungu_code=senior.sigungu_code,
         hosting_status=HostingStatus.OPEN,
     )
 

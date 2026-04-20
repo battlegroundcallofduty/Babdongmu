@@ -322,8 +322,12 @@
       if (typeof seniorDetail?.age === 'number') {
         seniorMetaParts.push(`${seniorDetail.age}세`);
       }
-      if (seniorDetail?.address) {
-        seniorMetaParts.push(seniorDetail.address);
+      const hostingAddress = [hostingDetail?.road_address, hostingDetail?.detail_address]
+        .filter(Boolean)
+        .join(' ');
+
+      if (hostingAddress) {
+        seniorMetaParts.push(hostingAddress);
       }
 
       document.querySelector('#detail-content').classList.remove('hidden');
