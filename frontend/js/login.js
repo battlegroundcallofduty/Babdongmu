@@ -1,3 +1,8 @@
+// 회원가입 직후 넘어온 경우 안내 메시지 표시
+if (new URLSearchParams(window.location.search).get('registered') === '1') {
+  document.getElementById('register-notice').classList.remove('hidden');
+}
+
 // 이메일/비밀번호 로그인
 document.querySelector('#login-form')?.addEventListener('submit', async (e) => {
   e.preventDefault();

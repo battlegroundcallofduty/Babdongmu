@@ -119,7 +119,7 @@ document.querySelector('#register-form')?.addEventListener('submit', async (e) =
       }
     }
 
-    window.location.href = '/pages/login.html';
+    window.location.href = '/pages/login.html?registered=1';
   } catch (err) {
     if (token) {
       // 회원가입은 성공했지만 서류 업로드 실패 → 가입은 유지하고 안내만 표시 후 이동
@@ -127,7 +127,7 @@ document.querySelector('#register-form')?.addEventListener('submit', async (e) =
       // 400: 형식 오류/크기 초과 → 백엔드 메시지 그대로 (유저가 고칠수있도록 뭔지 알려줌)
       const msg = err.status === 503
         ? '서류 업로드에 실패했습니다.\n가입은 완료됐으니 로그인 후 마이페이지에서 다시 업로드해주세요.'
-        : `서류 업로드 오류: ${err.message}\n로그인 후 마이페이지에서 다시 업로드해주세요.`;
+        : `서류 업로드 오류: ${err.message}\n가입은 완료됐으니 로그인 후 마이페이지에서 다시 업로드해주세요.`;
       alert(msg);
       window.location.href = '/pages/login.html';
     } else {
