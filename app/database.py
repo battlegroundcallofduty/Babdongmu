@@ -1,11 +1,21 @@
 from typing import AsyncGenerator
 
+from sqlalchemy import event
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
 from app.config import settings
 
 engine = create_async_engine(settings.DATABASE_URL, echo=False)
+
+# SQLite는 외래키 CASCADE가 기본 비활성화 → 로컬 테스트용으로 활성화
+# PostgreSQL(배포)은 자동 적용이라 해당 없음
+if "sqlite" in settings.DATABASE_URL:
+    @event.listens_for(engine.sync_engine, "connect")
+    def set_sqlite_pragma(dbapi_connection, connection_record):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
 AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 
 

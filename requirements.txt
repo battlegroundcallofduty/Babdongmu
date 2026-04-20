@@ -15,6 +15,7 @@ httpx==0.28.1
 google-genai==1.16.1
 solapi==5.0.3
 boto3==1.37.37
+qrcode[pil]==8.1
 python-multipart==0.0.20
 pytest==8.3.5
 pytest-asyncio==0.25.3

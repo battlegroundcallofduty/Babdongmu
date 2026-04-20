@@ -146,6 +146,7 @@
 - 체크아웃 시 → 보호자에게 SMS 발송 (`alarm_type: checkout`)
 - 취소 시 → `hosting_status`가 `모집완료`였다면 `신청가능`으로 되돌림. 호스팅 12시간 전부터는 취소 불가
 - 날짜 경과 시 (스케줄러) → 체크아웃 없는 `approved` 매칭은 `not_visited`로 전환
+- `not_visited` 상태에서 당일 체크아웃 시 → `approved`로 보정 (지각생 보정)
 
 ---
 
