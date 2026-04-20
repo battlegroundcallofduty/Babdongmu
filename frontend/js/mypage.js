@@ -3,15 +3,220 @@ if (!isLoggedIn()) {  // api.js에 있는 함수
   window.location.href = '/pages/login.html';
 }
 
+// 서류 유형 한글 이름 매핑
+const DOC_TYPE_LABELS = {
+  criminal_record: '범죄경력조회서',
+  welfare_cert: '복지관 인증서류',
+  family_cert: '가족관계증명서',
+  identity_copy: '신분증 사본',
+};
+
+// 날짜 포맷 (UTC → KST 변환 후 표시)
+// Z: UTC임을 명시
+function formatDate(isoString) {
+  const utc = isoString.endsWith('Z') || isoString.includes('+') ? isoString : isoString + 'Z';
+  return new Date(utc).toLocaleString('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+}
+
+// 서류 파일 업로드 (register.js와 같은 multipart 방식)
+// api() 대신 fetch 사용 - content-type boundary 자동 설정 필요
+async function uploadDocument(documentType, file) {
+  const formData = new FormData();
+  formData.append('document_type', documentType);
+  formData.append('file', file);
+  const token = localStorage.getItem('access_token');
+  const response = await fetch('/api/v1/users/me/documents', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` },
+    body: formData,
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ detail: '서류 업로드에 실패했어요.' }));
+    const detail = error.detail;
+    const message = Array.isArray(detail)
+      ? detail.map(d => d.msg.replace(/^Value error,\s*/i, '')).join(', ')
+      : (detail || '서류 업로드에 실패했어요.');
+    throw new Error(message);
+  }
+  return response.json();
+}
+
+// 업로드된 서류 슬롯 (삭제 버튼 포함)
+function renderUploadedSlot(doc, label) {
+  const fileName = doc.document_url.split('/').pop();  // R2 URL에서 파일명만 추출
+  return `
+    <div class="list-item" style="background:var(--surface); border:1px solid var(--border-light); border-radius:var(--radius-md); margin-bottom:8px;">
+      <div style="min-width:0;">
+        <div style="font-weight:600; font-size:14px;">${label}</div>
+        <div style="font-size:12px; color:var(--muted); margin-top:2px;">${fileName}</div>
+        <div style="font-size:12px; color:var(--muted);">${formatDate(doc.created_at)} 업로드</div>
+      </div>
+      <button class="btn btn-sm btn-danger delete-doc-btn" data-doc-id="${doc.document_id}" style="flex-shrink:0;">삭제</button>
+    </div>`;
+}
+
+// 미업로드 서류 슬롯 (업로드 버튼 포함)
+function renderEmptySlot(docType, label) {
+  return `
+    <div class="list-item" style="background:var(--surface); border:1px solid var(--border-light); border-radius:var(--radius-md); margin-bottom:8px;">
+      <div>
+        <div style="font-weight:600; font-size:14px;">${label}</div>
+        <div style="font-size:12px; color:var(--muted);">미업로드</div>
+      </div>
+      <label class="btn btn-sm btn-primary" style="cursor:pointer; flex-shrink:0;">
+        업로드
+        <input type="file" class="upload-input"
+          style="position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer;"
+          data-doc-type="${docType}"
+          accept=".jpg,.jpeg,.png,.pdf,.hwp,.docx">
+      </label>
+    </div>`;
+}
+
+// 보호자 추가 서류 미업로드 슬롯 (서류 종류 선택 셀렉트 포함)
+function renderEmptyGuardianSlot() {
+  return `
+    <div class="list-item" style="background:var(--surface); border:1px solid var(--border-light); border-radius:var(--radius-md); margin-bottom:8px;">
+      <div>
+        <div style="font-weight:600; font-size:14px;">보호자 인증서류</div>
+        <div style="font-size:12px; color:var(--muted);">미업로드</div>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center; flex-shrink:0;">
+        <select id="guardian-doc-type"
+          style="padding:8px 10px; border:1.5px solid var(--border); border-radius:var(--radius-md); font-size:13px; font-family:var(--font-body); background:var(--surface); color:var(--text);">
+          <option value="welfare_cert">복지관 인증서류</option>
+          <option value="family_cert">가족관계증명서</option>
+        </select>
+        <label class="btn btn-sm btn-primary" style="cursor:pointer;">
+          업로드
+          <input type="file" class="upload-input guardian-upload"
+            style="position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer;"
+            accept=".jpg,.jpeg,.png,.pdf,.hwp,.docx">
+        </label>
+      </div>
+    </div>`;
+}
+
+// 역할에 맞는 서류 슬롯 전체 렌더링
+// 봉사자: 신분증 + 범죄경력조회서 / 보호자: 신분증 + 복지관or가족관계증명서
+function renderDocumentSlots(docs, userRole) {
+  const container = document.getElementById('docs-list');
+
+  const idDoc = docs.find(d => d.document_type === 'identity_copy');
+
+  // 공통: 신분증 사본
+  let html = idDoc ? renderUploadedSlot(idDoc, '신분증 사본') : renderEmptySlot('identity_copy', '신분증 사본');
+
+  if (userRole === 'volunteer') {
+    const crimDoc = docs.find(d => d.document_type === 'criminal_record');
+    html += crimDoc
+      ? renderUploadedSlot(crimDoc, '범죄경력조회서')
+      : renderEmptySlot('criminal_record', '범죄경력조회서');
+  } else if (userRole === 'guardian') {
+    const guardianDoc = docs.find(d => d.document_type === 'welfare_cert' || d.document_type === 'family_cert');
+    html += guardianDoc
+      ? renderUploadedSlot(guardianDoc, DOC_TYPE_LABELS[guardianDoc.document_type])
+      : renderEmptyGuardianSlot();
+  }
+
+  container.innerHTML = html;
+}
+
+// 서류 목록 로드
+// 즉시실행함수에서 me.user_role을 저장해두는 전역변수
+let currentUserRole = null;
+
+// api 호출 후 렌더링
+async function loadDocuments() {
+  try {
+    const docs = await api('/users/me/documents');
+    renderDocumentSlots(docs, currentUserRole);
+  } catch {
+    document.getElementById('docs-list').innerHTML =
+      '<p style="color:var(--muted); font-size:14px; padding:12px 0;">서류 목록을 불러오지 못했어요.</p>';
+  }
+}
+
+// 서류 삭제 (이벤트 위임: docs-list에 이벤트 달고, 클릭 시 삭제버튼 확인)
+document.getElementById('docs-list')?.addEventListener('click', async (e) => {
+  const deleteBtn = e.target.closest('.delete-doc-btn');
+  if (!deleteBtn) return;
+  const docId = deleteBtn.dataset.docId;
+  if (!confirm('이 서류를 삭제하시겠어요?')) return;
+  try {
+    await api(`/users/me/documents/${docId}`, { method: 'DELETE' });
+    await loadDocuments();
+  } catch (err) {
+    alert(err.message);
+  }
+});
+
+// 서류 업로드 (change 이벤트 위임)
+document.getElementById('docs-list')?.addEventListener('change', async (e) => {
+  if (!e.target.classList.contains('upload-input')) return;
+  const file = e.target.files[0];
+  if (!file) return;
+
+  // 보호자 추가 서류는 셀렉트에서 타입 읽기, 나머지는 data-doc-type 사용
+  const docType = e.target.classList.contains('guardian-upload')
+    ? e.target.closest('.list-item').querySelector('#guardian-doc-type').value
+    : e.target.dataset.docType;
+  try {
+    await uploadDocument(docType, file);
+    await loadDocuments();
+  } catch (err) {
+    alert(`업로드 실패: ${err.message}`);
+  }
+});
+
 // 페이지 진입 시 유저 정보 (일반/카카오 로그인별 비밀번호 변경폼 노출 여부)
 (async () => {
   try {
     const me = await api('/users/me');
+
+    // 프로필 카드 채우기
+    const roleLabel = { volunteer: '봉사자', guardian: '보호자', admin: '관리자' }[me.user_role] ?? me.user_role;
+    document.getElementById('profile-avatar').textContent = me.name[0];
+    document.getElementById('profile-name').textContent = me.name;
+    document.getElementById('profile-role-district').textContent = `${roleLabel} · ${me.address}`;
+    document.getElementById('profile-contact').textContent = `${me.email} · ${me.phone_number}`;
+
+    // 내 정보 섹션
+    document.getElementById('user-name').textContent = me.name;
+    document.getElementById('user-email').textContent = me.email;
+    document.getElementById('user-phone').textContent = me.phone_number;
+    document.getElementById('user-district').textContent = me.address;
+
+    // 인증 상태 뱃지
+    const certBadge = document.getElementById('cert-badge');
+    if (me.cert_flag === 'approved') {
+      certBadge.innerHTML = '<span class="badge badge-open">검증 완료</span>';
+    } else if (me.cert_flag === 'pending') {
+      certBadge.innerHTML = '<span class="badge badge-pending">검토 중</span>';
+    } else if (me.cert_flag === 'rejected') {
+      certBadge.innerHTML = '<span class="badge badge-cancelled">반려됨</span>';
+    }
+
     if (me.is_social_login) {
       document.querySelector('.detail-section:has(#password-form)')?.remove();
     }
-  } catch {
     // 토큰 없거나 만료되면 비밀번호 변경폼 그냥 표시
+
+    // 역할 저장 후 서류 슬롯 로드
+    currentUserRole = me.user_role;
+    await loadDocuments();
+  } catch {
+    // 토큰 없거나 만료되면 안내 후 로그인 페이지로 이동
+    alert('로그인이 만료됐어요. 다시 로그인해주세요.');
+    window.location.href = '/pages/login.html';
   }
 })();
 
