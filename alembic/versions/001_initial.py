@@ -101,6 +101,7 @@ def upgrade() -> None:
     sa.Column('sigungu_code', sa.String(length=20), nullable=True),
     sa.Column('hosting_status', sa.Enum('OPEN', 'FULL', 'FAILED', 'IN_PROGRESS', 'CLOSED', name='hostingstatus'), nullable=False),
     sa.Column('created_at', sa.TIMESTAMP(timezone=True), nullable=False),
+    sa.Column('updated_at', sa.TIMESTAMP(timezone=True), nullable=True),
     sa.CheckConstraint('max_people >= 2', name='ck_hosting_max_people'),
     sa.ForeignKeyConstraint(['senior_id'], ['seniors.senior_id'], ondelete='RESTRICT'),
     sa.PrimaryKeyConstraint('hosting_id')
