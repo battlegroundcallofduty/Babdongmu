@@ -27,6 +27,27 @@ DOCUMENT_CONTENT_TYPES = {
 
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 
+# Content-Type별 매직 바이트 (파일 앞부분 시그니처)
+# Content-Type 헤더는 클라이언트가 위조 가능해서 실제 파일 바이트로 2차 검증
+_MAGIC_BY_MIME: dict[str, bytes] = {
+    "image/jpeg": b"\xff\xd8\xff",
+    "image/png":  b"\x89PNG\r\n\x1a\n",
+    "application/pdf": b"%PDF",
+    "application/x-hwp":        b"\xd0\xcf\x11\xe0",  # hwp: OLE2 컨테이너 포장
+    "application/haansoft-hwp": b"\xd0\xcf\x11\xe0",  # docx: ZIP 컨테이너 포장
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": b"PK\x03\x04",
+    "application/haansoftdocx": b"PK\x03\x04",
+}
+
+
+def _verify_magic(content_type: str, data: bytes) -> bool:
+    """선언된 Content-Type과 실제 파일 바이트 시그니처가 일치하는지 확인"""
+    expected = _MAGIC_BY_MIME.get(content_type)
+    if expected is None:
+        return False
+    return data.startswith(expected)
+
+
 # 파일 형식이 늘어나서 딕셔너리로 변환
 CONTENT_TYPE_EXT = {
     "image/jpeg": "jpg",         # R2에 저장할때 쓰는 확장자
@@ -81,6 +102,9 @@ async def upload_image(
     if len(contents) > MAX_FILE_SIZE:
         raise HTTPException(status_code=400, detail="파일 크기는 최대 5MB까지 허용됩니다.")
 
+    if not _verify_magic(file.content_type, contents):
+        raise HTTPException(status_code=400, detail="허용되지 않는 파일 형식입니다.")
+
     ext = CONTENT_TYPE_EXT.get(file.content_type, "bin")
     key = f"{folder}/{uuid.uuid4().hex}.{ext}"
     bucket_name = (
@@ -125,5 +149,5 @@ async def delete_image(image_url: str) -> None:
     try:
         client = _get_client()
         client.delete_object(Bucket=bucket, Key=key)
-    except (BotoCoreError, ClientError):
-        pass  # R2 삭제 실패해도 DB 삭제는 진행
+    except (BotoCoreError, ClientError) as e:
+        logging.getLogger(__name__).error("R2 delete failed: %s", e)  # R2 삭제 실패해도 DB 삭제는 진행
