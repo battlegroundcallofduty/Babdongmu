@@ -130,17 +130,22 @@ document.querySelector('#register-form')?.addEventListener('submit', async (e) =
     // → 유저 삭제 롤백
     if (token) {
       // api()는 localStorage에서 토큰 읽는데 saveToken 안 했으니 직접 fetch로 토큰 넘김
-      await fetch('/api/v1/users/me', {
+      const rollbackOk = await fetch('/api/v1/users/me', {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` },
-      }).catch(() => {});
+      }).then(r => r.ok).catch(() => false);  // 실패하면 false
       localStorage.removeItem('access_token');
       token = null;
-      // 503: R2 서버 문제 → 기술 메시지 숨기고 안내 문구로 표시
-      // 400: 형식 오류/크기 초과 → 백엔드 메시지 그대로 (유저가 고칠수있도록 뭔지 알려줌)
-      errorMsg.textContent = err.status === 503 // 조건 ? 참일때값 : 거짓일때값
-        ? '서버 오류로 업로드에 실패했습니다. 잠시 후 다시 시도해주세요.'
-        : `${err.message} 알맞은 파일을 다시 선택해주세요.`;  // f-string이랑 비슷
+      if (!rollbackOk) {
+        // 롤백 자체가 실패 → 유저가 DB에 남아있어서 재가입도 안 됨
+        errorMsg.textContent = '오류가 발생했습니다. 해당 이메일로 재가입이 안 된다면 고객센터로 문의해주세요.';
+      } else {
+        // 503: R2 서버 문제 → 기술 메시지 숨기고 안내 문구로 표시
+        // 400: 형식 오류/크기 초과 → 백엔드 메시지 그대로 (유저가 고칠수있도록 뭔지 알려줌)
+        errorMsg.textContent = err.status === 503 // 조건 ? 참일때값 : 거짓일때값
+          ? '서버 오류로 업로드에 실패했습니다. 잠시 후 다시 시도해주세요.'
+          : `${err.message} 알맞은 파일을 다시 선택해주세요.`;
+      }
     } else {
       errorMsg.textContent = err.message;
     }
