@@ -113,7 +113,7 @@ async def delete_me(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """회원 탈퇴 (회원가입 중 서류 업로드 실패 시 롤백용으로도 사용)"""
+    """회원 탈퇴"""
     # 보호자인 경우 등록된 어르신이 있으면 탈퇴 차단
     if current_user.user_role == UserRole.GUARDIAN:  # 비활성 포함 전체 조회
         seniors = await list_seniors_by_guardian(db, current_user.user_id, active_only=False)

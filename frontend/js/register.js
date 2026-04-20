@@ -75,17 +75,9 @@ document.querySelector('#register-form')?.addEventListener('submit', async (e) =
     return;
   }
 
-  // 신분증 사본을 필수로 체크해서 제출서류 0개 방지하도록
-  const idFile = document.querySelector('#doc-id').files[0];
-  if (!idFile) {  // 파일 안 골랐다면(undefined)
-    errorMsg.textContent = '신분증 사본은 필수입니다.';
-    errorMsg.classList.remove('hidden');
-    return;  // 제출 막고 함수 종료
-  }
-
   errorMsg.classList.add('hidden');
 
-  let token = null; // catch에서 롤백 여부 판단하기 위해 try 바깥에 선언
+  let token = null; // catch에서 가입 성공 여부 판단하기 위해 try 바깥에 선언
 
   try {
     // 1) 회원가입 → 유저 정보 반환
@@ -107,8 +99,11 @@ document.querySelector('#register-form')?.addEventListener('submit', async (e) =
     // saveToken 삭제 → 회원가입 후 자동 로그인 방지, 서류 업로드엔 token 변수 직접 사용
     const role = document.querySelector('#role').value;
 
-    // 3) 신분증 사본 업로드 (공통 필수)
-    await uploadDocument(token, 'identity_copy', idFile);
+    // 3) 신분증 사본 업로드 (선택)
+    const idFile = document.querySelector('#doc-id').files[0];
+    if (idFile) {
+      await uploadDocument(token, 'identity_copy', idFile);
+    }
 
     // 4) 역할별 추가 서류 업로드 (선택)
     if (role === 'volunteer') {
@@ -126,29 +121,18 @@ document.querySelector('#register-form')?.addEventListener('submit', async (e) =
 
     window.location.href = '/pages/login.html';
   } catch (err) {
-    // token이 있다는 건 회원가입은 성공했지만 서류 업로드가 실패한 것
-    // → 유저 삭제 롤백
     if (token) {
-      // api()는 localStorage에서 토큰 읽는데 saveToken 안 했으니 직접 fetch로 토큰 넘김
-      const rollbackOk = await fetch('/api/v1/users/me', {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` },
-      }).then(r => r.ok).catch(() => false);  // 실패하면 false
-      localStorage.removeItem('access_token');
-      token = null;
-      if (!rollbackOk) {
-        // 롤백 자체가 실패 → 유저가 DB에 남아있어서 재가입도 안 됨
-        errorMsg.textContent = '오류가 발생했습니다. 해당 이메일로 재가입이 안 된다면 고객센터로 문의해주세요.';
-      } else {
-        // 503: R2 서버 문제 → 기술 메시지 숨기고 안내 문구로 표시
-        // 400: 형식 오류/크기 초과 → 백엔드 메시지 그대로 (유저가 고칠수있도록 뭔지 알려줌)
-        errorMsg.textContent = err.status === 503 // 조건 ? 참일때값 : 거짓일때값
-          ? '서버 오류로 업로드에 실패했습니다. 잠시 후 다시 시도해주세요.'
-          : `${err.message} 알맞은 파일을 다시 선택해주세요.`;
-      }
+      // 회원가입은 성공했지만 서류 업로드 실패 → 가입은 유지하고 안내만 표시 후 이동
+      // 503: R2 서버 문제 → 기술 메시지 숨기고 안내 문구로 표시
+      // 400: 형식 오류/크기 초과 → 백엔드 메시지 그대로 (유저가 고칠수있도록 뭔지 알려줌)
+      const msg = err.status === 503
+        ? '서류 업로드에 실패했습니다.\n가입은 완료됐으니 로그인 후 마이페이지에서 다시 업로드해주세요.'
+        : `서류 업로드 오류: ${err.message}\n로그인 후 마이페이지에서 다시 업로드해주세요.`;
+      alert(msg);
+      window.location.href = '/pages/login.html';
     } else {
       errorMsg.textContent = err.message;
+      errorMsg.classList.remove('hidden');
     }
-    errorMsg.classList.remove('hidden');
   }
 });
