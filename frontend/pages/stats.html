@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>통계 - 밥동무</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+  <link rel="stylesheet" href="/css/common.css">
+  <style>
+    .stats-summary {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--space-md);
+      margin-bottom: var(--space-xl);
+    }
+    @media (max-width: 640px) {
+      .stats-summary { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    thead th {
+      text-align: left;
+      padding: var(--space-sm) var(--space-md);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    tbody td {
+      padding: var(--space-sm) var(--space-md);
+      border-bottom: 1px solid var(--border-light);
+      color: var(--text);
+    }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: var(--surface-warm); }
+    .rank { font-weight: 700; color: var(--primary); width: 36px; font-variant-numeric: tabular-nums; }
+    .cell-num { font-variant-numeric: tabular-nums; }
+    .cell-muted { color: var(--muted); font-size: 13px; }
+    .badge-fail {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: var(--radius-full);
+      background: #F0EBE6;
+      color: #6B5E53;
+    }
+
+    .access-denied {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: var(--bg, #fff);
+      z-index: 99999;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+    .access-denied.show { display: flex; }
+    .access-denied-icon { font-size: 48px; }
+    .access-denied-title { font-size: 20px; font-weight: 700; color: var(--text); }
+    .access-denied-sub { font-size: 14px; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="access-denied" id="accessDenied">
+    <div class="access-denied-icon">🔒</div>
+    <div class="access-denied-title">접근 권한이 없어요</div>
+    <div class="access-denied-sub">관리자 계정으로 로그인해주세요</div>
+  </div>
+
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="/" class="nav-logo">
+        <svg class="nav-logo-icon" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="14" fill="#D4763C" opacity="0.12"/><path d="M8 18c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke="#D4763C" stroke-width="2" stroke-linecap="round"/><path d="M6 18h20v1c0 3.3-2.7 6-6 6h-8c-3.3 0-6-2.7-6-6v-1z" fill="#D4763C" opacity="0.2"/><path d="M13 14c-.5-2 .5-4 3-4s3.5 2 3 4" stroke="#5B8C5A" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/></svg>
+        밥동무
+      </a>
+      <ul class="nav-links">
+        <li><a href="/pages/admin.html">대시보드</a></li>
+        <li><a href="/pages/stats.html" class="active">통계</a></li>
+        <li><a href="/pages/hostings.html">호스팅</a></li>
+        <li><a href="#" onclick="logout()">로그아웃</a></li>
+      </ul>
+      <button class="nav-toggle" onclick="toggleNav()" aria-label="메뉴"><span></span><span></span><span></span></button>
+    </div>
+  </nav>
+  <div class="nav-drawer" id="navDrawer" onclick="closeNav(event)">
+    <div class="nav-drawer-content">
+      <a href="/pages/admin.html">대시보드</a>
+      <a href="/pages/stats.html" class="active">통계</a>
+      <a href="/pages/hostings.html">호스팅</a>
+      <a href="#" onclick="logout()">로그아웃</a>
+    </div>
+  </div>
+
+  <main class="container" style="padding-top: var(--space-xl); padding-bottom: var(--space-3xl);">
+    <div class="page-header slide-up">
+      <h1>통계</h1>
+      <p>누적 봉사 통계와 이상 항목을 확인하세요</p>
+    </div>
+
+    <!-- 요약 카드 -->
+    <div class="stats-summary slide-up stagger-1">
+      <div class="stat-card">
+        <div class="stat-value" id="stat-total-hours">-</div>
+        <div class="stat-label">총 봉사시간</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-avg-visits">-</div>
+        <div class="stat-label">봉사자 평균 방문</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-not-visited-rate">-</div>
+        <div class="stat-label">미방문율</div>
+      </div>
+    </div>
+
+    <!-- 봉사자별 통계 -->
+    <div class="section-header slide-up stagger-2">
+      <h2>봉사자별 방문 현황</h2>
+    </div>
+    <div class="card mb-lg slide-up stagger-2">
+      <div id="volunteer-stats">
+        <div class="empty-state" style="padding: var(--space-xl) 0;">
+          <div class="empty-state-icon">🍚</div>
+          <p>불러오는 중...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 미방문 현황 -->
+    <div class="section-header slide-up stagger-3">
+      <h2>미방문 현황</h2>
+    </div>
+    <div class="card mb-lg slide-up stagger-3">
+      <div id="not-visited-list">
+        <div class="empty-state" style="padding: var(--space-xl) 0;">
+          <div class="empty-state-icon">🍚</div>
+          <p>불러오는 중...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SMS 발송 실패 -->
+    <div class="section-header slide-up stagger-4">
+      <h2>SMS 발송 실패</h2>
+    </div>
+    <div class="card slide-up stagger-4">
+      <div id="sms-fail-list">
+        <div class="empty-state" style="padding: var(--space-xl) 0;">
+          <div class="empty-state-icon">🍚</div>
+          <p>불러오는 중...</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/admin.js"></script>
+  <script>
+    function toggleNav() {
+      document.getElementById('navDrawer').classList.toggle('open');
+    }
+    function closeNav(e) {
+      if (e.target === e.currentTarget) toggleNav();
+    }
+
+    function formatDate(iso) {
+      if (!iso) return '-';
+      return new Date(iso).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    }
+
+    const ALARM_LABEL = {
+      match: '신청 알림',
+      checkin: '체크인 알림',
+      checkout: '체크아웃 알림',
+      update: '수정 알림',
+      delete: '삭제 알림',
+    };
+
+    let _volunteerData = [];
+    let _notVisitedData = {};
+
+    function renderSummaryCards() {
+      const totalMinutes = _volunteerData.reduce((s, r) => s + (r.total_minutes || 0), 0);
+      const totalHours = Math.floor(totalMinutes / 60);
+      const avgVisits = _volunteerData.length
+        ? (_volunteerData.reduce((s, r) => s + r.visit_count, 0) / _volunteerData.length).toFixed(1)
+        : 0;
+      const totalClosed = _notVisitedData.total_closed || 0;
+      const notVisitedRate = totalClosed
+        ? Math.round(_notVisitedData.total / totalClosed * 100)
+        : 0;
+
+      document.getElementById('stat-total-hours').textContent = `${totalHours}h`;
+      document.getElementById('stat-avg-visits').textContent = `${avgVisits}회`;
+      document.getElementById('stat-not-visited-rate').textContent = `${notVisitedRate}%`;
+    }
+
+    async function init() {
+      const ok = await checkAdmin();
+      if (!ok) return;
+      await Promise.all([
+        loadVolunteerStats(),
+        loadNotVisited(),
+        loadSmsFailures(),
+      ]);
+      renderSummaryCards();
+    }
+
+    async function loadVolunteerStats() {
+      const wrap = document.getElementById('volunteer-stats');
+      try {
+        const data = await api('/admin/stats/volunteers');
+        _volunteerData = data;
+        if (!data.length) {
+          wrap.innerHTML = `<div class="empty-state" style="padding: var(--space-xl) 0;"><div class="empty-state-icon">🍚</div><p>아직 방문 활동이 없어요. 첫 밥동무를 기다리고 있어요!</p></div>`;
+          return;
+        }
+        wrap.innerHTML = `
+          <table>
+            <thead>
+              <tr>
+                <th>순위</th>
+                <th>이름</th>
+                <th>이메일</th>
+                <th>방문 횟수</th>
+                <th>봉사시간 합계</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${data.map((r, i) => `
+                <tr>
+                  <td class="rank">${i + 1}</td>
+                  <td>${r.name}</td>
+                  <td class="cell-muted">${r.email}</td>
+                  <td class="cell-num">${r.visit_count}회</td>
+                  <td class="cell-num">${r.total_minutes ? `${Math.floor(r.total_minutes / 60)}시간 ${r.total_minutes % 60}분` : '-'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>`;
+      } catch {
+        wrap.innerHTML = `<div class="empty-state" style="padding: var(--space-xl) 0;"><p>불러올 수 없어요</p></div>`;
+      }
+    }
+
+    async function loadNotVisited() {
+      const wrap = document.getElementById('not-visited-list');
+      try {
+        const data = await api('/admin/stats/not-visited');
+        _notVisitedData = data;
+        if (!data.items.length) {
+          wrap.innerHTML = `<div class="empty-state" style="padding: var(--space-xl) 0;"><div class="empty-state-icon">🍚</div><p>모든 봉사자가 잘 방문했어요!</p></div>`;
+          return;
+        }
+        wrap.innerHTML = `
+          <table>
+            <thead>
+              <tr>
+                <th>봉사자</th>
+                <th>어르신</th>
+                <th>신청일</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${data.items.map(r => `
+                <tr>
+                  <td>${r.volunteer_name}<span class="cell-muted"> · ${r.volunteer_email}</span></td>
+                  <td>${r.senior_name}</td>
+                  <td class="cell-muted">${formatDate(r.created_at)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>`;
+      } catch {
+        wrap.innerHTML = `<div class="empty-state" style="padding: var(--space-xl) 0;"><p>불러올 수 없어요</p></div>`;
+      }
+    }
+
+    async function loadSmsFailures() {
+      const wrap = document.getElementById('sms-fail-list');
+      try {
+        const data = await api('/admin/stats/sms-failures');
+        if (!data.items.length) {
+          wrap.innerHTML = `<div class="empty-state" style="padding: var(--space-xl) 0;"><div class="empty-state-icon">🍚</div><p>모든 알림이 정상 발송됐어요!</p></div>`;
+          return;
+        }
+        wrap.innerHTML = `
+          <table>
+            <thead>
+              <tr>
+                <th>수신자</th>
+                <th>알림 유형</th>
+                <th>내용</th>
+                <th>발송 시각</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${data.items.map(r => `
+                <tr>
+                  <td>${r.receiver_name}<span class="cell-muted"> · ${r.receiver_email}</span></td>
+                  <td><span class="badge-fail">${ALARM_LABEL[r.alarm_type] ?? r.alarm_type}</span></td>
+                  <td class="cell-muted">${r.contents}</td>
+                  <td class="cell-muted">${formatDate(r.created_at)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>`;
+      } catch {
+        wrap.innerHTML = `<div class="empty-state" style="padding: var(--space-xl) 0;"><p>불러올 수 없어요</p></div>`;
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
