@@ -3,7 +3,17 @@
 import enum
 from datetime import datetime, timezone
 
-from sqlalchemy import TIMESTAMP, Boolean, CheckConstraint, Enum, ForeignKey, Integer, String, Text
+from sqlalchemy import (
+    TIMESTAMP,
+    Boolean,
+    CheckConstraint,
+    Enum,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -25,7 +35,7 @@ class AlarmType(str, enum.Enum):
     MATCH = "match"
     CHECKIN = "checkin"
     CHECKOUT = "checkout"
-    UPDATE = "update"   # 사용x, 확장성 위해 유지
+    UPDATE = "update"
     DELETE = "delete"
 
 
@@ -53,11 +63,21 @@ class Hosting(Base):
         TIMESTAMP(timezone=True),
         nullable=False,
     )
+    max_people: Mapped[int] = mapped_column(Integer, nullable=False)
 
-    max_people: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-    )
+    road_address: Mapped[str] = mapped_column(String(255), nullable=False)
+    jibun_address: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    zonecode: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    sigungu: Mapped[str] = mapped_column(String(100), nullable=False)
+    bname: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    detail_address: Mapped[str] = mapped_column(String(255), nullable=False)
+
+    sido: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    building_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    is_apartment: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    lat: Mapped[float | None] = mapped_column(Float, nullable=True)
+    lng: Mapped[float | None] = mapped_column(Float, nullable=True)
+    sigungu_code: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
     hosting_status: Mapped[HostingStatus] = mapped_column(
         Enum(HostingStatus),
@@ -70,20 +90,10 @@ class Hosting(Base):
         nullable=False,
         default=lambda: datetime.now(timezone.utc),
     )
-    updated_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True),
-        nullable=False,
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
-    )
 
 
 class SmsLog(Base):
-    """SMS 발송 이력.
-
-    수신자가 여러 명인 경우 수신자별로 row 생성.
-    alarm_type: match | checkin | checkout | update
-    """
+    """SMS 발송 이력."""
 
     __tablename__ = "sms_logs"
 

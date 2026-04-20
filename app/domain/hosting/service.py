@@ -7,7 +7,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.hosting.models import Hosting, HostingStatus
-from app.domain.hosting.schema import HostingCreateRequest, HostingResponse, HostingUpdateRequest
+from app.domain.hosting.schemas import HostingCreateRequest, HostingResponse
+from app.domain.match.models import MatchingInfo, MatchStatus
 from app.domain.senior.models import Senior
 
 
@@ -69,43 +70,63 @@ def get_now_utc() -> datetime:
     return datetime.now(timezone.utc)
 
 
-async def process_hosting_status_by_time(
-    session: AsyncSession,
+def process_hosting_status_by_time(
     hosting: Hosting,
-) -> bool:
-    """호스팅 1건의 시간 기반 상태를 처리합니다."""
+) -> HostingStatus | None:
+    """호스팅 1건의 시간 기반 다음 상태를 계산합니다."""
 
-    _ = session
     now = get_now_utc()
     deadline_at = hosting.hosting_at - timedelta(hours=12)
     current_status = hosting.hosting_status
-    new_status = current_status
 
+    # 1. 시작 12시간 전까지 모집 미달이면 실패
+    if now >= deadline_at and current_status == HostingStatus.OPEN:
+        return HostingStatus.FAILED
+
+    # 2. 종료 시점 처리
     if now >= hosting.hosting_end:
         if current_status == HostingStatus.IN_PROGRESS:
-            new_status = HostingStatus.CLOSED
-        elif current_status != HostingStatus.CLOSED:
-            new_status = HostingStatus.FAILED
+            return HostingStatus.CLOSED
 
-    elif now >= deadline_at:
-        if current_status not in {
+        if current_status in {
+            HostingStatus.OPEN,
             HostingStatus.FULL,
-            HostingStatus.IN_PROGRESS,
-            HostingStatus.CLOSED,
         }:
-            new_status = HostingStatus.FAILED
+            return HostingStatus.FAILED
 
-    if new_status == current_status:
-        return False
+    return None
 
-    hosting.hosting_status = new_status
-    return True
+
+async def mark_matches_not_visited(
+    session: AsyncSession,
+    hosting_id: int,
+) -> int:
+    """호스팅의 미방문 매칭을 NOT_VISITED로 변경합니다."""
+
+    stmt = select(MatchingInfo).where(
+        MatchingInfo.hosting_id == hosting_id,
+        MatchingInfo.match_status == MatchStatus.APPROVED,
+    )
+    result = await session.execute(stmt)
+    matches = result.scalars().all()
+
+    changed_count = 0
+
+    for match in matches:
+        # 체크아웃이 없으면 미방문 처리
+        # - 체크인 없음
+        # - 체크인만 있고 체크아웃 없음
+        if match.check_out_time is None:
+            match.match_status = MatchStatus.NOT_VISITED
+            changed_count += 1
+
+    return changed_count
 
 
 async def run_hosting_status_scheduler(
     session: AsyncSession,
 ) -> int:
-    """시간 조건이 도래한 호스팅 상태를 일괄 처리합니다."""
+    """시간 조건이 도래한 호스팅과 매칭 상태를 일괄 처리합니다."""
 
     stmt = select(Hosting).where(
         Hosting.hosting_status.in_(
@@ -123,12 +144,20 @@ async def run_hosting_status_scheduler(
     changed_count = 0
 
     for hosting in hostings:
-        is_changed = await process_hosting_status_by_time(
-            session=session,
-            hosting=hosting,
-        )
-        if is_changed:
+        new_status = process_hosting_status_by_time(hosting=hosting)
+
+        if new_status is None:
+            continue
+
+        if hosting.hosting_status != new_status:
+            hosting.hosting_status = new_status
             changed_count += 1
+
+        if new_status in {HostingStatus.FAILED, HostingStatus.CLOSED}:
+            changed_count += await mark_matches_not_visited(
+                session=session,
+                hosting_id=hosting.hosting_id,
+            )
 
     if changed_count > 0:
         await session.commit()
@@ -165,6 +194,18 @@ async def create_hosting(
         hosting_at=request.hosting_at,
         hosting_end=request.hosting_end,
         max_people=hosting_max_people,
+        road_address=request.road_address,
+        jibun_address=request.jibun_address,
+        zonecode=request.zonecode,
+        sigungu=request.sigungu,
+        bname=request.bname,
+        detail_address=request.detail_address,
+        sido=request.sido,
+        building_name=request.building_name,
+        is_apartment=request.is_apartment,
+        lat=float(request.lat) if request.lat is not None else None,
+        lng=float(request.lng) if request.lng is not None else None,
+        sigungu_code=request.sigungu_code,
         hosting_status=HostingStatus.OPEN,
     )
 

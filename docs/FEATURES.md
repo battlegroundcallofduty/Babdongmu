@@ -89,15 +89,23 @@
 | `IN_PROGRESS: 호스팅 진행 중` | check in 상태|
 | `CLOSED : 정상완료` | IN_PROGRESS -> CLOSED 그 외의 CASE	-> FAILED
 
-스케줄러 작업
-FAILED : 호스팅 시작 시간 -12시간 시점에 체크하여 FULL -> FAILED
-CLOSED : 호스팅 종료 시간 시점에 체크하여  
+**스케줄러 작업**
+- FAILED : 호스팅 시작 시간 -12시간 시점에 체크하여 OPEN이면 -> FAILED , 해당하는 호스팅에 매칭 테이블이 존재한다면(신청한 사람이 있다면) APPROVED -> NOT_VISITED 교체 
+
+- CLOSED : 호스팅 종료 시간 시점에 체크하여  
 				IN_PROGRESS -> CLOSED 
-				그 외의 CASE -> FAILED 
+				그 외의 CASE	-> CLOSED
+				해당하는 호스팅에 매칭 테이블이 존재한다면(신청한 사람이 있다면) 
+				checkin이 없으면 -> NOT_VISITED 교체
+				checkin만 있는 경우 -> NOT_VISITED 교체
+
+- [ 추가 보정 필요 (지각생용) ] : Check-out 했을 때 NOT_VISITED를 APPROVED로 교체(데이터 보정)
 
 **호스팅 시간 제약**
-- 시작 시간: 07:00 이후
-- 종료 시간: 22:00 이전
+- 기준시간 : 현재(now)
+- 호스팅 생성 시간: 최소 호스팅 시작 시간 -24시간 이전, 최대 14일 전 
+- 시작 시간: 07:00 이후 (KST적용)
+- 종료 시간: 22:00 이전 (KST적용)
 - 최소 진행 시간: 2시간
 - 최대 진행 시간: 4시간
 
