@@ -70,21 +70,37 @@ def get_now_utc() -> datetime:
     return datetime.now(timezone.utc)
 
 
+
+def ensure_utc_aware(dt: datetime) -> datetime:
+    """datetime을 UTC aware 형태로 맞춥니다."""
+
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
+
 def process_hosting_status_by_time(
     hosting: Hosting,
 ) -> HostingStatus | None:
     """호스팅 1건의 시간 기반 다음 상태를 계산합니다."""
 
     now = get_now_utc()
-    deadline_at = hosting.hosting_at - timedelta(hours=12)
+    hosting_at = ensure_utc_aware(hosting.hosting_at)
+    hosting_end = ensure_utc_aware(hosting.hosting_end)
+    deadline_at = hosting_at - timedelta(hours=12)
     current_status = hosting.hosting_status
 
     # 1. 시작 12시간 전까지 모집 미달이면 실패
     if now >= deadline_at and current_status == HostingStatus.OPEN:
         return HostingStatus.FAILED
 
-    # 2. 종료 시점 처리
-    if now >= hosting.hosting_end:
+    # 2. 시작 시각이 되었고 모집완료 상태면 진행중으로 변경
+    if now >= hosting_at and current_status == HostingStatus.FULL:
+        return HostingStatus.IN_PROGRESS
+
+    # 3. 종료 시점 처리
+    if now >= hosting_end:
         if current_status == HostingStatus.IN_PROGRESS:
             return HostingStatus.CLOSED
 
@@ -188,24 +204,27 @@ async def create_hosting(
     if hosting_max_people is None:
         hosting_max_people = senior.max_people
 
+    hosting_at = ensure_utc_aware(request.hosting_at)
+    hosting_end = ensure_utc_aware(request.hosting_end)
+
     hosting = Hosting(
         senior_id=senior.senior_id,
         menu=request.menu,
-        hosting_at=request.hosting_at,
-        hosting_end=request.hosting_end,
+        hosting_at=hosting_at,
+        hosting_end=hosting_end,
         max_people=hosting_max_people,
-        road_address=request.road_address,
-        jibun_address=request.jibun_address,
-        zonecode=request.zonecode,
-        sigungu=request.sigungu,
-        bname=request.bname,
-        detail_address=request.detail_address,
-        sido=request.sido,
-        building_name=request.building_name,
-        is_apartment=request.is_apartment,
-        lat=float(request.lat) if request.lat is not None else None,
-        lng=float(request.lng) if request.lng is not None else None,
-        sigungu_code=request.sigungu_code,
+        road_address=senior.road_address,
+        jibun_address=senior.jibun_address,
+        zonecode=senior.zonecode,
+        sigungu=senior.sigungu,
+        bname=senior.bname,
+        detail_address=senior.detail_address,
+        sido=senior.sido,
+        building_name=senior.building_name,
+        is_apartment=senior.is_apartment,
+        lat=senior.lat,
+        lng=senior.lng,
+        sigungu_code=senior.sigungu_code,
         hosting_status=HostingStatus.OPEN,
     )
 

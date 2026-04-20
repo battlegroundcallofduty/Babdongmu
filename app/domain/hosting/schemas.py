@@ -26,23 +26,10 @@ class HostingCreateRequest(BaseModel):
         description="모집 가능 인원 (미입력 시 어르신 기본값 사용)",
     )
 
-    road_address: str = Field(..., min_length=1, max_length=255, description="도로명 주소")
-    jibun_address: str | None = Field(default=None, max_length=255, description="지번 주소")
-    zonecode: str | None = Field(default=None, max_length=10, description="우편번호")
-    sigungu: str = Field(..., min_length=1, max_length=100, description="시군구")
-    bname: str | None = Field(default=None, max_length=100, description="법정동명")
-    detail_address: str = Field(..., min_length=1, max_length=255, description="상세 주소")
-
-    sido: str | None = Field(default=None, max_length=50, description="시도")
-    building_name: str | None = Field(default=None, max_length=100, description="건물명")
-    is_apartment: bool | None = Field(default=None, description="아파트 여부")
-    lat: float | None = Field(default=None, description="위도")
-    lng: float | None = Field(default=None, description="경도")
-    sigungu_code: str | None = Field(default=None, max_length=20, description="시군구 코드")
-
     @model_validator(mode="after")
     def validate_hosting_time(self) -> "HostingCreateRequest":
         """호스팅 시간 규칙을 검증합니다."""
+
         if self.hosting_at.tzinfo is None or self.hosting_end.tzinfo is None:
             raise ValueError("호스팅 시작/종료 일시는 시간대 정보가 포함되어야 합니다.")
 
@@ -62,6 +49,9 @@ class HostingCreateRequest(BaseModel):
         if hosting_at_utc > max_allowed_hosting_at:
             raise ValueError("호스팅 시작 일시는 현재 시각보다 최대 14일 이내여야 합니다.")
 
+        if hosting_end_utc <= hosting_at_utc:
+            raise ValueError("호스팅 종료 일시는 시작 일시보다 늦어야 합니다.")
+
         if hosting_at_kst.time() < time(7, 0):
             raise ValueError("호스팅 시작 시각은 07:00 이후여야 합니다.")
 
@@ -78,31 +68,6 @@ class HostingCreateRequest(BaseModel):
             raise ValueError("호스팅 종료 일시는 시작 일시보다 최대 4시간까지만 가능합니다.")
 
         return self
-
-
-class HostingUpdateRequest(BaseModel):
-    """호스팅 수정 요청 스키마입니다."""
-
-    menu: str | None = Field(default=None, min_length=1, max_length=255, description="메뉴")
-    hosting_at: datetime | None = Field(default=None, description="호스팅 시작 일시")
-    hosting_end: datetime | None = Field(default=None, description="호스팅 종료 일시")
-    max_people: int | None = Field(default=None, ge=2, le=4, description="모집 가능 인원")
-
-    road_address: str | None = Field(default=None, min_length=1, max_length=255,
-                                     description="도로명 주소")
-    jibun_address: str | None = Field(default=None, max_length=255, description="지번 주소")
-    zonecode: str | None = Field(default=None, max_length=10, description="우편번호")
-    sigungu: str | None = Field(default=None, min_length=1, max_length=100, description="시군구")
-    bname: str | None = Field(default=None, max_length=100, description="법정동명")
-    detail_address: str | None = Field(default=None, min_length=1, max_length=255,
-                                       description="상세 주소")
-
-    sido: str | None = Field(default=None, max_length=50, description="시도")
-    building_name: str | None = Field(default=None, max_length=100, description="건물명")
-    is_apartment: bool | None = Field(default=None, description="아파트 여부")
-    lat: float | None = Field(default=None, description="위도")
-    lng: float | None = Field(default=None, description="경도")
-    sigungu_code: str | None = Field(default=None, max_length=20, description="시군구 코드")
 
 
 class HostingResponse(BaseModel):
@@ -131,5 +96,6 @@ class HostingResponse(BaseModel):
 
     hosting_status: HostingStatus
     created_at: datetime
+    updated_at: datetime | None
 
     model_config = ConfigDict(from_attributes=True)

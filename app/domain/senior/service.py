@@ -89,7 +89,7 @@ async def create_senior(
         lng=float(request.lng) if request.lng is not None else None,
         sigungu_code=request.sigungu_code,
         special_note=request.special_note,
-        active_flag=request.active_flag if request.active_flag is not None else True,
+        active_flag=request.active_flag,
         max_people=request.max_people,
         qr_code=str(uuid.uuid4()),
     )
@@ -196,7 +196,6 @@ async def update_senior(
 
     update_data = request.model_dump(
         exclude_unset=True,
-        exclude_none=True,
     )
 
     for field_name, field_value in update_data.items():
