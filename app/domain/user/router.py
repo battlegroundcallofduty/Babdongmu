@@ -27,6 +27,7 @@ from app.domain.user.service import (
     get_documents_by_user_id,
     get_user_by_email,
 )
+from app.domain.senior.service import list_seniors_by_guardian
 from app.services.r2 import DOCUMENT_CONTENT_TYPES, BucketType, delete_image, upload_image
 
 router = APIRouter()
@@ -111,6 +112,14 @@ async def delete_me(
     db: AsyncSession = Depends(get_db),
 ):
     """회원 탈퇴 (회원가입 중 서류 업로드 실패 시 롤백용으로도 사용)"""
+    # 보호자인 경우 등록된 어르신이 있으면 탈퇴 차단
+    if current_user.user_role == UserRole.GUARDIAN:  # 비활성 포함 전체 조회
+        seniors = await list_seniors_by_guardian(db, current_user.user_id, active_only=False)
+        if seniors:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="등록된 어르신이 있어 탈퇴할 수 없습니다. 먼저 어르신 정보를 삭제해주세요.",
+            )
     # R2 파일 먼저 삭제 (유저 삭제 후 CASCADE로 DB 레코드는 사라지지만 R2 파일은 안 사라짐)
     documents = await get_documents_by_user_id(current_user.user_id, db)
     for doc in documents:
