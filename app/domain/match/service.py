@@ -149,7 +149,11 @@ async def cancel_match(db: AsyncSession, matching_id: int, vt_id: int) -> Matchi
     hosting = await db.get(Hosting, match.hosting_id)
 
     # 호스팅 12시간 전부터는 취소 불가
-    hosting_at = hosting.hosting_at if hosting.hosting_at.tzinfo else hosting.hosting_at.replace(tzinfo=timezone.utc)
+    hosting_at = (
+        hosting.hosting_at
+        if hosting.hosting_at.tzinfo
+        else hosting.hosting_at.replace(tzinfo=timezone.utc)
+    )
     if hosting and hosting_at - datetime.now(timezone.utc) <= timedelta(hours=12):
         raise HTTPException(status_code=400, detail="호스팅 12시간 전부터는 취소할 수 없습니다.")
 
@@ -173,14 +177,14 @@ async def cancel_match(db: AsyncSession, matching_id: int, vt_id: int) -> Matchi
 
 
 async def _get_approved_match(db: AsyncSession, senior_id: int, vt_id: int) -> MatchingInfo:
-    """승인된 매칭을 조회합니다."""
+    """승인된 매칭을 조회합니다. NOT_VISITED(지각생 보정)도 포함합니다."""
     result = await db.execute(
         select(MatchingInfo)
         .join(Hosting, MatchingInfo.hosting_id == Hosting.hosting_id)
         .where(
             MatchingInfo.senior_id == senior_id,
             MatchingInfo.vt_id == vt_id,
-            MatchingInfo.match_status == MatchStatus.APPROVED,
+            MatchingInfo.match_status.in_([MatchStatus.APPROVED, MatchStatus.NOT_VISITED]),
             func.date(Hosting.hosting_at) == date.today(),
         )
     )
@@ -206,14 +210,14 @@ async def check_in(db: AsyncSession, senior_id: int, vt_id: int) -> MatchingInfo
 
     match.check_in_time = datetime.now(timezone.utc)
 
-    # TODO: 호스팅 담당자 IN_PROGRESS enum 추가 후 주석 해제
+    # 첫 번째 체크인이면 호스팅 상태를 진행 중으로 변경 (스케줄러 연결 후 주석 해제)
     # count_result = await db.execute(
     #     select(func.count()).where(
     #         MatchingInfo.hosting_id == match.hosting_id,
     #         MatchingInfo.check_in_time.isnot(None),
     #     )
     # )
-    # is_first_checkin = count_result.scalar() == 0
+    # is_first_checkin = count_result.scalar() == 1
     # if is_first_checkin:
     #     hosting = await db.get(Hosting, match.hosting_id)
     #     if hosting:
@@ -247,6 +251,11 @@ async def check_out(db: AsyncSession, senior_id: int, vt_id: int) -> MatchingInf
         raise HTTPException(status_code=400, detail="이미 체크아웃 완료된 매칭입니다.")
 
     match.check_out_time = datetime.now(timezone.utc)
+
+    # NOT_VISITED 상태에서 체크아웃한 경우 APPROVED로 보정 (지각생)
+    if match.match_status == MatchStatus.NOT_VISITED:
+        match.match_status = MatchStatus.APPROVED
+
     await db.commit()
     await db.refresh(match)
 

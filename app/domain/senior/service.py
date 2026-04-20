@@ -1,5 +1,7 @@
 """어르신 CRUD 로직."""
 
+import uuid
+
 from fastapi import HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -89,6 +91,7 @@ async def create_senior(
         special_note=request.special_note,
         active_flag=request.active_flag,
         max_people=request.max_people,
+        qr_code=str(uuid.uuid4()),
     )
 
     session.add(senior)

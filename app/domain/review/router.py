@@ -49,16 +49,6 @@ async def create_review(
     )
 
 
-@router.get("/{review_id}", response_model=ReviewResponse)
-async def get_review(
-    review_id: int,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-) -> ReviewResponse:
-    """후기 단건을 조회합니다."""
-    return await service.get_review(db=db, review_id=review_id)
-
-
 @router.get("/senior/{senior_id}", response_model=list[ReviewResponse])
 async def list_reviews_by_senior(
     senior_id: int,
@@ -67,6 +57,16 @@ async def list_reviews_by_senior(
 ) -> list[ReviewResponse]:
     """어르신별 후기 목록을 조회합니다."""
     return await service.list_reviews_by_senior(db=db, senior_id=senior_id)
+
+
+@router.get("/{review_id}", response_model=ReviewResponse)
+async def get_review(
+    review_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> ReviewResponse:
+    """후기 단건을 조회합니다."""
+    return await service.get_review(db=db, review_id=review_id)
 
 
 @router.patch("/{review_id}", response_model=ReviewResponse)

@@ -1,14 +1,15 @@
 """유저 API 엔드포인트."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
+import asyncio
+
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import create_access_token
 from app.database import get_db
 from app.domain.user.dependency import get_current_user
-from app.domain.user.models import User, UserRole
+from app.domain.user.models import DocumentType, User, UserRole
 from app.domain.user.schemas import (
-    DocumentCreateRequest,
     DocumentResponse,
     PasswordChangeRequest,
     RegisterResponse,
@@ -23,10 +24,13 @@ from app.domain.user.service import (
     create_document,
     create_user,
     delete_document,
+    delete_user,
     get_document_by_id,
     get_documents_by_user_id,
     get_user_by_email,
 )
+from app.domain.senior.service import list_seniors_by_guardian
+from app.services.r2 import DOCUMENT_CONTENT_TYPES, BucketType, delete_image, upload_image
 
 router = APIRouter()
 
@@ -104,18 +108,47 @@ async def update_password(
         )
 
 
-# ── 서류 ───────────────────
-@router.post("/me/documents", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
-async def upload_document(
-    body: DocumentCreateRequest,
+@router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_me(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """서류 업로드"""
+    """회원 탈퇴"""
+    # 보호자인 경우 등록된 어르신이 있으면 탈퇴 차단
+    if current_user.user_role == UserRole.GUARDIAN:  # 비활성 포함 전체 조회
+        seniors = await list_seniors_by_guardian(db, current_user.user_id, active_only=False)
+        if seniors:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="등록된 어르신이 있어 탈퇴할 수 없습니다. 먼저 어르신 정보를 삭제해주세요.",
+            )
+    # R2 파일 먼저 삭제 (유저 삭제 후 CASCADE로 DB 레코드는 사라지지만 R2 파일은 안 사라짐)
+    documents = await get_documents_by_user_id(current_user.user_id, db)
+    await asyncio.gather(*[delete_image(doc.document_url) for doc in documents], return_exceptions=True)
+    await delete_user(current_user.user_id, db)
+
+
+# ── 서류 ───────────────────
+@router.post("/me/documents", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
+async def upload_document(
+    document_type: DocumentType = Form(...),  # 텍스트 조각(서류유형)
+    file: UploadFile = File(...),             # 파일 조각(실제 파일 바이너리)
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """서류 업로드 (파일 → R2 업로드 → DB 저장)"""  # review-router 참고했습니다
+    # 1) 파일 R2 private 버킷에 올리고 URL 받기
+    document_url = await upload_image(
+        file,
+        folder="documents",
+        bucket=BucketType.PRIVATE,
+        allowed_types=DOCUMENT_CONTENT_TYPES
+    )
+    # 2) URL을 db에 저장
     document = await create_document(
         user_id=current_user.user_id,
-        document_type=body.document_type,
-        document_url=str(body.document_url),  # Pydantic HttpUrl → str 변환 (DB 저장용)
+        document_type=document_type,
+        document_url=document_url,
         db=db,
     )
     return document
@@ -149,4 +182,5 @@ async def remove_document(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="본인의 서류만 삭제할 수 있습니다.",
         )
+    await delete_image(document.document_url)  # R2 파일 먼저 삭제
     await delete_document(document_id, db)
