@@ -293,6 +293,7 @@
     // href 속성에 javascript: URI 삽입 방지
     function safeUrl(url) {
       if (!url || /^javascript:/i.test(String(url).trim())) return '#';
+      if (!/^https?:\/\//i.test(url.trim())) return '#';      
       return url;
     }
 
