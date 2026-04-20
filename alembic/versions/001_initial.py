@@ -1,8 +1,8 @@
 """initial
 
-Revision ID: 8382e5237157
+Revision ID: bd97486c88b5
 Revises: 
-Create Date: 2026-04-17 14:41:44.771223
+Create Date: 2026-04-20 10:32:03.981528
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '8382e5237157'
+revision: str = 'bd97486c88b5'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -53,7 +53,18 @@ def upgrade() -> None:
     sa.Column('name', sa.String(length=100), nullable=False),
     sa.Column('gender', sa.Enum('MALE', 'FEMALE', 'OTHER', name='genderenum'), nullable=False),
     sa.Column('age', sa.Integer(), nullable=False),
-    sa.Column('address', sa.String(length=255), nullable=False),
+    sa.Column('road_address', sa.String(length=255), nullable=False),
+    sa.Column('jibun_address', sa.String(length=255), nullable=True),
+    sa.Column('zonecode', sa.String(length=10), nullable=True),
+    sa.Column('sigungu', sa.String(length=100), nullable=False),
+    sa.Column('bname', sa.String(length=100), nullable=True),
+    sa.Column('detail_address', sa.String(length=255), nullable=False),
+    sa.Column('sido', sa.String(length=50), nullable=True),
+    sa.Column('building_name', sa.String(length=100), nullable=True),
+    sa.Column('is_apartment', sa.Boolean(), nullable=True),
+    sa.Column('lat', sa.Float(), nullable=True),
+    sa.Column('lng', sa.Float(), nullable=True),
+    sa.Column('sigungu_code', sa.String(length=20), nullable=True),
     sa.Column('special_note', sa.Text(), nullable=True),
     sa.Column('active_flag', sa.Boolean(), nullable=False),
     sa.Column('ai_summary', sa.Text(), nullable=True),
@@ -76,9 +87,20 @@ def upgrade() -> None:
     sa.Column('hosting_at', sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column('hosting_end', sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column('max_people', sa.Integer(), nullable=False),
+    sa.Column('road_address', sa.String(length=255), nullable=False),
+    sa.Column('jibun_address', sa.String(length=255), nullable=True),
+    sa.Column('zonecode', sa.String(length=10), nullable=True),
+    sa.Column('sigungu', sa.String(length=100), nullable=False),
+    sa.Column('bname', sa.String(length=100), nullable=True),
+    sa.Column('detail_address', sa.String(length=255), nullable=False),
+    sa.Column('sido', sa.String(length=50), nullable=True),
+    sa.Column('building_name', sa.String(length=100), nullable=True),
+    sa.Column('is_apartment', sa.Boolean(), nullable=True),
+    sa.Column('lat', sa.Float(), nullable=True),
+    sa.Column('lng', sa.Float(), nullable=True),
+    sa.Column('sigungu_code', sa.String(length=20), nullable=True),
     sa.Column('hosting_status', sa.Enum('OPEN', 'FULL', 'FAILED', 'IN_PROGRESS', 'CLOSED', name='hostingstatus'), nullable=False),
     sa.Column('created_at', sa.TIMESTAMP(timezone=True), nullable=False),
-    sa.Column('updated_at', sa.TIMESTAMP(timezone=True), nullable=False),
     sa.CheckConstraint('max_people >= 2', name='ck_hosting_max_people'),
     sa.ForeignKeyConstraint(['senior_id'], ['seniors.senior_id'], ondelete='RESTRICT'),
     sa.PrimaryKeyConstraint('hosting_id')

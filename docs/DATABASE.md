@@ -88,13 +88,25 @@ alembic upgrade head  # 로컬 반영 (DEBUG=False인 경우)
 | name | VARCHAR | 이름 |
 | gender | ENUM | 성별 (`male` / `female` / `other`) |
 | age | INT | 나이 |
-| address | VARCHAR | 주소 |
+| road_address | VARCHAR | 도로명 주소 |
+| jibun_address | VARCHAR nullable | 지번 주소 |
+| zonecode | VARCHAR(10) nullable | 우편번호 |
+| sigungu | VARCHAR | 시군구 |
+| bname | VARCHAR nullable | 법정동/리명 |
+| detail_address | VARCHAR | 상세주소 |
+| sido | VARCHAR nullable | 시/도 |
+| building_name | VARCHAR nullable | 건물명 |
+| is_apartment | BOOLEAN nullable | 아파트 여부 |
+| lat | FLOAT nullable | 위도 |
+| lng | FLOAT nullable | 경도 |
+| sigungu_code | VARCHAR(20) nullable | 시군구 코드 |
 | special_note | TEXT nullable | 특이사항 (병력, 주의사항) |
 | active_flag | BOOLEAN | 활성 상태. 기본값 `true` |
 | ai_summary | TEXT nullable | Gemini AI 생성 소개글 |
 | max_people | INT | 수용 가능 인원 (호스팅 기본값으로 사용) |
 | qr_code | VARCHAR nullable | UUID (어르신 등록 시 자동 생성. 체크인/체크아웃 URL 토큰으로 사용) |
 | created_at | TIMESTAMP | 등록일 |
+| updated_at | TIMESTAMP | 수정일 |
 
 ---
 
@@ -107,9 +119,20 @@ alembic upgrade head  # 로컬 반영 (DEBUG=False인 경우)
 | hosting_at | TIMESTAMP | 호스팅 시작 일시 |
 | hosting_end | TIMESTAMP | 호스팅 종료 일시 |
 | max_people | INT | 모집 가능 인원 (seniors.max_people이 기본값, 수정 가능) |
-| hosting_status | ENUM | 모집 상태 (`신청가능` / `모집완료` / `신청불가`). 기본값 `신청가능` |
+| road_address | VARCHAR | 도로명 주소 |
+| jibun_address | VARCHAR nullable | 지번 주소 |
+| zonecode | VARCHAR(10) nullable | 우편번호 |
+| sigungu | VARCHAR | 시군구 |
+| bname | VARCHAR nullable | 법정동/리명 |
+| detail_address | VARCHAR | 상세주소 |
+| sido | VARCHAR nullable | 시/도 |
+| building_name | VARCHAR nullable | 건물명 |
+| is_apartment | BOOLEAN nullable | 아파트 여부 |
+| lat | FLOAT nullable | 위도 |
+| lng | FLOAT nullable | 경도 |
+| sigungu_code | VARCHAR(20) nullable | 시군구 코드 |
+| hosting_status | ENUM | 모집 상태 (`신청가능` / `모집완료` / `무산` / `진행중` / `완료`). 기본값 `신청가능` |
 | created_at | TIMESTAMP | 생성일 |
-| updated_at | TIMESTAMP nullable | 수정일 |
 
 ---
 

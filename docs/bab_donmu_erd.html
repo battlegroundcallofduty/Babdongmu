@@ -51,13 +51,25 @@ const { svg } = await mermaid.render('erd-svg', `erDiagram
     string name
     string gender
     int age
-    string address
+    string road_address
+    string jibun_address
+    string zonecode
+    string sigungu
+    string bname
+    string detail_address
+    string sido
+    string building_name
+    bool is_apartment
+    float lat
+    float lng
+    string sigungu_code
     string special_note
     bool active_flag
     string ai_summary
     int max_people
     string qr_code
     timestamp created_at
+    timestamp updated_at
   }
   hostings {
     int hosting_id PK
@@ -66,9 +78,20 @@ const { svg } = await mermaid.render('erd-svg', `erDiagram
     timestamp hosting_at
     timestamp hosting_end
     int max_people
+    string road_address
+    string jibun_address
+    string zonecode
+    string sigungu
+    string bname
+    string detail_address
+    string sido
+    string building_name
+    bool is_apartment
+    float lat
+    float lng
+    string sigungu_code
     string hosting_status
     timestamp created_at
-    timestamp updated_at
   }
   matching_info {
     int matching_id PK
