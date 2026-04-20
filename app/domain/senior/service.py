@@ -38,7 +38,18 @@ async def build_senior_response(
         name=senior.name,
         gender=senior.gender,
         age=senior.age,
-        address=senior.address,
+        road_address=senior.road_address,
+        jibun_address=senior.jibun_address,
+        zonecode=senior.zonecode,
+        sigungu=senior.sigungu,
+        bname=senior.bname,
+        detail_address=senior.detail_address,
+        sido=senior.sido,
+        building_name=senior.building_name,
+        is_apartment=senior.is_apartment,
+        lat=senior.lat,
+        lng=senior.lng,
+        sigungu_code=senior.sigungu_code,
         special_note=senior.special_note,
         active_flag=senior.active_flag,
         ai_summary=senior.ai_summary,
@@ -63,9 +74,20 @@ async def create_senior(
         name=request.name,
         gender=request.gender,
         age=request.age,
-        address=request.address,
+        road_address=request.road_address,
+        jibun_address=request.jibun_address,
+        zonecode=request.zonecode,
+        sigungu=request.sigungu,
+        bname=request.bname,
+        detail_address=request.detail_address,
+        sido=request.sido,
+        building_name=request.building_name,
+        is_apartment=request.is_apartment,
+        lat=float(request.lat) if request.lat is not None else None,
+        lng=float(request.lng) if request.lng is not None else None,
+        sigungu_code=request.sigungu_code,
         special_note=request.special_note,
-        active_flag=request.active_flag,
+        active_flag=request.active_flag if request.active_flag is not None else True,
         max_people=request.max_people,
     )
 
@@ -169,7 +191,10 @@ async def update_senior(
         senior_id=senior_id,
     )
 
-    update_data = request.model_dump(exclude_unset=True)
+    update_data = request.model_dump(
+        exclude_unset=True,
+        exclude_none=True,
+    )
 
     for field_name, field_value in update_data.items():
         setattr(senior, field_name, field_value)
@@ -197,7 +222,6 @@ async def deactivate_senior(
     )
 
     senior.active_flag = False
-
     await session.commit()
 
 
@@ -215,7 +239,6 @@ async def activate_senior(
     )
 
     senior.active_flag = True
-
     await session.commit()
 
 
