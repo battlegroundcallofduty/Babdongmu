@@ -5,16 +5,10 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
+import app.domain  # noqa: F401 — 모든 모델을 Base.metadata에 등록
 from alembic import context
 from app.config import settings
 from app.database import Base
-from app.domain.hosting.models import Hosting, SmsLog  # noqa
-from app.domain.match.models import MatchingInfo  # noqa
-from app.domain.review.models import Review, ReviewImg  # noqa
-from app.domain.senior.models import Senior  # noqa
-
-# 모든 모델 import (Base.metadata 등록용)
-from app.domain.user.models import Document, User  # noqa
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

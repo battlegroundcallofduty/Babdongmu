@@ -8,7 +8,7 @@ dependencies = [
     "fastapi==0.115.12",
     "uvicorn[standard]==0.34.2",
     "pydantic-settings==2.8.1",
-    "pydantic[email]",
+    "pydantic[email]==2.12.5",
     "python-dotenv==1.1.0",
     "sqlalchemy[asyncio]==2.0.40",
     "aiosqlite==0.20.0",
@@ -22,6 +22,7 @@ dependencies = [
     "solapi==5.0.3",
     "boto3==1.37.37",
     "python-multipart==0.0.20",
+    "qrcode[pil]==8.1",
 ]
 
 [dependency-groups]

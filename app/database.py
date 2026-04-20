@@ -15,7 +15,7 @@ class Base(DeclarativeBase):
 
 async def init_db() -> None:
     """DB 초기화.
-    - SQLite + DB 없음: create_all로 최초 생성
+    - SQLite + DB 없음: create_all로 최초 생성 후 alembic stamp head로 버전 기록
     - SQLite + DB 있음 + DEBUG=True: alembic upgrade head로 스키마 변경 반영
     - PostgreSQL: deploy.yml에서 alembic upgrade head 담당
     """
@@ -28,19 +28,28 @@ async def init_db() -> None:
     db_exists = os.path.exists(db_path)
 
     if not db_exists:
-        from app.domain.hosting.models import Hosting, SmsLog  # noqa: F401
-        from app.domain.match.models import MatchingInfo  # noqa: F401
-        from app.domain.review.models import Review, ReviewImg  # noqa: F401
-        from app.domain.senior.models import Senior  # noqa: F401
-        from app.domain.user.models import Document, User  # noqa: F401
+        import asyncio
 
+        import app.domain  # noqa: F401 — 모든 모델을 Base.metadata에 등록
+        from alembic import command
+        from alembic.config import Config
+
+        # 테이블 생성
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
+
+        # create_all은 SQL만 실행하고 alembic_version을 남기지 않음.
+        # 다음 기동 때 upgrade head가 001을 재실행하려다 충돌하는 걸 막기 위해
+        # "지금 DB가 최신 revision 상태"임을 alembic에 기록만 해둠.
+        alembic_cfg = Config("alembic.ini")
+        await asyncio.to_thread(command.stamp, alembic_cfg, "head")
     elif settings.DEBUG:
+        import asyncio
+
         from alembic import command
         from alembic.config import Config
         alembic_cfg = Config("alembic.ini")
-        command.upgrade(alembic_cfg, "head")
+        await asyncio.to_thread(command.upgrade, alembic_cfg, "head")
 
 
 async def close_db() -> None:
