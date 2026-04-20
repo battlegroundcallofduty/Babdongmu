@@ -88,12 +88,14 @@ class HostingUpdateRequest(BaseModel):
     hosting_end: datetime | None = Field(default=None, description="호스팅 종료 일시")
     max_people: int | None = Field(default=None, ge=2, le=4, description="모집 가능 인원")
 
-    road_address: str | None = Field(default=None, min_length=1, max_length=255, description="도로명 주소")
+    road_address: str | None = Field(default=None, min_length=1, max_length=255,
+                                     description="도로명 주소")
     jibun_address: str | None = Field(default=None, max_length=255, description="지번 주소")
     zonecode: str | None = Field(default=None, max_length=10, description="우편번호")
     sigungu: str | None = Field(default=None, min_length=1, max_length=100, description="시군구")
     bname: str | None = Field(default=None, max_length=100, description="법정동명")
-    detail_address: str | None = Field(default=None, min_length=1, max_length=255, description="상세 주소")
+    detail_address: str | None = Field(default=None, min_length=1, max_length=255,
+                                       description="상세 주소")
 
     sido: str | None = Field(default=None, max_length=50, description="시도")
     building_name: str | None = Field(default=None, max_length=100, description="건물명")

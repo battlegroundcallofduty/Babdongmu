@@ -3,7 +3,17 @@
 import enum
 from datetime import datetime, timezone
 
-from sqlalchemy import TIMESTAMP, Boolean, CheckConstraint, Enum, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import (
+    TIMESTAMP,
+    Boolean,
+    CheckConstraint,
+    Enum,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
