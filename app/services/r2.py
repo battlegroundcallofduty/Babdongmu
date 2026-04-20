@@ -1,7 +1,10 @@
 """Cloudflare R2 이미지 업로드 유틸리티."""
 
 import enum
+import logging
 import uuid
+# 로그 남길 수 있는 객체
+logger = logging.getLogger(__name__)
 
 import boto3
 from botocore.client import BaseClient
@@ -123,5 +126,6 @@ async def delete_image(image_url: str) -> None:
     try:
         client = _get_client()
         client.delete_object(Bucket=bucket, Key=key)
-    except (BotoCoreError, ClientError):
-        pass  # R2 삭제 실패해도 DB 삭제는 진행
+    except (BotoCoreError, ClientError) as e:
+        # 삭제 실패해도 DB 삭제는 진행하되 로그 남김 (R2 고아 파일 추적용)
+        logger.error("R2 파일 삭제 실패 url=%s error=%s", image_url, e)
