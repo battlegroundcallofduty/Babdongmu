@@ -1,6 +1,7 @@
 """Cloudflare R2 이미지 업로드 유틸리티."""
 
 import enum
+import logging
 import uuid
 
 import boto3
@@ -66,7 +67,8 @@ async def upload_image(
             ContentType=file.content_type,
         )
     except (BotoCoreError, ClientError) as e:
-        raise HTTPException(status_code=503, detail=f"이미지 업로드에 실패했습니다. {e}")
+        logging.getLogger(__name__).error("R2 upload failed: %s", e)
+        raise HTTPException(status_code=503, detail="이미지 업로드에 실패했습니다.")
 
     # 공개 버킷은 CDN URL, 비공개 버킷은 엔드포인트 URL 반환
     if bucket == BucketType.PUBLIC:
