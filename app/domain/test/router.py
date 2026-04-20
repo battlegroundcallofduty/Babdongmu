@@ -4,6 +4,7 @@
 무관하게 sms 서비스 함수를 직접 호출해 발송 여부를 확인합니다.
 """
 
+import logging
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -190,7 +191,7 @@ async def seed_review_test_data(
     try:
         await update_senior_ai_summary(senior.senior_id, db)
     except Exception:
-        pass
+        logging.getLogger(__name__).exception("AI 요약 생성 실패 (senior_id=%s)", senior.senior_id)
 
     return {
         "senior_id": senior.senior_id,

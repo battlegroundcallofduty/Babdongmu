@@ -210,7 +210,7 @@ async def check_in(db: AsyncSession, senior_id: int, vt_id: int) -> MatchingInfo
 
     match.check_in_time = datetime.now(timezone.utc)
 
-    # 첫 번째 체크인이면 호스팅 상태를 진행 중으로 변경
+    # 첫 번째 체크인이면 호스팅 상태를 진행 중으로 변경 (스케줄러 연결 후 주석 해제)
     # count_result = await db.execute(
     #     select(func.count()).where(
     #         MatchingInfo.hosting_id == match.hosting_id,

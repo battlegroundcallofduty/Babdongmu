@@ -1,5 +1,7 @@
 """어르신 API 라우터."""
 
+import asyncio
+
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -159,11 +161,14 @@ async def get_senior_qr_endpoint(
     if not senior.qr_code:
         raise HTTPException(status_code=404, detail="QR 코드가 존재하지 않습니다.")
 
-    image_bytes = generate_qr_image(senior.qr_code)
+    image_bytes = await asyncio.to_thread(generate_qr_image, senior.qr_code)
     return StreamingResponse(
         iter([image_bytes]),
         media_type="image/png",
-        headers={"Content-Disposition": f"inline; filename=senior_{senior_id}_qr.png"},
+        headers={
+            "Content-Disposition": "inline; filename=qr.png",
+            "Cache-Control": "no-store",
+        },
     )
 
 
