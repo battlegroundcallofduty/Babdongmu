@@ -24,7 +24,7 @@ from app.domain.senior.service import (
     update_senior,
 )
 from app.domain.user.dependency import require_guardian, require_volunteer
-from app.services.qr import generate_qr_image
+from app.services.qr import build_checkin_url, generate_qr_image
 
 router = APIRouter()
 
@@ -183,7 +183,8 @@ async def get_senior_qr_endpoint(
     if not senior.qr_code:
         raise HTTPException(status_code=404, detail="QR 코드가 존재하지 않습니다.")
 
-    image_bytes = await asyncio.to_thread(generate_qr_image, senior.qr_code)
+    checkin_url = build_checkin_url(senior.qr_code)
+    image_bytes = await asyncio.to_thread(generate_qr_image, checkin_url)
     return StreamingResponse(
         iter([image_bytes]),
         media_type="image/png",

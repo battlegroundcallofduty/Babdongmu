@@ -122,7 +122,7 @@ async def list_matches_by_volunteer(
             hosting_at=hosting.hosting_at,
             senior_id=senior.senior_id,
             senior_name=senior.name,
-            senior_address=senior.address,
+            senior_address=senior.road_address,
             actual_volunteer_time=match.actual_volunteer_time,
             has_review=review_id_map.get(match.matching_id) is not None,
             review_id=review_id_map.get(match.matching_id),
