@@ -1,5 +1,5 @@
 // 로그인 안 했으면 로그인 페이지로 이동
-if (!isLoggedIn()) {  // api.js에 있는 함수
+if (!isLoggedIn()) {  // api.js 함수
   window.location.href = '/pages/login.html';
 }
 
@@ -49,7 +49,7 @@ async function uploadDocument(documentType, file) {
   return response.json();
 }
 
-// 업로드된 서류 슬롯 (삭제 버튼 포함)
+// 업로드된 서류 (삭제 버튼 포함)
 function renderUploadedSlot(doc, label) {
   const fileName = doc.document_url.split('/').pop();  // R2 URL에서 파일명만 추출
   return `
@@ -63,7 +63,7 @@ function renderUploadedSlot(doc, label) {
     </div>`;
 }
 
-// 미업로드 서류 슬롯 (업로드 버튼 포함)
+// 미업로드 서류 (업로드 버튼 포함)
 function renderEmptySlot(docType, label) {
   return `
     <div class="list-item" style="background:var(--surface); border:1px solid var(--border-light); border-radius:var(--radius-md); margin-bottom:8px;">
@@ -81,7 +81,7 @@ function renderEmptySlot(docType, label) {
     </div>`;
 }
 
-// 보호자 추가 서류 미업로드 슬롯 (서류 종류 선택 셀렉트 포함)
+// 보호자 추가 서류 미업로드 (서류 종류 선택 셀렉트 포함)
 function renderEmptyGuardianSlot() {
   return `
     <div class="list-item" style="background:var(--surface); border:1px solid var(--border-light); border-radius:var(--radius-md); margin-bottom:8px;">
@@ -106,7 +106,7 @@ function renderEmptyGuardianSlot() {
 }
 
 // 역할에 맞는 서류 슬롯 전체 렌더링
-// 봉사자: 신분증 + 범죄경력조회서 / 보호자: 신분증 + 복지관or가족관계증명서
+// 봉사자: 신분증 + 범죄경력 / 보호자: 신분증 + 복지관or가족
 function renderDocumentSlots(docs, userRole) {
   const container = document.getElementById('docs-list');
 
@@ -214,7 +214,7 @@ document.getElementById('docs-list')?.addEventListener('change', async (e) => {
     currentUserRole = me.user_role;
     await loadDocuments();
   } catch {
-    // 토큰 없거나 만료되면 안내 후 로그인 페이지로 이동
+    // 토큰 없거나 만료되면 안내 후 로그인 페이지로
     alert('로그인이 만료됐어요. 다시 로그인해주세요.');
     window.location.href = '/pages/login.html';
   }
@@ -223,7 +223,7 @@ document.getElementById('docs-list')?.addEventListener('change', async (e) => {
 // 비밀번호 변경폼 제출 처리
 // password-form 제출되면 이 함수 실행
 document.querySelector('#password-form')?.addEventListener('submit', async (e) => {
-  e.preventDefault(); // preventDefault: 페이지 새로고침 막기, ?: null이면 뒤를 실행하지 않고 넘어감
+  e.preventDefault(); // preventDefault: 새로고침 방지, ?: null이면 뒤를 실행하지 않고 pass
 
   const errorMsg = document.querySelector('#password-error');
   const successMsg = document.querySelector('#password-success');
@@ -252,7 +252,7 @@ document.querySelector('#password-form')?.addEventListener('submit', async (e) =
 
   try {  // api() 호출(jwt 토큰 자동)
     await api('/users/me/password', {
-      method: 'PATCH',  // PATCH: 일부 수정(지금 비밀번호 변경처럼 바꿀 필드만 보냄)
+      method: 'PATCH',  // PATCH: 일부 수정(비번 변경처럼 바꿀 필드만 보냄)
       body: JSON.stringify({
         current_password: currentPassword,
         new_password: newPassword,
@@ -266,15 +266,15 @@ document.querySelector('#password-form')?.addEventListener('submit', async (e) =
   } catch (err) {
     errorMsg.textContent = err.message;
     errorMsg.classList.remove('hidden');
-  }  // 실패하면 빨간알림창(api.js꺼 갖다써서 에러메시지 파싱 잘됨)
+  }  // 실패하면 빨간알림창
 });
 
 // 로그아웃 버튼 클릭
 document.querySelector('#logout-btn')?.addEventListener('click', () => {
-  logout();  // logout도 api.js에 있음(토큰 삭제후 로그인 페이지 이동)
+  logout();  // api.js 함수(토큰 삭제후 로그인 이동)
 });
 
-// 회원 탈퇴 버튼 클릭
+// 회원 탈퇴 버튼
 document.querySelector('#delete-btn')?.addEventListener('click', async () => {
   if (!confirm('정말 탈퇴하시겠습니까? 모든 정보가 삭제되며 복구할 수 없습니다.')) return;
   try {

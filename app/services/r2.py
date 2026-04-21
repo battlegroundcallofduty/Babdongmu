@@ -19,7 +19,7 @@ DOCUMENT_CONTENT_TYPES = {
     "image/jpeg",                # 브라우저가 서버에 보내는값(MIME 타입)
     "image/png",
     "application/pdf",
-    "application/x-hwp",         # hwp: 브라우저마다 다른 유형 2개(MIME 타입 2종류)
+    "application/x-hwp",         # hwp: 브라우저마다 다른 유형 2개
     "application/haansoft-hwp",  # docx: 공식 유형, 한컴회사꺼 2개
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     "application/haansoftdocx",
