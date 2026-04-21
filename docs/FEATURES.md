@@ -94,7 +94,7 @@
 
 - CLOSED : 호스팅 종료 시간 시점에 체크하여  
 				IN_PROGRESS -> CLOSED 
-				그 외의 CASE	-> CLOSED
+				그 외의 CASE	-> FAILED
 				해당하는 호스팅에 매칭 테이블이 존재한다면(신청한 사람이 있다면) 
 				checkin이 없으면 -> NOT_VISITED 교체
 				checkin만 있는 경우 -> NOT_VISITED 교체
