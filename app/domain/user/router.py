@@ -14,6 +14,8 @@ from app.domain.user.schemas import (
     DocumentResponse,
     PasswordChangeRequest,
     RegisterResponse,
+    SmsSendRequest,
+    SmsVerifyRequest,
     TokenResponse,
     UserLoginRequest,
     UserRegisterRequest,
@@ -29,6 +31,8 @@ from app.domain.user.service import (
     get_document_by_id,
     get_documents_by_user_id,
     get_user_by_email,
+    send_phone_verification,
+    verify_phone_code,
 )
 from app.services.r2 import (
     DOCUMENT_CONTENT_TYPES,
@@ -206,3 +210,31 @@ async def get_document_url(
         )
     return {"url": get_presigned_url(document.document_url)}
 
+
+# ── SMS 인증 ───────────────────
+@router.post("/phone/send", status_code=status.HTTP_204_NO_CONTENT)
+async def send_verification(body: SmsSendRequest, db: AsyncSession = Depends(get_db)):
+    """SMS 인증 코드 발송"""
+    success = await send_phone_verification(body.phone_number, db)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="SMS 발송에 실패했습니다. 잠시 후 다시 시도해주세요.",
+        )
+
+
+@router.post("/phone/verify", status_code=status.HTTP_204_NO_CONTENT)
+async def verify_verification(body: SmsVerifyRequest, db: AsyncSession = Depends(get_db)):
+    """SMS 인증 코드 확인"""
+    result = await verify_phone_code(body.phone_number, body.code, db)
+    if result is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="인증 코드가 만료되었습니다. 다시 요청해주세요.",
+        )
+    if result is False:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="인증 코드가 일치하지 않습니다.",
+        )
+# TODO: service 또는 router에 가입 전 동일번호 존재여부 조회후 409 반환예정 / 폰번 unique 고려
