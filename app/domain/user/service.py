@@ -1,12 +1,14 @@
 """유저 비즈니스 로직."""
 
-from datetime import datetime, timezone
+import random
+import string
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import hash_password, verify_password
-from app.domain.user.models import Document, DocumentType, User, UserRole
+from app.domain.user.models import Document, DocumentType, PhoneVerification, User, UserRole
 
 # update_user 허용 리스트
 ALLOWED_UPDATE_FIELDS = {"name", "phone_number", "address"}
@@ -154,11 +156,45 @@ async def get_or_create_kakao_user(kakao_id: str, email: str, name: str, db: Asy
 
 
 # ── SMS 인증 ────────
-async def send_phone_verification(phone_number: str, db: AsyncSession) -> None:
-    """SMS 인증 코드 생성하고 발송"""
-    pass
+async def send_phone_verification(phone_number: str, db: AsyncSession) -> bool:
+    """SMS 인증 코드 생성하고 발송. 발송 성공 시 True 반환."""
+    # sms.py에서 service.py를 참조하고있어서 순환오류 빠지지않도록 함수안에서 import
+    from app.services.sms import send_auth_sms
+    # 코드 랜덤생성 6자리 / 만료시간 3분
+    code = "".join(random.choices(string.digits, k=6))
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=3)
+
+    verification = PhoneVerification(
+        phone_number=phone_number,
+        code=code,
+        expires_at=expires_at,
+    )
+    db.add(verification)
+    await db.commit()
+
+    return await send_auth_sms(phone_number, code)
 
 
-async def verify_phone_code(phone_number: str, code: str, db: AsyncSession) -> bool:
-    """SMS 인증 코드 확인. 성공 시 True 반환."""
-    pass
+async def verify_phone_code(phone_number: str, code: str, db: AsyncSession) -> bool | None:
+    """SMS 인증 코드 확인. True: 성공 / False: 코드 불일치 / None: 만료 또는 없음."""
+    statement = (
+        select(PhoneVerification)
+        .where(PhoneVerification.phone_number == phone_number)
+        .order_by(PhoneVerification.created_at.desc())
+        .limit(1)
+    )
+    result = await db.execute(statement)
+    verification = result.scalar_one_or_none()
+
+    if verification is None:
+        return None
+    if verification.expires_at < datetime.now(timezone.utc):
+        return None
+    if verification.code != code:
+        return False
+
+    verification.is_verified = True
+    await db.commit()
+    return True
+# TODO: 스케줄러 추가예정
+# (R2 고아 서류파일,리뷰사진 + phone_verifications 만료된행 하루에 한번 정리)
