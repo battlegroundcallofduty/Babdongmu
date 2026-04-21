@@ -18,11 +18,42 @@ document.querySelectorAll('.tab[data-role]').forEach(tab => {
   });
 });
 
-// 파일 선택 시 파일명 표시
+// 파일 선택 시 파일명 표시 + 형식/크기 인라인 검증
+const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'pdf', 'hwp', 'docx'];
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
 document.querySelectorAll('input[type="file"]').forEach(input => {
   input.addEventListener('change', () => {
+    const file = input.files[0];
     const span = input.closest('label').querySelector('.doc-upload-text');
-    span.textContent = input.files[0] ? input.files[0].name : '파일 선택';
+    span.textContent = file ? file.name : '파일 선택';
+
+    const hint = input.closest('.form-group').querySelector('.doc-hint');
+    let errorEl = input.closest('.form-group').querySelector('.alert-error');
+
+    if (!file) {
+      errorEl?.remove();
+      return;
+    }
+
+    const ext = file.name.split('.').pop().toLowerCase();
+    let errorMsg = null;
+    if (!ALLOWED_EXTENSIONS.includes(ext)) {
+      errorMsg = '지원하지 않는 파일 형식입니다. 알맞은 형식의 파일을 다시 첨부해주세요.(허용: jpg, png, pdf, hwp, docx)';
+    } else if (file.size > MAX_FILE_SIZE) {
+      errorMsg = '파일 크기가 5MB를 초과했습니다. 5MB보다 작은 파일을 첨부해주세요.';
+    }
+
+    if (errorMsg) {
+      if (!errorEl) {
+        errorEl = document.createElement('p');
+        errorEl.className = 'alert alert-error';
+        hint.after(errorEl);
+      }
+      errorEl.textContent = errorMsg;
+    } else {
+      errorEl?.remove();
+    }
   });
 });
 
@@ -75,6 +106,17 @@ document.querySelector('#register-form')?.addEventListener('submit', async (e) =
 
   errorMsg.classList.add('hidden');
 
+  const role = document.querySelector('#role').value;
+  const idFile = document.querySelector('#doc-id').files[0];
+  const extraFile = role === 'volunteer'
+    ? document.querySelector('#doc-criminal').files[0]
+    : document.querySelector('#doc-family').files[0];
+
+  if (!idFile || !extraFile) {
+    const ok = confirm('서류를 모두 제출하지 않아도 가입은 가능하지만, 관리자의 승인이 반려될 수 있습니다. 계속하시겠습니까?');
+    if (!ok) return;
+  }
+
   let token = null; // catch에서 가입 성공 판단 위해 try 바깥에 선언
 
   try {
@@ -87,7 +129,7 @@ document.querySelector('#register-form')?.addEventListener('submit', async (e) =
         password_confirm: passwordConfirm,
         name: document.querySelector('#name').value,
         phone_number: document.querySelector('#phone').value,
-        user_role: document.querySelector('#role').value,
+        user_role: role,
         address: document.querySelector('#district').value,
       }),
     });
@@ -95,26 +137,18 @@ document.querySelector('#register-form')?.addEventListener('submit', async (e) =
     // 2) 토큰 저장 (서류 업로드 시 인증에 필요)
     token = result.access_token;
     // saveToken 삭제 → 회원가입 후 자동 로그인 방지, 서류 업로드엔 token 변수 직접 사용
-    const role = document.querySelector('#role').value;
 
     // 3) 신분증 사본 업로드 (선택)
-    const idFile = document.querySelector('#doc-id').files[0];
     if (idFile) {
       await uploadDocument(token, 'identity_copy', idFile);
     }
 
     // 4) 역할별 추가 서류 업로드 (선택)
-    if (role === 'volunteer') {
-      const criminalFile = document.querySelector('#doc-criminal').files[0];
-      if (criminalFile) {
-        await uploadDocument(token, 'criminal_record', criminalFile);
-      }
-    } else if (role === 'guardian') {
-      const guardianFile = document.querySelector('#doc-family').files[0];
-      if (guardianFile) {
-        const guardianType = document.querySelector('#doc-guardian-type').value;
-        await uploadDocument(token, guardianType, guardianFile);
-      }
+    if (extraFile) {
+      const documentType = role === 'volunteer'
+        ? 'criminal_record'
+        : document.querySelector('#doc-guardian-type').value;
+      await uploadDocument(token, documentType, extraFile);
     }
 
     window.location.href = '/pages/login.html?registered=1';
