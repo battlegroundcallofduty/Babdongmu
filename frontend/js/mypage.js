@@ -198,11 +198,15 @@ document.getElementById('docs-list')?.addEventListener('change', async (e) => {
     // 인증 상태 뱃지
     const certBadge = document.getElementById('cert-badge');
     if (me.cert_flag === 'approved') {
-      certBadge.innerHTML = '<span class="badge badge-open">검증 완료</span>';
+      certBadge.innerHTML = '<span class="badge badge-open">승인 완료</span>';
     } else if (me.cert_flag === 'pending') {
       certBadge.innerHTML = '<span class="badge badge-pending">검토 중</span>';
     } else if (me.cert_flag === 'rejected') {
       certBadge.innerHTML = '<span class="badge badge-cancelled">반려됨</span>';
+      if (me.cert_reject_reason) {
+        document.getElementById('reject-reason-msg').textContent = me.cert_reject_reason;
+        document.getElementById('reject-reason-section').classList.remove('hidden');
+      }
     }
 
     if (me.is_social_login) {
