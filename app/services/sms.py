@@ -5,6 +5,7 @@
 """
 
 import asyncio
+import logging
 from datetime import timezone
 from zoneinfo import ZoneInfo
 
@@ -15,6 +16,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.domain.hosting.models import AlarmType, Hosting, SmsLog
 from app.domain.user.service import get_user_by_id
+
+logger = logging.getLogger(__name__)
 
 
 async def send_sms(
@@ -38,7 +41,7 @@ async def send_sms(
     # 수신자 정보 조회
     receiver = await get_user_by_id(receiver_id, db)
     if not receiver or not receiver.phone_number:
-        print(f"[SMS] 수신자 {receiver_id}의 전화번호를 찾을 수 없습니다.")
+        logger.warning("SMS 발송 실패: 수신자 %s 전화번호 없음", receiver_id)
         return False
 
     to = receiver.phone_number
@@ -180,7 +183,7 @@ async def _send_via_solapi(to: str, message: str) -> bool:
     Solapi SDK는 동기 방식이므로 asyncio.to_thread로 감싸 이벤트 루프 블로킹을 방지합니다.
     """
     if not settings.SOLAPI_API_KEY:
-        print(f"[SMS:Solapi 미설정] to={to}, message={message}")
+        logger.warning("SMS 미발송: Solapi 미설정 (to=%s)", to)
         return False
 
     def _send() -> None:
@@ -202,5 +205,5 @@ async def _send_via_solapi(to: str, message: str) -> bool:
         await asyncio.to_thread(_send)
         return True
     except Exception as e:
-        print(f"[SMS:Solapi 발송 실패] {e}")
+        logger.error("SMS 발송 실패 (to=%s): %s", to, e)
         return False

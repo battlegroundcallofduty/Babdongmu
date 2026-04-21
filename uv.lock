@@ -93,7 +93,7 @@ requires-dist = [
     { name = "httpx", specifier = "==0.28.1" },
     { name = "passlib", extras = ["bcrypt"], specifier = "==1.7.4" },
     { name = "psycopg", extras = ["binary"], specifier = "==3.3.3" },
-    { name = "pydantic", extras = ["email"] },
+    { name = "pydantic", extras = ["email"], specifier = "==2.12.5" },
     { name = "pydantic-settings", specifier = "==2.8.1" },
     { name = "pyjwt", specifier = "==2.12.1" },
     { name = "python-dotenv", specifier = "==1.1.0" },
