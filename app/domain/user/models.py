@@ -3,7 +3,7 @@
 import enum
 from datetime import datetime, timezone
 
-from sqlalchemy import TIMESTAMP, Enum, ForeignKey, String
+from sqlalchemy import TIMESTAMP, Boolean, Enum, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -48,6 +48,22 @@ class User(Base):
     @property  # 메서드인데 속성처럼 쓸수있게(db 컬럼 X)
     def is_social_login(self) -> bool:
         return self.password is None
+
+
+class PhoneVerification(Base):
+    """SMS 인증 코드 저장."""
+
+    __tablename__ = "phone_verifications"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    phone_number: Mapped[str] = mapped_column(String(20), index=True)
+    code: Mapped[str] = mapped_column(String(6))
+    expires_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True))
+    is_verified: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+    )
 
 
 class DocumentType(enum.Enum):
