@@ -22,7 +22,7 @@ async def get_current_user(
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="유효하지 않은 토큰입니다.",
-        headers={"WWW-Authenticate": "Bearer"},  # 인증 실패라고 헤더에 알려주는거
+        headers={"WWW-Authenticate": "Bearer"},
     )
 
     payload = decode_access_token(credentials.credentials)
@@ -33,7 +33,7 @@ async def get_current_user(
     if user_id is None:
         raise credentials_exception
 
-    # sub 값을 정수로 방어도 해주고, 정수가 아닌 경우 500 에러 말고 401 에러로
+    # sub 값을 정수로 방어, 정수가 아닌 경우: 401 에러
     try:
         user_id_int = int(user_id)
     except ValueError:

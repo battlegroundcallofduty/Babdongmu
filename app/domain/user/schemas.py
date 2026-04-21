@@ -6,7 +6,7 @@ from pydantic import BaseModel, EmailStr, HttpUrl, field_validator, model_valida
 
 from app.domain.user.models import CertFlag, DocumentType, UserRole
 
-# (요청: 클라이언트가 서버에 body로 데이터를 보낼때)
+# (요청: 클라이언트 -body(데이터)-> 서버)
 # ── 유저 요청 ──────────────
 
 
@@ -15,22 +15,22 @@ class UserRegisterRequest(BaseModel):
 
     email: EmailStr
     password: str
-    password_confirm: str  # 비밀번호 확인(라우터에서 넘길필요없음~)
+    password_confirm: str  # 비밀번호 확인(라우터에서 안넘김)
     name: str
     phone_number: str
     user_role: UserRole  # volunteer | guardian
     address: str
 
-    @field_validator("password")  # 특정 필드 하나
-    # 비번 필드 하나만 들어왔을때 실행되서 userregisterrequest 객체가 없는 상태
-    @classmethod  # 그래서 self 객체 대신 클래스를 받는다(cls)
+    @field_validator("password")  # 특정 필드(비번) 하나
+    # userregisterrequest 객체가 없는 상태라서 클래스(cls) 받음
+    @classmethod
     def password_min_length(cls, v):  # v: password 입력값
         if len(v) < 8:
             raise ValueError("비밀번호는 8자 이상이어야 합니다.")
         return v
 
-    @model_validator(mode="after")  # 모델 전체(비번, 비번확인 비교)
-    # mode="after": 모든 필드 처리 다 끝난 다음에 validator 실행 (self 가능)
+    @model_validator(mode="after")  # 모델 전체(비번 - 비번확인 비교)
+    # after: 모든 필드 처리 다 끝난 다음에 validator 실행 (self 가능)
     def passwords_match(self):
         if self.password != self.password_confirm:
             raise ValueError("비밀번호가 일치하지 않습니다.")
@@ -79,6 +79,7 @@ class PasswordChangeRequest(BaseModel):
 class DocumentCreateRequest(BaseModel):
     """서류 업로드 요청"""
 
+    # 데드코드라 삭제 예정
     document_type: DocumentType
     # HttpUrl로 스킴/형식 검증 (javascript:, data: 등 차단). 렌더링 시 textContent 사용 권장
     document_url: HttpUrl
@@ -116,8 +117,7 @@ class UserResponse(BaseModel):
     created_at: datetime
     is_social_login: bool
 
-    # sqlalchemy orm 객체를 pydantic 스키마로 변환할때 객체 속성 읽게해줌
-    # 이 설정 때문에 @property도 읽을수있음
+    # ORM 객체같은 .속성도 읽기가능(@property도 읽음)
     model_config = {"from_attributes": True}
 
 
