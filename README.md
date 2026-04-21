@@ -34,17 +34,26 @@ uvicorn app.main:app --reload
 docker compose up --build
 ```
 
+### DB 초기화 동작 방식
+
+| 상황 | 동작 |
+|------|------|
+| `babdongmu.db` 없음 (최초 실행) | 서버 시작 시 `create_all`로 자동 생성 |
+| `babdongmu.db` 있음 + `DEBUG=True` | 서버 시작 시 `alembic upgrade head` 자동 실행 |
+| `babdongmu.db` 있음 + `DEBUG=False` | 아무것도 안 함 |
+| 프로덕션 (PostgreSQL) | `deploy.yml`에서 `alembic upgrade head` 실행 |
+
 ### 모델/DB 스키마가 바뀐 직후 pull 받았을 때
 
-`create_all`은 기존 테이블에 새 컬럼을 추가하지 않습니다. 모델에 컬럼이 추가/변경됐다는 커밋을 pull 받은 뒤 `no such column` 같은 에러가 나면 로컬 SQLite를 재생성하세요.
+`.env`에 `DEBUG=True`가 설정되어 있으면 서버 시작 시 자동으로 migration이 적용됩니다.
+
+`no such column` 같은 에러가 나거나 DB를 완전히 초기화하고 싶으면:
 
 ```bash
 # 서버 중지 후
 rm babdongmu.db
-uvicorn app.main:app --reload
+uvicorn app.main:app --reload  # 자동으로 create_all 실행
 ```
-
-로컬 데이터만 날아갑니다. 프로덕션 DB는 별도 마이그레이션 도입 전까지 수동 대응합니다.
 
 ## API 문서
 

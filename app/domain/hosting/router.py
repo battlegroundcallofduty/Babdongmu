@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.domain.hosting.schema import HostingCreateRequest, HostingResponse
+from app.domain.hosting.schemas import HostingCreateRequest, HostingResponse
 from app.domain.hosting.service import (
     cancel_hosting,
     create_hosting,
@@ -12,7 +12,6 @@ from app.domain.hosting.service import (
     list_hostings_by_guardian,
 )
 from app.domain.user.dependency import require_guardian
-
 
 router = APIRouter()
 

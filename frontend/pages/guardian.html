@@ -4,24 +4,299 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>어르신 관리 - 밥동무</title>
-  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" rel="stylesheet">
+  <link
+    href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css"
+    rel="stylesheet"
+  >
   <link rel="stylesheet" href="/css/common.css">
+  <style>
+    .hidden {
+      display: none;
+    }
+
+    .card {
+      max-width: 420px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .ellipsis {
+      display: block;
+      width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .address-text {
+      display: block;
+      width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .detail-row {
+      min-width: 0;
+    }
+
+    .detail-value {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .message-box {
+      margin-bottom: 24px;
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+
+    .senior-list-actions {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+      background: rgba(44, 36, 32, 0.45);
+    }
+
+    .modal-overlay:not(.hidden) {
+      display: flex;
+    }
+
+    .modal-panel {
+      width: 100%;
+      max-width: 640px;
+      max-height: calc(100vh - 48px);
+      overflow-y: auto;
+      background: #ffffff;
+      border: 1px solid #E8E0D8;
+      border-radius: 16px;
+      box-shadow: 0 20px 48px rgba(44, 36, 32, 0.18);
+      padding: 24px;
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .modal-header h3 {
+      margin: 0;
+    }
+
+    .modal-close-button {
+      border: none;
+      background: transparent;
+      font-size: 28px;
+      line-height: 1;
+      cursor: pointer;
+      color: #8C7E73;
+      padding: 0;
+    }
+
+    .modal-close-button:hover {
+      color: #2C2420;
+    }
+
+    .confirm-modal-panel {
+      max-width: 420px;
+      padding: 24px;
+    }
+
+    .confirm-modal-body {
+      color: #2C2420;
+      font-size: 16px;
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+
+    .confirm-modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    body.modal-open {
+      overflow: hidden;
+    }
+
+    .btn-disabled {
+      background: #F0EBE6;
+      border-color: #D8CEC4;
+      color: #8C7E73;
+      cursor: not-allowed;
+      opacity: 1;
+    }
+
+    .btn-disabled:hover {
+      background: #F0EBE6;
+      border-color: #D8CEC4;
+      color: #8C7E73;
+    }
+
+
+    .address-search-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .address-search-row .form-input {
+      flex: 1;
+    }
+
+    .address-meta {
+      margin-top: 8px;
+      font-size: 14px;
+      color: #8C7E73;
+      line-height: 1.5;
+    }
+
+    .address-preview-box {
+      margin-top: 8px;
+      padding: 12px 14px;
+      border: 1px solid #E8E0D8;
+      border-radius: 8px;
+      background: #FBF7F2;
+      font-size: 14px;
+      color: #2C2420;
+      line-height: 1.5;
+    }
+
+    .address-preview-box.is-empty {
+      color: #8C7E73;
+    }
+
+    @media (max-width: 768px) {
+      .modal-panel,
+      .confirm-modal-panel {
+        padding: 20px;
+      }
+    }
+
+    .senior-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .senior-filter-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .toggle-label {
+      font-size: 14px;
+      color: #8C7E73;
+      white-space: nowrap;
+    }
+
+    .ios-switch {
+      position: relative;
+      display: inline-block;
+      width: 46px;
+      height: 28px;
+      flex-shrink: 0;
+    }
+
+    .ios-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .ios-slider {
+      position: absolute;
+      inset: 0;
+      cursor: pointer;
+      background-color: #D8CEC4;
+      border-radius: 9999px;
+      transition: 0.2s ease;
+    }
+
+    .ios-slider::before {
+      content: '';
+      position: absolute;
+      width: 22px;
+      height: 22px;
+      left: 3px;
+      top: 3px;
+      background: #ffffff;
+      border-radius: 50%;
+      box-shadow: 0 2px 6px rgba(44, 36, 32, 0.18);
+      transition: 0.2s ease;
+    }
+
+    .ios-switch input:checked + .ios-slider {
+      background-color: #5B8C5A;
+    }
+
+    .ios-switch input:checked + .ios-slider::before {
+      transform: translateX(18px);
+    }
+
+    @media (max-width: 768px) {
+      .senior-header-actions {
+        width: 100%;
+        justify-content: space-between;
+      }
+
+      .senior-filter-toggle {
+        order: 1;
+      }
+
+      #show-register-form {
+        order: 2;
+      }
+    }
+  </style>
 </head>
 <body>
   <nav class="nav">
     <div class="nav-inner">
       <a href="/" class="nav-logo">
-        <svg class="nav-logo-icon" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="14" fill="#D4763C" opacity="0.12"/><path d="M8 18c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke="#D4763C" stroke-width="2" stroke-linecap="round"/><path d="M6 18h20v1c0 3.3-2.7 6-6 6h-8c-3.3 0-6-2.7-6-6v-1z" fill="#D4763C" opacity="0.2"/><path d="M13 14c-.5-2 .5-4 3-4s3.5 2 3 4" stroke="#5B8C5A" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/></svg>
+        <svg class="nav-logo-icon" viewBox="0 0 32 32" fill="none">
+          <circle cx="16" cy="16" r="14" fill="#D4763C" opacity="0.12"/>
+          <path d="M8 18c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke="#D4763C" stroke-width="2" stroke-linecap="round"/>
+          <path d="M6 18h20v1c0 3.3-2.7 6-6 6h-8c-3.3 0-6-2.7-6-6v-1z" fill="#D4763C" opacity="0.2"/>
+          <path d="M13 14c-.5-2 .5-4 3-4s3.5 2 3 4" stroke="#5B8C5A" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+        </svg>
         밥동무
       </a>
       <ul class="nav-links">
         <li><a href="/pages/guardian.html" class="active">어르신 관리</a></li>
         <li><a href="/pages/mypage.html">마이페이지</a></li>
       </ul>
-      <button class="nav-toggle" onclick="toggleNav()" aria-label="메뉴"><span></span><span></span><span></span></button>
+      <button class="nav-toggle" onclick="toggleNav()" aria-label="메뉴">
+        <span></span><span></span><span></span>
+      </button>
     </div>
   </nav>
-  <div class="nav-drawer" id="navDrawer" onclick="closeNav(event)"><div class="nav-drawer-content"><a href="/pages/guardian.html" class="active">어르신 관리</a><a href="/pages/mypage.html">마이페이지</a></div></div>
+
+  <div class="nav-drawer" id="navDrawer" onclick="closeNav(event)">
+    <div class="nav-drawer-content">
+      <a href="/pages/guardian.html" class="active">어르신 관리</a>
+      <a href="/pages/mypage.html">마이페이지</a>
+    </div>
+  </div>
 
   <main class="container">
     <div class="page-header slide-up">
@@ -29,110 +304,783 @@
       <p>어르신을 등록하고 호스팅 현황을 확인하세요</p>
     </div>
 
-    <!-- 어르신 목록 -->
+    <div id="message-box" class="message-box hidden"></div>
+
     <div class="section-header slide-up stagger-1">
       <h2>내 어르신</h2>
-      <button id="show-register-form" class="btn btn-primary btn-sm">어르신 등록</button>
-    </div>
 
-    <div id="senior-list" class="grid grid-2 mb-lg slide-up stagger-2">
-      <div class="card">
-        <div class="card-body">
-          <div class="hosting-header mb-md">
-            <div class="hosting-avatar">김</div>
-            <div>
-              <div class="hosting-name">김순자 어르신</div>
-              <div class="hosting-district">78세 · 성북구 정릉동</div>
-            </div>
-          </div>
-          <div class="detail-row">
-            <span class="detail-label">가능 요일</span>
-            <span class="detail-value">월, 수, 금</span>
-          </div>
-          <div class="detail-row">
-            <span class="detail-label">시간대</span>
-            <span class="detail-value">점심</span>
-          </div>
-          <div class="detail-row">
-            <span class="detail-label">상태</span>
-            <span class="detail-value"><span class="badge badge-open">활성</span></span>
-          </div>
+      <div class="senior-header-actions">
+        <div class="senior-filter-toggle">
+          <span class="toggle-label">전체</span>
+
+          <label class="ios-switch" for="active-only-toggle">
+            <input type="checkbox" id="active-only-toggle">
+            <span class="ios-slider"></span>
+          </label>
+
+          <span class="toggle-label">활성만</span>
         </div>
+
+        <button id="show-register-form" class="btn btn-primary btn-sm">어르신 등록</button>
       </div>
     </div>
 
-    <!-- 어르신 등록 폼 -->
-    <div id="register-form-section" class="card mb-lg hidden">
+    <div id="senior-empty" class="card mb-lg hidden">
       <div class="card-body">
-        <h3 class="mb-lg">어르신 등록</h3>
-        <form id="senior-form">
-          <div class="grid grid-2">
-            <div class="form-group">
-              <label class="form-label" for="senior-name">이름</label>
-              <input class="form-input" type="text" id="senior-name" placeholder="홍길순" required>
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="senior-age">나이</label>
-              <input class="form-input" type="number" id="senior-age" placeholder="78" required>
-            </div>
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="senior-address">주소</label>
-            <input class="form-input" type="text" id="senior-address" placeholder="서울시 성북구 정릉동 123-45" required>
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="senior-district">동네</label>
-            <input class="form-input" type="text" id="senior-district" placeholder="성북구 정릉동" required>
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="senior-days">가능 요일</label>
-            <input class="form-input" type="text" id="senior-days" placeholder="월, 수, 금" required>
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="senior-note">특이사항</label>
-            <input class="form-input" type="text" id="senior-note" placeholder="청력이 약하심, 계단 없는 1층 등">
-          </div>
-          <button type="submit" class="btn btn-primary">등록하기</button>
-        </form>
+        <div class="font-bold mb-sm">등록된 어르신이 아직 없어요.</div>
+        <div class="text-sm text-muted">첫 번째 어르신을 등록해보세요.</div>
       </div>
     </div>
 
-    <!-- 호스팅 현황 -->
+    <div id="senior-list" class="grid grid-2 mb-lg slide-up stagger-2"></div>
+
+    <div id="senior-list-actions" class="hidden senior-list-actions">
+      <button id="toggle-senior-list-button" type="button" class="btn btn-ghost btn-sm">
+        더보기
+      </button>
+    </div>
+
     <div class="section-header slide-up stagger-3">
       <h2>호스팅 현황</h2>
       <a href="/pages/hostings.html" class="btn btn-ghost btn-sm">호스팅 페이지에서 등록하기</a>
     </div>
 
     <div class="card slide-up stagger-4">
-      <div class="list-item">
-        <div>
-          <div class="font-bold">된장찌개 · 4월 15일 점심</div>
-          <div class="text-sm text-muted">김순자 어르신 · 봉사자 2/3명</div>
+      <div class="card-body">
+        <div class="text-sm text-muted">
+          호스팅 개별 목록은 호스팅 페이지에서 확인할 수 있어요.
         </div>
-        <span class="badge badge-open">모집중</span>
       </div>
-      <div class="list-item">
-        <div>
-          <div class="font-bold">김치찌개 · 4월 10일 점심</div>
-          <div class="text-sm text-muted">김순자 어르신 · 봉사자 3/3명</div>
+    </div>
+
+    <div id="register-form-modal" class="modal-overlay hidden">
+      <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="form-title">
+        <div class="modal-header">
+          <h3 id="form-title">어르신 등록</h3>
+          <button id="close-register-form-button" type="button" class="modal-close-button" aria-label="닫기">
+            ×
+          </button>
         </div>
-        <span class="badge badge-done">완료</span>
+
+        <form id="senior-form">
+          <input type="hidden" id="senior-id">
+
+          <div class="grid grid-2">
+            <div class="form-group">
+              <label class="form-label" for="senior-name">이름</label>
+              <input class="form-input" type="text" id="senior-name" placeholder="홍길순" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="senior-age">나이</label>
+              <input class="form-input" type="number" id="senior-age" min="65" placeholder="78" required>
+            </div>
+          </div>
+
+          <div class="grid grid-2">
+            <div class="form-group">
+              <label class="form-label" for="senior-gender">성별</label>
+              <select class="form-input" id="senior-gender" required>
+                <option value="">선택하세요</option>
+                <option value="male">남성</option>
+                <option value="female">여성</option>
+                <option value="other">기타</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="senior-max-people">최대 동행 인원</label>
+              <select class="form-input" id="senior-max-people" required>
+                <option value="2">2명</option>
+                <option value="3">3명</option>
+                <option value="4">4명</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="senior-road-address">주소</label>
+
+            <div class="address-search-row">
+              <input
+                class="form-input"
+                type="text"
+                id="senior-road-address"
+                placeholder="주소 검색 버튼으로 입력해 주세요"
+                readonly
+                required
+              >
+              <button id="search-address-button" type="button" class="btn btn-ghost btn-sm">
+                주소 검색
+              </button>
+            </div>
+
+            <div id="address-meta" class="address-meta">우편번호와 시군구 정보가 여기에 표시돼요.</div>
+
+            <div id="address-preview" class="address-preview-box is-empty">
+              아직 선택된 주소가 없어요.
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="senior-detail-address">상세주소</label>
+            <input
+              class="form-input"
+              type="text"
+              id="senior-detail-address"
+              placeholder="101동 1203호"
+              required
+            >
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="senior-note">특이사항</label>
+            <input
+              class="form-input"
+              type="text"
+              id="senior-note"
+              placeholder="청력이 약하심, 계단 없는 1층 등"
+            >
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="senior-active-flag">상태</label>
+            <select class="form-input" id="senior-active-flag" required>
+              <option value="true">활성</option>
+              <option value="false">비활성</option>
+            </select>
+          </div>
+
+          <div class="card-actions">
+            <button id="submit-button" type="submit" class="btn btn-primary">등록하기</button>
+            <button id="cancel-edit-button" type="button" class="btn btn-ghost hidden">취소</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div id="confirm-modal" class="modal-overlay hidden">
+      <div class="modal-panel confirm-modal-panel" role="dialog" aria-modal="true" aria-labelledby="confirm-modal-title">
+        <div class="modal-header">
+          <h3 id="confirm-modal-title">안내</h3>
+          <button id="close-confirm-modal-button" type="button" class="modal-close-button" aria-label="닫기">
+            ×
+          </button>
+        </div>
+
+        <div id="confirm-modal-message" class="confirm-modal-body"></div>
+
+        <div class="confirm-modal-actions">
+          <button
+            id="confirm-modal-cancel-button"
+            type="button"
+            class="btn btn-ghost btn-sm"
+          >
+            닫기
+          </button>
+          <button
+            id="confirm-modal-confirm-button"
+            type="button"
+            class="btn btn-primary btn-sm hidden"
+          >
+            확인
+          </button>
+        </div>
       </div>
     </div>
   </main>
 
   <footer class="footer">
-    <div class="footer-inner"><div class="footer-bottom">&copy; 2026 밥동무. 독거 어르신을 위한 식사 동반 플랫폼</div></div>
+    <div class="footer-inner">
+      <div class="footer-bottom">&copy; 2026 밥동무. 독거 어르신을 위한 식사 동반 플랫폼</div>
+    </div>
   </footer>
 
   <script src="/js/api.js"></script>
-  <script>
-    function toggleNav(){const t=document.querySelector('.nav-toggle'),d=document.getElementById('navDrawer');t.classList.toggle('active');d.classList.toggle('open');document.body.style.overflow=d.classList.contains('open')?'hidden':'';}
-    function closeNav(e){if(e.target===e.currentTarget)toggleNav();}
+  <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+  <script type="module">
+    import {
+      createEmptyAddressPayload,
+      formatAddressPreview,
+      mapKakaoAddressToPayload,
+      mergeDetailAddress,
+    } from '/js/addressMapper.js';
 
-    document.querySelector('#show-register-form')?.addEventListener('click', () => {
-      document.querySelector('#register-form-section').classList.toggle('hidden');
+    const seniorListElement = document.querySelector('#senior-list');
+    const seniorEmptyElement = document.querySelector('#senior-empty');
+    const seniorListActionsElement = document.querySelector('#senior-list-actions');
+    const toggleSeniorListButtonElement = document.querySelector('#toggle-senior-list-button');
+    const activeOnlyToggleElement = document.querySelector('#active-only-toggle');
+
+    const registerFormModalElement = document.querySelector('#register-form-modal');
+    const showRegisterFormButton = document.querySelector('#show-register-form');
+    const closeRegisterFormButtonElement = document.querySelector('#close-register-form-button');
+
+    const seniorFormElement = document.querySelector('#senior-form');
+    const messageBoxElement = document.querySelector('#message-box');
+    const formTitleElement = document.querySelector('#form-title');
+    const submitButtonElement = document.querySelector('#submit-button');
+    const cancelEditButtonElement = document.querySelector('#cancel-edit-button');
+
+    const roadAddressInputElement = document.querySelector('#senior-road-address');
+    const detailAddressInputElement = document.querySelector('#senior-detail-address');
+    const searchAddressButtonElement = document.querySelector('#search-address-button');
+    const addressMetaElement = document.querySelector('#address-meta');
+    const addressPreviewElement = document.querySelector('#address-preview');
+
+    const confirmModalElement = document.querySelector('#confirm-modal');
+    const confirmModalTitleElement = document.querySelector('#confirm-modal-title');
+    const confirmModalMessageElement = document.querySelector('#confirm-modal-message');
+    const confirmModalConfirmButtonElement = document.querySelector('#confirm-modal-confirm-button');
+    const confirmModalCancelButtonElement = document.querySelector('#confirm-modal-cancel-button');
+    const closeConfirmModalButtonElement = document.querySelector('#close-confirm-modal-button');
+
+    const DEFAULT_VISIBLE_SENIOR_COUNT = 4;
+
+    let isSeniorListExpanded = false;
+    let seniorListState = [];
+    let confirmModalHandler = null;
+    let isActiveOnly = activeOnlyToggleElement?.checked ?? false;
+    let addressState = createEmptyAddressPayload();
+
+    function toggleNav() {
+      const toggleButton = document.querySelector('.nav-toggle');
+      const drawer = document.querySelector('#navDrawer');
+
+      toggleButton.classList.toggle('active');
+      drawer.classList.toggle('open');
+      document.body.style.overflow = drawer.classList.contains('open') ? 'hidden' : '';
+    }
+
+    function closeNav(event) {
+      if (event.target === event.currentTarget) {
+        toggleNav();
+      }
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    }
+
+    function showMessage(message, isError = false) {
+      messageBoxElement.className = 'card message-box';
+      messageBoxElement.innerHTML = `
+        <div class="card-body">
+          <div class="${isError ? 'text-danger' : 'text-sm'}">${escapeHtml(message)}</div>
+        </div>
+      `;
+      messageBoxElement.classList.remove('hidden');
+    }
+
+    function hideMessage() {
+      messageBoxElement.classList.add('hidden');
+      messageBoxElement.innerHTML = '';
+    }
+
+    function getStatusBadge(activeFlag) {
+      if (activeFlag) {
+        return '<span class="badge badge-open">활성</span>';
+      }
+      return '<span class="badge badge-done">비활성</span>';
+    }
+
+    function getGenderLabel(gender) {
+      if (gender === 'male') {
+        return '남성';
+      }
+      if (gender === 'female') {
+        return '여성';
+      }
+      return '기타';
+    }
+
+    function buildSeniorAddressLabel(senior) {
+      return formatAddressPreview({
+        road_address: senior.road_address,
+        detail_address: senior.detail_address,
+      });
+    }
+
+    function updateAddressMeta() {
+      const zonecodeText = addressState.zonecode ? `우편번호 ${addressState.zonecode}` : '우편번호 없음';
+      const sigunguText = addressState.sigungu || '시군구 없음';
+      addressMetaElement.textContent = `${zonecodeText} · ${sigunguText}`;
+    }
+
+    function updateAddressPreview() {
+      const previewText = formatAddressPreview(addressState);
+
+      if (previewText) {
+        addressPreviewElement.textContent = previewText;
+        addressPreviewElement.classList.remove('is-empty');
+      } else {
+        addressPreviewElement.textContent = '아직 선택된 주소가 없어요.';
+        addressPreviewElement.classList.add('is-empty');
+      }
+    }
+
+    function syncAddressInputs() {
+      roadAddressInputElement.value = addressState.road_address ?? '';
+      detailAddressInputElement.value = addressState.detail_address ?? '';
+      updateAddressMeta();
+      updateAddressPreview();
+    }
+
+    function setAddressState(nextAddressState) {
+      addressState = {
+        ...createEmptyAddressPayload(),
+        ...nextAddressState,
+      };
+      syncAddressInputs();
+    }
+
+    function openAddressSearch() {
+      if (!window.daum?.Postcode) {
+        showMessage('주소 검색 스크립트를 불러오지 못했습니다.', true);
+        return;
+      }
+
+      new window.daum.Postcode({
+        oncomplete(data) {
+          const kakaoData = {
+            roadAddress: data.roadAddress || '',
+            jibunAddress: data.jibunAddress || '',
+            zonecode: data.zonecode || '',
+            sigungu: data.sigungu || '',
+            bname: data.bname || '',
+            sido: data.sido || '',
+            buildingName: data.buildingName || '',
+            apartment: data.apartment || null,
+            sigunguCode: data.sigunguCode || '',
+          };
+
+          setAddressState(
+            mapKakaoAddressToPayload(
+              kakaoData,
+              null,
+              detailAddressInputElement.value,
+            ),
+          );
+
+          detailAddressInputElement.focus();
+        },
+      }).open();
+    }
+
+
+    function setCreateMode() {
+      formTitleElement.textContent = '어르신 등록';
+      submitButtonElement.textContent = '등록하기';
+      cancelEditButtonElement.classList.add('hidden');
+      document.querySelector('#senior-id').value = '';
+    }
+
+    function setEditMode() {
+      formTitleElement.textContent = '어르신 수정';
+      submitButtonElement.textContent = '수정하기';
+      cancelEditButtonElement.classList.remove('hidden');
+    }
+
+    function resetForm() {
+      seniorFormElement.reset();
+      document.querySelector('#senior-id').value = '';
+      document.querySelector('#senior-active-flag').value = 'true';
+      document.querySelector('#senior-max-people').value = '2';
+      setAddressState(createEmptyAddressPayload());
+      setCreateMode();
+    }
+
+    function fillForm(senior) {
+      document.querySelector('#senior-id').value = senior.senior_id;
+      document.querySelector('#senior-name').value = senior.name;
+      document.querySelector('#senior-age').value = senior.age;
+      document.querySelector('#senior-gender').value = senior.gender;
+      document.querySelector('#senior-max-people').value = senior.max_people;
+      document.querySelector('#senior-note').value = senior.special_note || '';
+      document.querySelector('#senior-active-flag').value = String(senior.active_flag);
+
+      setAddressState({
+        road_address: senior.road_address,
+        jibun_address: senior.jibun_address,
+        zonecode: senior.zonecode,
+        sigungu: senior.sigungu,
+        bname: senior.bname,
+        detail_address: senior.detail_address,
+        sido: senior.sido,
+        building_name: senior.building_name,
+        is_apartment: senior.is_apartment,
+        lat: senior.lat,
+        lng: senior.lng,
+        sigungu_code: senior.sigungu_code,
+      });
+
+      setEditMode();
+    }
+
+    function openForm() {
+      registerFormModalElement.classList.remove('hidden');
+      document.body.classList.add('modal-open');
+    }
+
+    function closeForm() {
+      registerFormModalElement.classList.add('hidden');
+      document.body.classList.remove('modal-open');
+      resetForm();
+    }
+
+    function openConfirmModal({
+      title,
+      message,
+      confirmText = '확인',
+      cancelText = '닫기',
+      onConfirm = null,
+      showConfirmButton = true,
+    }) {
+      confirmModalTitleElement.textContent = title;
+      confirmModalMessageElement.textContent = message;
+      confirmModalCancelButtonElement.textContent = cancelText;
+      confirmModalHandler = onConfirm;
+
+      if (showConfirmButton) {
+        confirmModalConfirmButtonElement.textContent = confirmText;
+        confirmModalConfirmButtonElement.classList.remove('hidden');
+      } else {
+        confirmModalConfirmButtonElement.classList.add('hidden');
+      }
+
+      confirmModalElement.classList.remove('hidden');
+      document.body.classList.add('modal-open');
+    }
+
+    function closeConfirmModal() {
+      confirmModalElement.classList.add('hidden');
+      confirmModalHandler = null;
+
+      if (registerFormModalElement.classList.contains('hidden')) {
+        document.body.classList.remove('modal-open');
+      }
+    }
+
+    async function handleConfirmModalAction() {
+      if (!confirmModalHandler) {
+        closeConfirmModal();
+        return;
+      }
+
+      try {
+        await confirmModalHandler();
+      } finally {
+        closeConfirmModal();
+      }
+    }
+
+    function renderSeniorCard(senior) {
+      const isDeleteBlocked = senior.active_flag;
+      const deleteButtonClass = isDeleteBlocked
+        ? 'btn btn-ghost btn-sm btn-disabled'
+        : 'btn btn-ghost btn-sm';
+
+      return `
+        <div class="card">
+          <div class="card-body">
+            <div class="hosting-header mb-md">
+              <div class="hosting-avatar">${escapeHtml(senior.name.charAt(0))}</div>
+              <div style="min-width: 0; flex: 1;">
+                <div class="hosting-name ellipsis">${escapeHtml(senior.name)} 어르신</div>
+                <div class="hosting-district ellipsis">
+                  ${escapeHtml(String(senior.age))}세 · ${escapeHtml(getGenderLabel(senior.gender))}
+                </div>
+              </div>
+            </div>
+
+            <div class="detail-row">
+              <span class="detail-label">주소</span>
+              <span class="detail-value address-text" title="${escapeHtml(buildSeniorAddressLabel(senior))}">
+                ${escapeHtml(buildSeniorAddressLabel(senior))}
+              </span>
+            </div>
+
+            <div class="detail-row">
+              <span class="detail-label">호스팅 현황</span>
+              <span class="detail-value ellipsis">
+                모집 완료 ${escapeHtml(String(senior.full_hosting_count))}건 / 전체 ${escapeHtml(String(senior.total_hosting_count))}건
+              </span>
+            </div>
+
+            <div class="detail-row">
+              <span class="detail-label">상태</span>
+              <span class="detail-value">${getStatusBadge(senior.active_flag)}</span>
+            </div>
+
+            <div class="card-actions">
+              <button
+                type="button"
+                class="btn btn-ghost btn-sm"
+                data-action="edit"
+                data-senior-id="${senior.senior_id}"
+              >
+                수정
+              </button>
+
+              <button
+                type="button"
+                class="${deleteButtonClass}"
+                data-action="delete"
+                data-senior-id="${senior.senior_id}"
+                data-delete-blocked="${isDeleteBlocked ? 'true' : 'false'}"
+                aria-disabled="${isDeleteBlocked ? 'true' : 'false'}"
+                title="${isDeleteBlocked ? '활성 상태의 어르신은 삭제할 수 없어요.' : '어르신 삭제'}"
+              >
+                삭제
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderSeniorList(seniors) {
+      seniorListState = seniors;
+
+      if (!seniors.length) {
+        seniorListElement.innerHTML = '';
+        seniorEmptyElement.classList.remove('hidden');
+        seniorListActionsElement.classList.add('hidden');
+        return;
+      }
+
+      seniorEmptyElement.classList.add('hidden');
+
+      const visibleSeniors = isSeniorListExpanded
+        ? seniors
+        : seniors.slice(0, DEFAULT_VISIBLE_SENIOR_COUNT);
+
+      seniorListElement.innerHTML = visibleSeniors.map(renderSeniorCard).join('');
+
+      if (seniors.length > DEFAULT_VISIBLE_SENIOR_COUNT) {
+        seniorListActionsElement.classList.remove('hidden');
+        toggleSeniorListButtonElement.textContent = isSeniorListExpanded ? '접기' : '더보기';
+      } else {
+        seniorListActionsElement.classList.add('hidden');
+      }
+    }
+
+    async function loadSeniors() {
+      hideMessage();
+
+      try {
+        const seniors = await api(`/seniors/?active_only=${isActiveOnly}`);
+        isSeniorListExpanded = false;
+        renderSeniorList(seniors);
+      } catch (error) {
+        seniorListElement.innerHTML = '';
+        seniorEmptyElement.classList.add('hidden');
+        seniorListActionsElement.classList.add('hidden');
+        showMessage(error.message || '어르신 목록을 불러오지 못했습니다.', true);
+      }
+    }
+
+    async function fetchSeniorDetail(seniorId) {
+      return await api(`/seniors/${seniorId}`);
+    }
+
+    async function createSenior(payload) {
+      return await api('/seniors/', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    }
+
+    async function updateSenior(seniorId, payload) {
+      return await api(`/seniors/${seniorId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      });
+    }
+
+    async function deleteSenior(seniorId) {
+      return await api(`/seniors/${seniorId}`, {
+        method: 'DELETE',
+      });
+    }
+
+    function getFormPayload() {
+      addressState = mergeDetailAddress(
+        addressState,
+        detailAddressInputElement.value,
+      );
+
+      return {
+        name: document.querySelector('#senior-name').value.trim(),
+        gender: document.querySelector('#senior-gender').value,
+        age: Number(document.querySelector('#senior-age').value),
+        ...addressState,
+        special_note: document.querySelector('#senior-note').value.trim() || null,
+        active_flag: document.querySelector('#senior-active-flag').value === 'true',
+        max_people: Number(document.querySelector('#senior-max-people').value),
+      };
+    }
+
+    showRegisterFormButton?.addEventListener('click', () => {
+      hideMessage();
+      resetForm();
+      openForm();
     });
+
+    closeRegisterFormButtonElement?.addEventListener('click', () => {
+      closeForm();
+    });
+
+    cancelEditButtonElement?.addEventListener('click', () => {
+      closeForm();
+    });
+
+    registerFormModalElement?.addEventListener('click', (event) => {
+      if (event.target === registerFormModalElement) {
+        closeForm();
+      }
+    });
+
+    closeConfirmModalButtonElement?.addEventListener('click', () => {
+      closeConfirmModal();
+    });
+
+    confirmModalCancelButtonElement?.addEventListener('click', () => {
+      closeConfirmModal();
+    });
+
+    confirmModalConfirmButtonElement?.addEventListener('click', async () => {
+      await handleConfirmModalAction();
+    });
+
+    confirmModalElement?.addEventListener('click', (event) => {
+      if (event.target === confirmModalElement) {
+        closeConfirmModal();
+      }
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        if (!confirmModalElement.classList.contains('hidden')) {
+          closeConfirmModal();
+          return;
+        }
+
+        if (!registerFormModalElement.classList.contains('hidden')) {
+          closeForm();
+        }
+      }
+    });
+
+    searchAddressButtonElement?.addEventListener('click', () => {
+      hideMessage();
+      openAddressSearch();
+    });
+
+    detailAddressInputElement?.addEventListener('input', (event) => {
+      addressState = mergeDetailAddress(addressState, event.target.value);
+      updateAddressPreview();
+    });
+
+    activeOnlyToggleElement?.addEventListener('change', () => {
+      isActiveOnly = activeOnlyToggleElement.checked;
+      loadSeniors();
+    });
+
+    toggleSeniorListButtonElement?.addEventListener('click', () => {
+      isSeniorListExpanded = !isSeniorListExpanded;
+      renderSeniorList(seniorListState);
+    });
+
+    seniorFormElement?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      hideMessage();
+
+      const seniorId = document.querySelector('#senior-id').value;
+      const payload = getFormPayload();
+
+      if (!payload.road_address) {
+        showMessage('주소 검색으로 도로명 주소를 먼저 선택해 주세요.', true);
+        return;
+      }
+
+      if (!payload.detail_address) {
+        showMessage('상세주소를 입력해 주세요.', true);
+        return;
+      }
+
+      try {
+        if (seniorId) {
+          await updateSenior(seniorId, payload);
+          showMessage('어르신 정보가 수정되었어요.');
+        } else {
+          await createSenior(payload);
+          showMessage('어르신이 등록되었어요.');
+        }
+
+        closeForm();
+        await loadSeniors();
+      } catch (error) {
+        showMessage(error.message || '요청 처리 중 오류가 발생했습니다.', true);
+      }
+    });
+
+    seniorListElement?.addEventListener('click', async (event) => {
+      const actionButton = event.target.closest('[data-action]');
+      if (!actionButton) {
+        return;
+      }
+
+      const action = actionButton.dataset.action;
+      const seniorId = actionButton.dataset.seniorId;
+      const isDeleteBlocked = actionButton.dataset.deleteBlocked === 'true';
+
+      hideMessage();
+
+      try {
+        if (action === 'edit') {
+          const senior = await fetchSeniorDetail(seniorId);
+          fillForm(senior);
+          openForm();
+          return;
+        }
+
+        if (action === 'delete' && isDeleteBlocked) {
+          openConfirmModal({
+            title: '삭제할 수 없어요',
+            message: '활성 상태의 어르신은 삭제할 수 없어요. 먼저 비활성 상태로 변경해 주세요.',
+            cancelText: '확인',
+            showConfirmButton: false,
+          });
+          return;
+        }
+
+        if (action === 'delete') {
+          openConfirmModal({
+            title: '어르신 삭제',
+            message: '정말 삭제하시겠어요? 삭제 후 복구할 수 없습니다.',
+            confirmText: '삭제하기',
+            cancelText: '취소',
+            showConfirmButton: true,
+            onConfirm: async () => {
+              await deleteSenior(seniorId);
+              showMessage('어르신이 삭제되었어요.');
+              await loadSeniors();
+            },
+          });
+        }
+      } catch (error) {
+        showMessage(error.message || '요청 처리 중 오류가 발생했습니다.', true);
+      }
+    });
+
+    resetForm();
+    loadSeniors();
   </script>
 </body>
 </html>

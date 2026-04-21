@@ -6,9 +6,130 @@
   <title>호스팅 상세 - 밥동무</title>
   <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" rel="stylesheet">
   <link rel="stylesheet" href="/css/common.css">
+  <style>
+    .hidden { display: none !important; }
+    .page-shell { max-width: 720px; }
+    .profile-card,
+    .detail-section,
+    .empty-panel {
+      background: #fff;
+      border: 1px solid #E8E0D8;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 10px 30px rgba(44, 36, 32, 0.05);
+    }
+    .profile-card {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+    .profile-avatar {
+      width: 64px;
+      height: 64px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #D4763C, #5B8C5A);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .profile-details h2 {
+      margin: 0 0 8px;
+      font-size: 28px;
+    }
+    .profile-meta,
+    .profile-summary,
+    .detail-value,
+    .empty-panel p {
+      color: #6B5E53;
+      line-height: 1.6;
+    }
+    .profile-summary {
+      margin-top: 12px;
+    }
+    .detail-section {
+      margin-bottom: 24px;
+    }
+    .detail-section h3 {
+      margin-top: 0;
+      margin-bottom: 18px;
+    }
+    .detail-row {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: 16px;
+      padding: 12px 0;
+      border-bottom: 1px solid #F2ECE6;
+    }
+    .detail-row:last-child { border-bottom: 0; }
+    .detail-label {
+      color: #8C7E73;
+      font-weight: 600;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .badge-open { background: #EDF5ED; color: #3A6B39; }
+    .badge-full { background: #FDF5E6; color: #8B6914; }
+    .badge-failed { background: #FDECEC; color: #B44646; }
+    .badge-progress { background: #EEF3FF; color: #4269B4; }
+    .badge-closed { background: #F0EBE6; color: #6B5E53; }
+    .action-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+    .message-box {
+      display: none;
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 16px;
+      border: 1px solid #E8E0D8;
+      background: #fff;
+    }
+    .message-box.show { display: block; }
+    .message-box.success { background: #F6FBF6; color: #2E5D2E; border-color: #D8EAD8; }
+    .message-box.error { background: #FFF6F6; color: #9A3838; border-color: #F1D0D0; }
+    .message-box.info { background: #F8F5F1; color: #6B5E53; }
+    .back-link {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      color: inherit;
+      text-decoration: none;
+      margin-bottom: 24px;
+    }
+    .back-link svg {
+      width: 20px;
+      height: 20px;
+    }
+    .empty-panel {
+      text-align: center;
+    }
+    .empty-panel h2 {
+      margin-top: 0;
+      margin-bottom: 10px;
+    }
+    @media (max-width: 768px) {
+      .detail-row { grid-template-columns: 1fr; gap: 8px; }
+      .action-row .btn { width: 100%; }
+      .profile-card { align-items: flex-start; }
+    }
+  </style>
 </head>
 <body>
-  <!-- Navigation -->
   <nav class="nav">
     <div class="nav-inner">
       <a href="/" class="nav-logo">
@@ -26,13 +147,12 @@
         <li><a href="/pages/my-matches.html">내 매칭</a></li>
         <li><a href="/pages/mypage.html">마이페이지</a></li>
       </ul>
-      <button class="nav-toggle" onclick="toggleNav()" aria-label="메뉴 열기">
+      <button class="nav-toggle" type="button" onclick="toggleNav()" aria-label="메뉴 열기">
         <span></span><span></span><span></span>
       </button>
     </div>
   </nav>
 
-  <!-- Mobile Drawer -->
   <div class="nav-drawer" id="navDrawer" onclick="closeNav(event)">
     <div class="nav-drawer-content">
       <a href="/pages/hostings.html" class="active">호스팅</a>
@@ -41,112 +161,89 @@
     </div>
   </div>
 
-  <main class="container" style="max-width:720px;">
-    <!-- Back Link -->
-    <div class="page-header slide-up">
-      <a href="/pages/hostings.html" class="back-link">
-        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 4l-6 6 6 6"/>
-        </svg>
-        목록으로
-      </a>
-    </div>
+  <main class="container page-shell">
+    <a href="/pages/hostings.html" class="back-link slide-up">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 4l-6 6 6 6"/>
+      </svg>
+      목록으로
+    </a>
 
-    <!-- Profile Card -->
-    <div class="profile-card slide-up stagger-1">
-      <div class="profile-avatar">김</div>
-      <div class="profile-details">
-        <h2>김순자 어르신</h2>
-        <p>78세 · 고양시 덕양구 화정동</p>
-      </div>
-    </div>
+    <div id="message-box" class="message-box" role="status" aria-live="polite"></div>
 
-    <!-- AI Summary -->
-    <div class="ai-summary-card mb-lg slide-up stagger-2">
-      <div class="ai-summary-label">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-          <path d="M8 2l1.5 3.5H13l-3 2.5 1.2 3.5L8 9.5 4.8 11.5 6 8 3 5.5h3.5L8 2z"/>
-        </svg>
-        소개글
-      </div>
-      <p class="ai-summary-text">된장찌개 맛이 일품이시고, 늘 따뜻하게 맞아주셔서 집에 온 것 같은 편안함을 느낄 수 있어요. 이야기 나누는 걸 좋아하시는 정겨운 분입니다.</p>
-    </div>
-
-    <!-- Hosting Info -->
-    <div class="detail-section slide-up stagger-3">
-      <h3>호스팅 정보</h3>
-      <div class="detail-row">
-        <svg class="detail-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-          <rect x="3" y="4" width="14" height="14" rx="2"/><path d="M3 8h14"/><path d="M7 2v4M13 2v4"/>
-        </svg>
-        <span class="detail-label">날짜</span>
-        <span class="detail-value">2026년 4월 15일 (화)</span>
-      </div>
-      <div class="detail-row">
-        <svg class="detail-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-          <circle cx="10" cy="10" r="7"/><path d="M10 6v4l3 2"/>
-        </svg>
-        <span class="detail-label">시간</span>
-        <span class="detail-value">12:00 ~ 13:30</span>
-      </div>
-      <div class="detail-row">
-        <svg class="detail-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-          <path d="M4 16c0-4.4 3.6-8 8-8s8 4.4 8 8" transform="translate(-2,-2) scale(0.85)"/>
-          <ellipse cx="10" cy="14" rx="7" ry="1.5" opacity="0.3"/>
-        </svg>
-        <span class="detail-label">메뉴</span>
-        <span class="detail-value font-display font-bold text-primary">된장찌개</span>
-      </div>
-      <div class="detail-row">
-        <svg class="detail-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-          <circle cx="7" cy="8" r="3"/><circle cx="13" cy="8" r="3"/><path d="M2 17c0-2.8 2.2-5 5-5 1.3 0 2.5.5 3.4 1.3" opacity="0.5"/><path d="M18 17c0-2.8-2.2-5-5-5-1.3 0-2.5.5-3.4 1.3" opacity="0.5"/>
-        </svg>
-        <span class="detail-label">모집 현황</span>
-        <span class="detail-value"><span class="badge badge-open">모집중 2/3</span></span>
-      </div>
-      <div class="detail-row">
-        <svg class="detail-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-          <circle cx="10" cy="10" r="7"/><path d="M10 7v3"/><circle cx="10" cy="13" r="0.5" fill="currentColor"/>
-        </svg>
-        <span class="detail-label">특이사항</span>
-        <span class="detail-value">청력이 약하셔서 천천히 크게 말씀해주세요.</span>
-      </div>
-    </div>
-
-    <!-- Apply Button -->
-    <button id="apply-btn" class="btn btn-primary btn-lg w-full slide-up stagger-4">매칭 신청하기</button>
-
-    <!-- Reviews -->
-    <div class="detail-section mt-2xl slide-up stagger-5">
-      <h3>봉사자 후기</h3>
-
-      <div class="review-card">
-        <div class="review-header">
-          <span class="review-author">홍길동</span>
-          <span class="review-date">2026.04.10</span>
+    <div id="detail-content" class="hidden">
+      <section class="profile-card slide-up">
+        <div id="senior-avatar" class="profile-avatar">어</div>
+        <div class="profile-details">
+          <h2 id="senior-name">어르신</h2>
+          <p id="senior-meta" class="profile-meta">-</p>
+          <p id="senior-summary" class="profile-summary hidden"></p>
         </div>
-        <p class="review-message">된장찌개가 정말 맛있었어요. 할머니께서 손녀딸 온 것 같다며 기뻐하셨습니다.</p>
+      </section>
+
+      <div class="action-row slide-up stagger-1">
+        <button id="cancel-hosting-button" class="btn btn-secondary" type="button">호스팅 무산 처리</button>
       </div>
 
-      <div class="review-card">
-        <div class="review-header">
-          <span class="review-author">김철수</span>
-          <span class="review-date">2026.04.03</span>
+      <section class="detail-section slide-up stagger-2">
+        <h3>호스팅 정보</h3>
+        <div class="detail-row">
+          <span class="detail-label">상태</span>
+          <span id="hosting-status" class="detail-value">-</span>
         </div>
-        <p class="review-message">따뜻한 밥상에 마음까지 따뜻해졌습니다. 다음에 또 방문하고 싶어요.</p>
-      </div>
+        <div class="detail-row">
+          <span class="detail-label">메뉴</span>
+          <span id="hosting-menu" class="detail-value">-</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">일시</span>
+          <span id="hosting-datetime" class="detail-value">-</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">모집 인원</span>
+          <span id="hosting-max-people" class="detail-value">-</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">생성일</span>
+          <span id="hosting-created-at" class="detail-value">-</span>
+        </div>
+      </section>
 
-      <div class="review-card">
-        <div class="review-header">
-          <span class="review-author">이영희</span>
-          <span class="review-date">2026.03.28</span>
+      <section class="detail-section slide-up stagger-3">
+        <h3>주소 정보</h3>
+        <div class="detail-row">
+          <span class="detail-label">도로명 주소</span>
+          <span id="hosting-road-address" class="detail-value">-</span>
         </div>
-        <p class="review-message">할머니 손맛이 최고예요. 집밥이 그리울 때 꼭 다시 올게요.</p>
-      </div>
+        <div class="detail-row">
+          <span class="detail-label">상세 주소</span>
+          <span id="hosting-detail-address" class="detail-value">-</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">시군구</span>
+          <span id="hosting-sigungu" class="detail-value">-</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">시도 / 법정동</span>
+          <span id="hosting-region" class="detail-value">-</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">건물 정보</span>
+          <span id="hosting-building" class="detail-value">-</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">좌표</span>
+          <span id="hosting-coordinates" class="detail-value">-</span>
+        </div>
+      </section>
     </div>
+
+    <section id="empty-panel" class="empty-panel hidden slide-up">
+      <h2>호스팅을 찾을 수 없어요</h2>
+      <p>삭제되었거나 접근 권한이 없는 호스팅일 수 있어요.</p>
+    </section>
   </main>
 
-  <!-- Footer -->
   <footer class="footer">
     <div class="footer-inner">
       <div class="footer-bottom">
@@ -157,19 +254,172 @@
 
   <script src="/js/api.js"></script>
   <script>
+    const KST_TIME_ZONE = 'Asia/Seoul';
+    let hostingDetail = null;
+    let seniorDetail = null;
+
     function toggleNav() {
-      const toggle = document.querySelector('.nav-toggle');
-      const drawer = document.getElementById('navDrawer');
-      toggle.classList.toggle('active');
-      drawer.classList.toggle('open');
-      document.body.style.overflow = drawer.classList.contains('open') ? 'hidden' : '';
+      const toggleElement = document.querySelector('.nav-toggle');
+      const drawerElement = document.querySelector('#navDrawer');
+      toggleElement.classList.toggle('active');
+      drawerElement.classList.toggle('open');
+      document.body.style.overflow = drawerElement.classList.contains('open') ? 'hidden' : '';
     }
 
-    function closeNav(e) {
-      if (e.target === e.currentTarget) {
+    function closeNav(event) {
+      if (event.target === event.currentTarget) {
         toggleNav();
       }
     }
+
+    function showMessage(message, type = 'info') {
+      const messageBoxElement = document.querySelector('#message-box');
+      messageBoxElement.textContent = message;
+      messageBoxElement.className = `message-box show ${type}`;
+    }
+
+    function hideMessage() {
+      const messageBoxElement = document.querySelector('#message-box');
+      messageBoxElement.textContent = '';
+      messageBoxElement.className = 'message-box';
+    }
+
+    function getStatusMeta(status) {
+      const metaMap = {
+        '신청가능': { label: '신청가능', className: 'badge-open' },
+        '모집완료': { label: '모집완료', className: 'badge-full' },
+        '무산': { label: '무산', className: 'badge-failed' },
+        '진행중': { label: '진행중', className: 'badge-progress' },
+        '완료': { label: '완료', className: 'badge-closed' },
+      };
+      return metaMap[status] ?? { label: status ?? '-', className: 'badge-closed' };
+    }
+
+    function formatDate(value, options = {}) {
+      return new Intl.DateTimeFormat('ko-KR', {
+        timeZone: KST_TIME_ZONE,
+        ...options,
+      }).format(new Date(value));
+    }
+
+    function formatDateTimeRange(hostingAt, hostingEnd) {
+      const dateText = formatDate(hostingAt, { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' });
+      const startTimeText = formatDate(hostingAt, { hour: '2-digit', minute: '2-digit', hour12: false });
+      const endTimeText = formatDate(hostingEnd, { hour: '2-digit', minute: '2-digit', hour12: false });
+      return `${dateText} ${startTimeText} ~ ${endTimeText}`;
+    }
+
+    function setText(selector, value) {
+      document.querySelector(selector).textContent = value || '-';
+    }
+
+    function renderDetail() {
+      const statusMeta = getStatusMeta(hostingDetail.hosting_status);
+      const fullSeniorName = seniorDetail?.name ? `${seniorDetail.name} 어르신` : `어르신 #${hostingDetail.senior_id}`;
+      const seniorAvatarText = seniorDetail?.name ? seniorDetail.name.charAt(0) : '어';
+      const seniorMetaParts = [];
+
+      if (typeof seniorDetail?.age === 'number') {
+        seniorMetaParts.push(`${seniorDetail.age}세`);
+      }
+      const hostingAddress = [hostingDetail?.road_address, hostingDetail?.detail_address]
+        .filter(Boolean)
+        .join(' ');
+
+      if (hostingAddress) {
+        seniorMetaParts.push(hostingAddress);
+      }
+
+      document.querySelector('#detail-content').classList.remove('hidden');
+      document.querySelector('#empty-panel').classList.add('hidden');
+      document.querySelector('#senior-avatar').textContent = seniorAvatarText;
+      document.querySelector('#senior-name').textContent = fullSeniorName;
+      document.querySelector('#senior-meta').textContent = seniorMetaParts.join(' · ') || '-';
+
+      const summaryElement = document.querySelector('#senior-summary');
+      if (seniorDetail?.ai_summary) {
+        summaryElement.textContent = seniorDetail.ai_summary;
+        summaryElement.classList.remove('hidden');
+      } else {
+        summaryElement.textContent = '';
+        summaryElement.classList.add('hidden');
+      }
+
+      document.querySelector('#hosting-status').innerHTML = `<span class="badge ${statusMeta.className}">${statusMeta.label}</span>`;
+      setText('#hosting-menu', hostingDetail.menu);
+      setText('#hosting-datetime', formatDateTimeRange(hostingDetail.hosting_at, hostingDetail.hosting_end));
+      setText('#hosting-max-people', `${hostingDetail.max_people}명`);
+      setText('#hosting-created-at', formatDate(hostingDetail.created_at, {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      }));
+
+      setText('#hosting-road-address', hostingDetail.road_address);
+      setText('#hosting-detail-address', hostingDetail.detail_address);
+      setText('#hosting-sigungu', hostingDetail.sigungu);
+      setText('#hosting-region', [hostingDetail.sido, hostingDetail.bname].filter(Boolean).join(' / ') || '-');
+      setText('#hosting-building', [hostingDetail.building_name, hostingDetail.is_apartment === null || hostingDetail.is_apartment === undefined ? '' : (hostingDetail.is_apartment ? '아파트' : '비아파트')].filter(Boolean).join(' / ') || '-');
+      setText('#hosting-coordinates', hostingDetail.lat && hostingDetail.lng ? `${hostingDetail.lat}, ${hostingDetail.lng}` : '-');
+
+      const cancelButtonElement = document.querySelector('#cancel-hosting-button');
+      cancelButtonElement.disabled = !['신청가능', '모집완료', '무산'].includes(hostingDetail.hosting_status);
+      if (hostingDetail.hosting_status === '무산') {
+        cancelButtonElement.textContent = '이미 무산된 호스팅';
+      } else {
+        cancelButtonElement.textContent = '호스팅 무산 처리';
+      }
+    }
+
+    async function loadDetail() {
+      const params = new URLSearchParams(window.location.search);
+      const hostingId = params.get('id');
+
+      if (!hostingId) {
+        document.querySelector('#empty-panel').classList.remove('hidden');
+        return;
+      }
+
+      try {
+        hideMessage();
+        hostingDetail = await api(`/hostings/${hostingId}`);
+        seniorDetail = await api(`/seniors/${hostingDetail.senior_id}`);
+        renderDetail();
+      } catch (error) {
+        console.error(error);
+        document.querySelector('#detail-content').classList.add('hidden');
+        document.querySelector('#empty-panel').classList.remove('hidden');
+        showMessage(error?.message || '호스팅 상세 정보를 불러오지 못했어요.', 'error');
+      }
+    }
+
+    document.querySelector('#cancel-hosting-button')?.addEventListener('click', async () => {
+      if (!hostingDetail || hostingDetail.hosting_status === '무산') {
+        return;
+      }
+
+      const isConfirmed = window.confirm('이 호스팅을 무산 처리할까요?');
+      if (!isConfirmed) {
+        return;
+      }
+
+      try {
+        hideMessage();
+        await api(`/hostings/${hostingDetail.hosting_id}/cancel`, {
+          method: 'PATCH',
+        });
+        await loadDetail();
+        showMessage('호스팅이 무산 처리되었어요.', 'success');
+      } catch (error) {
+        console.error(error);
+        showMessage(error?.message || '호스팅 무산 처리에 실패했어요.', 'error');
+      }
+    });
+
+    loadDetail();
   </script>
 </body>
 </html>
