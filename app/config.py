@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     # 개발 모드 (True일 때만 테스트 라우터 등록)
     DEBUG: bool = False
 
+    # 스케줄러 실행 주기(초)
+    SCHEDULER_INTERVAL_SECONDS: int = 300
+
     class Config:
         env_file = ".env"
         extra = "ignore"
