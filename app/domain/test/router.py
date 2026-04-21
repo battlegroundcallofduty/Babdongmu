@@ -5,6 +5,7 @@
 """
 
 import logging
+import uuid
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -77,13 +78,17 @@ async def seed_match_test_data(
     db.add(guardian)
     await db.flush()
 
+    qr = str(uuid.uuid4())
     senior = Senior(
         guardian_id=guardian.user_id,
         name="테스트어르신",
         gender=GenderEnum.FEMALE,
         age=80,
-        address="테스트 주소",
+        road_address="경기도 고양시 일산동구 테스트로 1",
+        sigungu="고양시 일산동구",
+        detail_address="101호",
         max_people=2,
+        qr_code=qr,
     )
     db.add(senior)
     await db.flush()
@@ -92,7 +97,91 @@ async def seed_match_test_data(
         senior_id=senior.senior_id,
         menu="된장찌개",
         hosting_at=datetime.now(timezone.utc),
+        hosting_end=datetime.now(timezone.utc) + timedelta(hours=2),
         max_people=2,
+        road_address="경기도 고양시 일산동구 테스트로 1",
+        sigungu="고양시 일산동구",
+        detail_address="101호",
+    )
+    db.add(hosting)
+    await db.flush()
+
+    match = MatchingInfo(
+        hosting_id=hosting.hosting_id,
+        vt_id=volunteer.user_id,
+        senior_id=senior.senior_id,
+        match_status=MatchStatus.APPROVED,
+    )
+    db.add(match)
+    await db.flush()
+
+    await db.commit()
+
+    return {
+        "volunteer_email": volunteer.email,
+        "volunteer_password": password,
+        "volunteer_id": volunteer.user_id,
+        "hosting_id": hosting.hosting_id,
+        "senior_id": senior.senior_id,
+        "qr_uuid": qr,
+    }
+
+
+@router.post("/apply/seed")
+async def seed_apply_test_data(
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """매칭 신청 테스트용 더미 데이터를 생성합니다. (내일 호스팅 — 신청 가능 상태)"""
+    suffix = datetime.now().strftime("%Y%m%d%H%M%S")
+    password = "test1234"
+
+    volunteer = User(
+        name="테스트봉사자",
+        email=f"test-vt-{suffix}@example.com",
+        password=hash_password(password),
+        phone_number="",
+        address="테스트 주소",
+        user_role=UserRole.VOLUNTEER,
+        cert_flag=CertFlag.APPROVED,
+    )
+    db.add(volunteer)
+
+    guardian = User(
+        name="테스트보호자",
+        email=f"test-guardian-{suffix}@example.com",
+        password=hash_password(password),
+        phone_number="",
+        address="테스트 주소",
+        user_role=UserRole.GUARDIAN,
+        cert_flag=CertFlag.APPROVED,
+    )
+    db.add(guardian)
+    await db.flush()
+
+    qr = str(uuid.uuid4())
+    senior = Senior(
+        guardian_id=guardian.user_id,
+        name="테스트어르신",
+        gender=GenderEnum.FEMALE,
+        age=80,
+        road_address="경기도 고양시 일산동구 테스트로 1",
+        sigungu="고양시 일산동구",
+        detail_address="101호",
+        max_people=2,
+        qr_code=qr,
+    )
+    db.add(senior)
+    await db.flush()
+
+    hosting = Hosting(
+        senior_id=senior.senior_id,
+        menu="된장찌개",
+        hosting_at=datetime.now(timezone.utc) + timedelta(days=1),
+        hosting_end=datetime.now(timezone.utc) + timedelta(days=1, hours=2),
+        max_people=2,
+        road_address="경기도 고양시 일산동구 테스트로 1",
+        sigungu="고양시 일산동구",
+        detail_address="101호",
     )
     db.add(hosting)
     await db.flush()
@@ -105,6 +194,7 @@ async def seed_match_test_data(
         "volunteer_id": volunteer.user_id,
         "hosting_id": hosting.hosting_id,
         "senior_id": senior.senior_id,
+        "qr_uuid": qr,
     }
 
 
@@ -145,7 +235,9 @@ async def seed_review_test_data(
         name="테스트어르신",
         gender=GenderEnum.FEMALE,
         age=80,
-        address="테스트 주소",
+        road_address="경기도 고양시 일산동구 테스트로 1",
+        sigungu="고양시 일산동구",
+        detail_address="101호",
         max_people=3,
     )
     db.add(senior)
@@ -162,7 +254,11 @@ async def seed_review_test_data(
             senior_id=senior.senior_id,
             menu="된장찌개",
             hosting_at=now - timedelta(days=i + 1),
+            hosting_end=now - timedelta(days=i + 1) + timedelta(hours=2),
             max_people=3,
+            road_address="경기도 고양시 일산동구 테스트로 1",
+            sigungu="고양시 일산동구",
+            detail_address="101호",
         )
         db.add(hosting)
         await db.flush()
@@ -206,7 +302,6 @@ async def seed_qr_test_data(
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """QR 코드 테스트용 보호자 + 어르신 더미 데이터를 생성합니다."""
-    import uuid
 
     suffix = datetime.now().strftime("%Y%m%d%H%M%S")
     password = "test1234"
@@ -223,14 +318,17 @@ async def seed_qr_test_data(
     db.add(guardian)
     await db.flush()
 
+    qr = str(uuid.uuid4())
     senior = Senior(
         guardian_id=guardian.user_id,
         name="테스트어르신",
         gender=GenderEnum.FEMALE,
         age=80,
-        address="테스트 주소",
+        road_address="경기도 고양시 일산동구 테스트로 1",
+        sigungu="고양시 일산동구",
+        detail_address="101호",
         max_people=2,
-        qr_code=str(uuid.uuid4()),
+        qr_code=qr,
     )
     db.add(senior)
     await db.commit()
@@ -239,6 +337,7 @@ async def seed_qr_test_data(
         "guardian_email": guardian.email,
         "guardian_password": password,
         "senior_id": senior.senior_id,
+        "qr_uuid": qr,
         "message": f"GET /api/v1/seniors/{senior.senior_id}/qr 로 QR 이미지 확인하세요.",
     }
 
@@ -287,7 +386,9 @@ async def seed_sms_test_data(
         name="테스트어르신",
         gender=GenderEnum.FEMALE,
         age=80,
-        address="테스트 주소",
+        road_address="경기도 고양시 일산동구 테스트로 1",
+        sigungu="고양시 일산동구",
+        detail_address="101호",
         max_people=2,
     )
     db.add(senior)
@@ -297,7 +398,11 @@ async def seed_sms_test_data(
         senior_id=senior.senior_id,
         menu="된장찌개",
         hosting_at=datetime.now(timezone.utc) + timedelta(days=1),
+        hosting_end=datetime.now(timezone.utc) + timedelta(days=1, hours=2),
         max_people=2,
+        road_address="경기도 고양시 일산동구 테스트로 1",
+        sigungu="고양시 일산동구",
+        detail_address="101호",
     )
     db.add(hosting)
     await db.flush()

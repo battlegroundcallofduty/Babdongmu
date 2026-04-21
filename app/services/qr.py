@@ -4,6 +4,13 @@ import io
 
 import qrcode
 
+from app.config import settings
+
+
+def build_checkin_url(qr_uuid: str) -> str:
+    """QR UUID로 체크인 페이지 URL을 생성합니다."""
+    return f"{settings.FRONTEND_BASE_URL}/pages/check.html?qr_uuid={qr_uuid}"
+
 
 def generate_qr_image(data: str) -> bytes:
     """데이터를 QR 코드 PNG 이미지로 변환하여 반환합니다."""
