@@ -30,11 +30,11 @@
     </div>
 
     <div class="profile-card slide-up stagger-1">
-      <div class="profile-avatar">홍</div>
+      <div class="profile-avatar" id="profile-avatar">?</div>
       <div class="profile-details">
-        <h2>김상혁</h2>
-        <p>봉사자 · 고양시 덕양구 내유동</p>
-        <p>example@email.com · 010-1234-5678</p>
+        <h2 id="profile-name">-</h2>
+        <p id="profile-role-district">-</p>
+        <p id="profile-contact">-</p>
       </div>
     </div>
 
@@ -61,27 +61,41 @@
       <h3>내 정보</h3>
       <div class="detail-row">
         <span class="detail-label">이름</span>
-        <span class="detail-value" id="user-name">김상혁</span>
+        <span class="detail-value" id="user-name">-</span>
       </div>
       <div class="detail-row">
         <span class="detail-label">이메일</span>
-        <span class="detail-value" id="user-email">example@email.com</span>
+        <span class="detail-value" id="user-email">-</span>
       </div>
       <div class="detail-row">
         <span class="detail-label">전화번호</span>
-        <span class="detail-value" id="user-phone">010-1234-5678</span>
+        <span class="detail-value" id="user-phone">-</span>
       </div>
       <div class="detail-row">
         <span class="detail-label">활동 동네</span>
-        <span class="detail-value" id="user-district">고양시 덕양구 내유동</span>
+        <span class="detail-value" id="user-district">-</span>
       </div>
       <div class="detail-row">
         <span class="detail-label">신원검증</span>
-        <span class="detail-value"><span class="badge badge-done">검증 완료</span></span>
+        <span class="detail-value"><span id="cert-badge"><span class="badge badge-pending">검토 중</span></span></span>
       </div>
     </div>
 
+    <div id="reject-reason-section" class="detail-section slide-up stagger-4 hidden">
+      <h3>반려 사유</h3>
+      <div class="alert alert-error" id="reject-reason-msg"></div>
+    </div>
+
     <div class="detail-section slide-up stagger-4">
+      <h3>서류 관리</h3>
+      <p style="font-size:13px; color:var(--muted); margin-bottom:var(--space-md);">잘못된 서류를 올렸거나 변경하고 싶다면 해당 서류를 <strong>삭제</strong>하신 후 올바른 서류로 다시 <strong>업로드</strong>해주세요.</p>
+      <div id="docs-list">
+        <p style="color:var(--muted); font-size:14px; padding:12px 0;">서류 목록을 불러오는 중...</p>
+      </div>
+      <p style="font-size:13px; color:var(--muted); margin-top:var(--space-sm);">허용 파일 형식: jpg, png, pdf, hwp, docx / 최대 5MB</p>
+    </div>
+
+    <div class="detail-section slide-up stagger-5">
       <h3>비밀번호 변경</h3>
       <form id="password-form">
         <div class="form-group">
@@ -102,8 +116,8 @@
       </form>
     </div>
 
-    <button id="logout-btn" class="btn btn-ghost w-full mt-xl slide-up stagger-5">로그아웃</button>
-    <button id="delete-btn" class="btn btn-danger w-full mt-sm slide-up stagger-5">회원 탈퇴</button>
+    <button id="logout-btn" class="btn btn-ghost w-full mt-xl slide-up stagger-6">로그아웃</button>
+    <button id="delete-btn" class="btn btn-danger w-full mt-sm slide-up stagger-6">회원 탈퇴</button>
   </main>
 
   <footer class="footer">

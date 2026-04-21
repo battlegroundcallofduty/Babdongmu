@@ -36,8 +36,7 @@ async function api(path, options = {}) {
     throw new Error(message);
   }
 
-  // 204 No Content처럼 body가 없는 응답은 null 반환
-  // (204: 서버가 요청은 성공적으로 처리했는데 돌려줄 데이터가 없을때)
+  // 204(요청은 성공했는데 돌려줄 데이터가 없을때)처럼 body가 없는 응답은 null 반환
   if (response.status === 204) return null;
   return response.json();
 }

@@ -18,24 +18,53 @@ document.querySelectorAll('.tab[data-role]').forEach(tab => {
   });
 });
 
-// 파일 선택 시 파일명 표시
+// 파일 선택 시 파일명 표시 + 형식/크기 인라인 검증
+const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'pdf', 'hwp', 'docx'];
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
 document.querySelectorAll('input[type="file"]').forEach(input => {
   input.addEventListener('change', () => {
+    const file = input.files[0];
     const span = input.closest('label').querySelector('.doc-upload-text');
-    span.textContent = input.files[0] ? input.files[0].name : '파일 선택';
+    span.textContent = file ? file.name : '파일 선택';
+
+    const hint = input.closest('.form-group').querySelector('.doc-hint');
+    let errorEl = input.closest('.form-group').querySelector('.alert-error');
+
+    if (!file) {
+      errorEl?.remove();
+      return;
+    }
+
+    const ext = file.name.split('.').pop().toLowerCase();
+    let errorMsg = null;
+    if (!ALLOWED_EXTENSIONS.includes(ext)) {
+      errorMsg = '지원하지 않는 파일 형식입니다. 알맞은 형식의 파일을 다시 첨부해주세요.(허용: jpg, png, pdf, hwp, docx)';
+    } else if (file.size > MAX_FILE_SIZE) {
+      errorMsg = '파일 크기가 5MB를 초과했습니다. 5MB보다 작은 파일을 첨부해주세요.';
+    }
+
+    if (errorMsg) {
+      if (!errorEl) {
+        errorEl = document.createElement('p');
+        errorEl.className = 'alert alert-error';
+        hint.after(errorEl);
+      }
+      errorEl.textContent = errorMsg;
+    } else {
+      errorEl?.remove();
+    }
   });
 });
 
-// 파일 업로드 함수
-// 파일은 바이너리라 json에 못담아서 multipart 씀
+// 파일 업로드 함수(파일: json에 못담아서 multipart 씀)
 async function uploadDocument(token, documentType, file) {
-  const formData = new FormData();  // FormData: multipart 요청 만들어줌
-  formData.append('document_type', documentType); // 텍스트 필드 -> Form(...)
-  formData.append('file', file);                  // 파일 필드 -> File(...)
+  const formData = new FormData();  // FormData: multipart 요청 생성
+  formData.append('document_type', documentType);
+  formData.append('file', file);
 
-  // api() 대신 fetch 직접 사용
-  // api(): content-type json 강제로 붙임. boundary 값 못 넣음
-  // fetch: content-type 자동 설정, boundary값 같이 들어감 -> multipart 요청은 파싱 때문에 파일경계값 필요
+  // api(): content-type json 강제. boundary값 X
+  // fetch: content-type 자동 설정, boundary값 O(multipart: 파싱 때문에 파일경계값 필요)
   const response = await fetch('/api/v1/users/me/documents', {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${token}` },  // 토큰만 직접 설정
@@ -49,7 +78,7 @@ async function uploadDocument(token, documentType, file) {
       ? detail.map(d => d.msg.replace(/^Value error,\s*/i, '')).join(', ')
       : (detail || '서류 업로드에 실패했어요.');
     const err = new Error(message);
-    err.status = response.status;  // http 상태 코드를 에러 객체에 담음(catch에서 꺼내쓰려고)
+    err.status = response.status;  // http 상태 코드를 에러 객체에 담음(catch용)
     throw err;
   }
   return response.json();
@@ -77,7 +106,18 @@ document.querySelector('#register-form')?.addEventListener('submit', async (e) =
 
   errorMsg.classList.add('hidden');
 
-  let token = null; // catch에서 가입 성공 여부 판단하기 위해 try 바깥에 선언
+  const role = document.querySelector('#role').value;
+  const idFile = document.querySelector('#doc-id').files[0];
+  const extraFile = role === 'volunteer'
+    ? document.querySelector('#doc-criminal').files[0]
+    : document.querySelector('#doc-family').files[0];
+
+  if (!idFile || !extraFile) {
+    const ok = confirm('서류를 모두 제출하지 않아도 가입은 가능하지만, 관리자의 승인이 반려될 수 있습니다. 계속하시겠습니까?');
+    if (!ok) return;
+  }
+
+  let token = null; // catch에서 가입 성공 판단 위해 try 바깥에 선언
 
   try {
     // 1) 회원가입 → 유저 정보 반환
@@ -89,47 +129,39 @@ document.querySelector('#register-form')?.addEventListener('submit', async (e) =
         password_confirm: passwordConfirm,
         name: document.querySelector('#name').value,
         phone_number: document.querySelector('#phone').value,
-        user_role: document.querySelector('#role').value,
+        user_role: role,
         address: document.querySelector('#district').value,
       }),
     });
 
     // 2) 토큰 저장 (서류 업로드 시 인증에 필요)
-    token = result.access_token; // 여기서 설정되면 회원가입 성공한 것
+    token = result.access_token;
     // saveToken 삭제 → 회원가입 후 자동 로그인 방지, 서류 업로드엔 token 변수 직접 사용
-    const role = document.querySelector('#role').value;
 
     // 3) 신분증 사본 업로드 (선택)
-    const idFile = document.querySelector('#doc-id').files[0];
     if (idFile) {
       await uploadDocument(token, 'identity_copy', idFile);
     }
 
     // 4) 역할별 추가 서류 업로드 (선택)
-    if (role === 'volunteer') {
-      const criminalFile = document.querySelector('#doc-criminal').files[0];
-      if (criminalFile) {
-        await uploadDocument(token, 'criminal_record', criminalFile);
-      }
-    } else if (role === 'guardian') {
-      const guardianFile = document.querySelector('#doc-family').files[0];
-      if (guardianFile) {
-        const guardianType = document.querySelector('#doc-guardian-type').value;
-        await uploadDocument(token, guardianType, guardianFile);
-      }
+    if (extraFile) {
+      const documentType = role === 'volunteer'
+        ? 'criminal_record'
+        : document.querySelector('#doc-guardian-type').value;
+      await uploadDocument(token, documentType, extraFile);
     }
 
-    window.location.href = '/pages/login.html';
+    window.location.href = '/pages/login.html?registered=1';
   } catch (err) {
     if (token) {
-      // 회원가입은 성공했지만 서류 업로드 실패 → 가입은 유지하고 안내만 표시 후 이동
-      // 서류는 가입 필수값이 아님 — 업로드 실패해도 계정은 유지, 로그인 후 마이페이지에서 재업로드 가능
+      // 서류는 회원가입 필수값이 아님
+      // 서류 업로드 실패해도 계정유지(가입처리), 로그인 후 마이페이지에서 재업로드 가능
       // TODO: R2에만 올라가고 DB 연결 안 된 파일(orphan)은 백엔드 스케줄러에서 주기적으로 정리 예정
-      // 503: R2 서버 문제 → 기술 메시지 숨기고 안내 문구로 표시
-      // 400: 형식 오류/크기 초과 → 백엔드 메시지 그대로 (유저가 고칠수있도록 뭔지 알려줌)
+      // 503: R2 서버 문제 → 안내 문구로 표시
+      // 400: 형식 오류/크기 초과 → 백엔드 메시지(유저가 수정할수있도록)
       const msg = err.status === 503
         ? '서류 업로드에 실패했습니다.\n가입은 완료됐으니 로그인 후 마이페이지에서 다시 업로드해주세요.'
-        : `서류 업로드 오류: ${err.message}\n로그인 후 마이페이지에서 다시 업로드해주세요.`;
+        : `서류 업로드 오류: ${err.message}\n가입은 완료됐으니 로그인 후 마이페이지에서 다시 업로드해주세요.`;
       alert(msg);
       window.location.href = '/pages/login.html';
     } else {
