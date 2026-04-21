@@ -123,6 +123,8 @@ document.querySelector('#register-form')?.addEventListener('submit', async (e) =
   } catch (err) {
     if (token) {
       // 회원가입은 성공했지만 서류 업로드 실패 → 가입은 유지하고 안내만 표시 후 이동
+      // 서류는 가입 필수값이 아님 — 업로드 실패해도 계정은 유지, 로그인 후 마이페이지에서 재업로드 가능
+      // TODO: R2에만 올라가고 DB 연결 안 된 파일(orphan)은 백엔드 스케줄러에서 주기적으로 정리 예정
       // 503: R2 서버 문제 → 기술 메시지 숨기고 안내 문구로 표시
       // 400: 형식 오류/크기 초과 → 백엔드 메시지 그대로 (유저가 고칠수있도록 뭔지 알려줌)
       const msg = err.status === 503
