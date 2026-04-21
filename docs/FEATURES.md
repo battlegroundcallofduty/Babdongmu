@@ -23,7 +23,7 @@
 
 | 기능 | 설명 |
 |------|------|
-| 회원가입 | 이름, 이메일, 비밀번호, 전화번호, 주소, 역할 입력. 봉사자는 서류 업로드 필수 |
+| 회원가입 | 이름, 이메일, 비밀번호, 전화번호, 주소, 역할 입력. 서류 업로드는 선택 — 실패해도 가입 완료, 로그인 후 마이페이지에서 재업로드 가능 |
 | 카카오 로그인 | 카카오 OAuth 연동. 비밀번호 없이 가입 가능 (`users.password = NULL`) |
 | 로그인 / 로그아웃 | 이메일 + 비밀번호, JWT 발급 |
 | JWT 발급 및 검증 | Access Token 기반 인증 |
@@ -34,6 +34,7 @@
 - 서류 업로드 후 관리자가 승인하면 `users.cert_flag = approved`로 변경
 - 반려 시 `cert_flag = rejected`로 변경, 반려 사유는 `users.cert_reject_reason`에 저장. 기존 서류 삭제 후 재업로드 필요
 - `cert_flag = approved` 상태인 봉사자만 호스팅 신청 가능
+- 업로드 중단 등으로 DB 연결 없이 R2에만 남은 파일(orphan)은 스케줄러가 주기적으로 정리 예정 (미구현)
 
 ---
 
@@ -94,7 +95,7 @@
 
 - CLOSED : 호스팅 종료 시간 시점에 체크하여  
 				IN_PROGRESS -> CLOSED 
-				그 외의 CASE	-> CLOSED
+				그 외의 CASE	-> FAILED
 				해당하는 호스팅에 매칭 테이블이 존재한다면(신청한 사람이 있다면) 
 				checkin이 없으면 -> NOT_VISITED 교체
 				checkin만 있는 경우 -> NOT_VISITED 교체

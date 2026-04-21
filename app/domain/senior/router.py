@@ -158,7 +158,11 @@ async def get_senior_qr_endpoint(
     session: AsyncSession = Depends(get_db),
     current_guardian=Depends(require_guardian),
 ) -> StreamingResponse:
-    """어르신 QR 코드 이미지를 반환합니다."""
+    """어르신 QR 코드 이미지를 반환합니다.
+
+    QR UUID는 어르신 1명당 1개로 고정되며 영구 유효 — 재발급 API는 의도적으로 제공하지 않음.
+    Cache-Control: no-store 로 브라우저 캐시만 차단.
+    """
     senior = await get_guardian_senior_by_id(
         session=session,
         guardian_id=current_guardian.user_id,
