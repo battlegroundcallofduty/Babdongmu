@@ -4,7 +4,7 @@ import random
 import string
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import hash_password, verify_password
@@ -162,7 +162,24 @@ async def send_phone_verification(phone_number: str, db: AsyncSession) -> bool:
     from app.services.sms import send_auth_sms
     # 코드 랜덤생성 6자리 / 만료시간 3분
     code = "".join(random.choices(string.digits, k=6))
-    expires_at = datetime.now(timezone.utc) + timedelta(minutes=3)
+    now = datetime.now(timezone.utc)
+    expires_at = now + timedelta(minutes=3)
+
+    # 기존 미만료·미인증 코드 만료처리 (동일한 번호로 여러번 재발송한 경우)
+    await db.execute(
+        update(PhoneVerification)
+        .where(
+            PhoneVerification.phone_number == phone_number,
+            PhoneVerification.is_verified == False,
+            PhoneVerification.expires_at > now,
+        )
+        .values(expires_at=now)
+    )
+
+    # SMS 먼저 발송 (실패하면 DB 저장 X)
+    success = await send_auth_sms(phone_number, code)
+    if not success:
+        return False
 
     verification = PhoneVerification(
         phone_number=phone_number,
@@ -172,7 +189,7 @@ async def send_phone_verification(phone_number: str, db: AsyncSession) -> bool:
     db.add(verification)
     await db.commit()
 
-    return await send_auth_sms(phone_number, code)
+    return True
 
 
 async def verify_phone_code(phone_number: str, code: str, db: AsyncSession) -> bool | None:
@@ -188,7 +205,8 @@ async def verify_phone_code(phone_number: str, code: str, db: AsyncSession) -> b
 
     if verification is None:
         return None
-    if verification.expires_at < datetime.now(timezone.utc):
+    # 이미 인증에 사용된 코드, 시간 만료된 코드 -> None 반환
+    if verification.is_verified or verification.expires_at < datetime.now(timezone.utc):
         return None
     if verification.code != code:
         return False

@@ -20,9 +20,9 @@ DOCUMENT_CONTENT_TYPES = {
     "image/png",
     "application/pdf",
     "application/x-hwp",         # hwp: 브라우저마다 다른 유형 2개
-    "application/haansoft-hwp",  # docx: 공식 유형, 한컴회사꺼 2개
+    "application/haansoft-hwp",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    "application/haansoftdocx",
+    "application/haansoftdocx",  # docx: 공식 유형, 한컴회사꺼 2개
 }
 
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
@@ -34,9 +34,9 @@ _MAGIC_BY_MIME: dict[str, bytes] = {
     "image/png":  b"\x89PNG\r\n\x1a\n",
     "application/pdf": b"%PDF",
     "application/x-hwp":        b"\xd0\xcf\x11\xe0",  # hwp: OLE2 컨테이너 포장
-    "application/haansoft-hwp": b"\xd0\xcf\x11\xe0",  # docx: ZIP 컨테이너 포장
+    "application/haansoft-hwp": b"\xd0\xcf\x11\xe0",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document": b"PK\x03\x04",
-    "application/haansoftdocx": b"PK\x03\x04",
+    "application/haansoftdocx": b"PK\x03\x04",        # docx: ZIP 컨테이너 포장
 }
 
 
