@@ -19,10 +19,11 @@ from app.domain.senior.service import (
     delete_senior,
     get_guardian_senior_by_id,
     get_senior_by_id,
+    get_senior_id_by_qr,
     list_seniors_by_guardian,
     update_senior,
 )
-from app.domain.user.dependency import require_guardian
+from app.domain.user.dependency import require_guardian, require_volunteer
 from app.services.qr import generate_qr_image
 
 router = APIRouter()
@@ -147,6 +148,20 @@ async def activate_senior_endpoint(
         senior_id=senior_id,
     )
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get(
+    "/qr/{qr_uuid}",
+    status_code=status.HTTP_200_OK,
+)
+async def get_senior_id_by_qr_endpoint(
+    qr_uuid: str,
+    session: AsyncSession = Depends(get_db),
+    current_user=Depends(require_volunteer),
+) -> dict:
+    """QR UUID로 senior_id를 반환합니다. 봉사자가 QR 스캔 후 체크인/아웃 API 호출에 활용합니다."""
+    senior_id = await get_senior_id_by_qr(session=session, qr_uuid=qr_uuid)
+    return {"senior_id": senior_id}
 
 
 @router.get(

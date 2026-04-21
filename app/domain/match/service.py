@@ -210,18 +210,17 @@ async def check_in(db: AsyncSession, senior_id: int, vt_id: int) -> MatchingInfo
 
     match.check_in_time = datetime.now(timezone.utc)
 
-    # 첫 번째 체크인이면 호스팅 상태를 진행 중으로 변경 (스케줄러 연결 후 주석 해제)
-    # count_result = await db.execute(
-    #     select(func.count()).where(
-    #         MatchingInfo.hosting_id == match.hosting_id,
-    #         MatchingInfo.check_in_time.isnot(None),
-    #     )
-    # )
-    # is_first_checkin = count_result.scalar() == 1
-    # if is_first_checkin:
-    #     hosting = await db.get(Hosting, match.hosting_id)
-    #     if hosting:
-    #         hosting.hosting_status = HostingStatus.IN_PROGRESS
+    count_result = await db.execute(
+        select(func.count()).where(
+            MatchingInfo.hosting_id == match.hosting_id,
+            MatchingInfo.check_in_time.isnot(None),
+        )
+    )
+    is_first_checkin = count_result.scalar() == 1
+    if is_first_checkin:
+        hosting = await db.get(Hosting, match.hosting_id)
+        if hosting:
+            hosting.hosting_status = HostingStatus.IN_PROGRESS
 
     await db.commit()
     await db.refresh(match)
