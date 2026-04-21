@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import create_access_token
 from app.database import get_db
+from app.domain.senior.service import list_seniors_by_guardian
 from app.domain.user.dependency import get_current_user
 from app.domain.user.models import DocumentType, User, UserRole
 from app.domain.user.schemas import (
@@ -29,7 +30,6 @@ from app.domain.user.service import (
     get_documents_by_user_id,
     get_user_by_email,
 )
-from app.domain.senior.service import list_seniors_by_guardian
 from app.services.r2 import DOCUMENT_CONTENT_TYPES, BucketType, delete_image, upload_image
 
 router = APIRouter()
@@ -83,7 +83,7 @@ async def login(body: UserLoginRequest, db: AsyncSession = Depends(get_db)):
 @router.get("/me", response_model=UserResponse)
 async def get_me(current_user: User = Depends(get_current_user)):
     """현재 로그인한 유저 정보 반환"""
-    return current_user  # orm 객체: db 테이블의 한 행을 python 객체로 감싼것
+    return current_user
 
 
 @router.patch("/me/password", status_code=status.HTTP_204_NO_CONTENT)
@@ -122,9 +122,11 @@ async def delete_me(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="등록된 어르신이 있어 탈퇴할 수 없습니다. 먼저 어르신 정보를 삭제해주세요.",
             )
-    # R2 파일 먼저 삭제 (유저 삭제 후 CASCADE로 DB 레코드는 사라지지만 R2 파일은 안 사라짐)
+    # R2 파일 먼저 삭제 (유저 삭제 후 CASCADE로 DB는 사라지지만 R2 파일은 안 사라짐)
     documents = await get_documents_by_user_id(current_user.user_id, db)
-    await asyncio.gather(*[delete_image(doc.document_url) for doc in documents], return_exceptions=True)
+    await asyncio.gather(
+        *[delete_image(doc.document_url) for doc in documents], return_exceptions=True
+    )
     await delete_user(current_user.user_id, db)
 
 
@@ -132,17 +134,14 @@ async def delete_me(
 @router.post("/me/documents", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
 async def upload_document(
     document_type: DocumentType = Form(...),  # 텍스트 조각(서류유형)
-    file: UploadFile = File(...),             # 파일 조각(실제 파일 바이너리)
+    file: UploadFile = File(...),  # 파일 조각(실제 파일 바이너리)
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """서류 업로드 (파일 → R2 업로드 → DB 저장)"""  # review-router 참고했습니다
+    """서류 업로드 (파일 → R2 업로드 → DB 저장)"""
     # 1) 파일 R2 private 버킷에 올리고 URL 받기
     document_url = await upload_image(
-        file,
-        folder="documents",
-        bucket=BucketType.PRIVATE,
-        allowed_types=DOCUMENT_CONTENT_TYPES
+        file, folder="documents", bucket=BucketType.PRIVATE, allowed_types=DOCUMENT_CONTENT_TYPES
     )
     # 2) URL을 db에 저장
     document = await create_document(
@@ -163,7 +162,7 @@ async def get_my_documents(
     return await get_documents_by_user_id(current_user.user_id, db)
 
 
-# 204: 삭제 후 응답 바디가 없음(성공했지만 삭제라서 돌려줄 내용이 없음)
+# 204: 삭제 후 응답 바디 X(성공했지만 돌려줄 내용 x)
 @router.delete("/me/documents/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def remove_document(
     document_id: int,
