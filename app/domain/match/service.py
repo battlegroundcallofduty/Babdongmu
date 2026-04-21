@@ -253,6 +253,7 @@ async def check_out(db: AsyncSession, senior_id: int, vt_id: int) -> MatchingInf
     match.check_out_time = datetime.now(timezone.utc)
 
     # NOT_VISITED 상태에서 체크아웃한 경우 APPROVED로 보정 (지각생)
+    # check_in_time 존재는 위 가드에서 이미 보장됨 — 여기서 중복 검증 불필요
     if match.match_status == MatchStatus.NOT_VISITED:
         match.match_status = MatchStatus.APPROVED
 
