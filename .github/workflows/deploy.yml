@@ -22,8 +22,6 @@ jobs:
             git fetch origin && git reset --hard origin/main
             docker-compose build
             docker-compose up -d postgres
-            until docker-compose exec -T postgres pg_isready -U babdongmu; do sleep 2; done
             docker-compose run --rm app alembic upgrade head
-            docker-compose up -d
+            docker-compose up -d --wait
             docker image prune -f
-            curl -fsS http://localhost:8000/openapi.json > /dev/null
