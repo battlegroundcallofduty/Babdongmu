@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr, HttpUrl, field_validator, model_validator
+from pydantic import BaseModel, EmailStr, field_validator, model_validator
 
 from app.domain.user.models import CertFlag, DocumentType, UserRole
 
@@ -73,18 +73,6 @@ class PasswordChangeRequest(BaseModel):
         return self
 
 
-# ── 서류 요청 ────────────────
-
-
-class DocumentCreateRequest(BaseModel):
-    """서류 업로드 요청"""
-
-    # 데드코드라 삭제 예정
-    document_type: DocumentType
-    # HttpUrl로 스킴/형식 검증 (javascript:, data: 등 차단). 렌더링 시 textContent 사용 권장
-    document_url: HttpUrl
-
-
 # ── SMS 요청 ───────────────
 
 
@@ -114,6 +102,7 @@ class UserResponse(BaseModel):
     user_role: UserRole
     address: str
     cert_flag: CertFlag
+    cert_reject_reason: str | None
     created_at: datetime
     is_social_login: bool
 
