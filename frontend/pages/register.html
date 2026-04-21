@@ -58,7 +58,18 @@
         </div>
         <div class="form-group">
           <label class="form-label" for="phone">전화번호</label>
-          <input class="form-input" type="tel" id="phone" placeholder="010-1234-5678" required>
+          <div style="display:flex; gap:8px;">
+            <input class="form-input" type="tel" id="phone" placeholder="010-1234-5678" required style="flex:1;">
+            <button type="button" id="btn-send-code" class="btn btn-secondary" style="white-space:nowrap;">인증하기</button>
+          </div>
+        </div>
+        <div class="form-group hidden" id="verify-group">
+          <label class="form-label" for="verify-code">인증번호</label>
+          <div style="display:flex; gap:8px;">
+            <input class="form-input" type="text" id="verify-code" placeholder="6자리 숫자 입력" maxlength="6" style="flex:1;">
+            <button type="button" id="btn-verify-code" class="btn btn-secondary" style="white-space:nowrap;">확인</button>
+          </div>
+          <p id="verify-msg" class="doc-hint"></p>
         </div>
         <div class="form-group">
           <label class="form-label" for="district">활동 동네</label>
