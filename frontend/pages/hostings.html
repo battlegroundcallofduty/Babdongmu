@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="/css/common.css">
   <style>
     .hidden { display: none !important; }
+
     .hosting-page-header {
       display: flex;
       align-items: flex-start;
@@ -15,23 +16,48 @@
       gap: 16px;
       flex-wrap: wrap;
     }
+
+    .page-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .header-caption {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: #F8F5F1;
+      color: #6B5E53;
+      font-size: 13px;
+      font-weight: 600;
+      margin-top: 8px;
+    }
+
     .filter-bar {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 12px;
       margin-bottom: 24px;
     }
+
     .hosting-card {
       display: block;
       text-decoration: none;
       color: inherit;
+      height: 100%;
     }
+
     .hosting-header {
       display: flex;
       align-items: flex-start;
       gap: 12px;
       margin-bottom: 16px;
     }
+
     .hosting-avatar {
       width: 44px;
       height: 44px;
@@ -44,31 +70,53 @@
       background: linear-gradient(135deg, #D4763C, #5B8C5A);
       flex-shrink: 0;
     }
+
     .hosting-name {
       font-size: 18px;
       font-weight: 700;
       margin-bottom: 4px;
     }
+
     .hosting-address,
     .hosting-meta-row,
-    .hosting-subtext {
+    .hosting-subtext,
+    .hosting-helper {
       color: #8C7E73;
       font-size: 14px;
       line-height: 1.5;
     }
+
     .hosting-menu {
       font-size: 20px;
       font-weight: 700;
       color: #D4763C;
       margin-bottom: 14px;
     }
+
     .hosting-meta {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
       flex-wrap: wrap;
+      margin-bottom: 16px;
     }
+
+    .hosting-helper {
+      margin-bottom: 16px;
+    }
+
+    .hosting-card-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .hosting-card-actions .btn {
+      flex: 1;
+      min-width: 0;
+    }
+
     .badge {
       display: inline-flex;
       align-items: center;
@@ -79,11 +127,13 @@
       font-weight: 700;
       white-space: nowrap;
     }
+
     .badge-open { background: #EDF5ED; color: #3A6B39; }
     .badge-full { background: #FDF5E6; color: #8B6914; }
     .badge-failed { background: #FDECEC; color: #B44646; }
     .badge-progress { background: #EEF3FF; color: #4269B4; }
     .badge-closed { background: #F0EBE6; color: #6B5E53; }
+
     .message-box {
       display: none;
       border-radius: 12px;
@@ -92,20 +142,24 @@
       border: 1px solid #E8E0D8;
       background: #fff;
     }
+
     .message-box.show { display: block; }
     .message-box.success { background: #F6FBF6; color: #2E5D2E; border-color: #D8EAD8; }
     .message-box.error { background: #FFF6F6; color: #9A3838; border-color: #F1D0D0; }
     .message-box.info { background: #F8F5F1; color: #6B5E53; }
+
     .empty-state {
       padding: 56px 24px;
       text-align: center;
     }
+
     .empty-state-icon {
       width: 80px;
       height: 80px;
       margin: 0 auto 16px;
       color: #D4763C;
     }
+
     .modal-overlay {
       position: fixed;
       inset: 0;
@@ -116,7 +170,9 @@
       padding: 24px;
       z-index: 30;
     }
+
     .modal-overlay.open { display: flex; }
+
     .modal {
       width: min(100%, 640px);
       max-height: calc(100vh - 48px);
@@ -125,6 +181,7 @@
       border-radius: 16px;
       padding: 24px;
     }
+
     .modal-header {
       display: flex;
       align-items: center;
@@ -132,6 +189,7 @@
       gap: 12px;
       margin-bottom: 16px;
     }
+
     .modal-close {
       border: 0;
       background: transparent;
@@ -139,6 +197,7 @@
       cursor: pointer;
       color: #8C7E73;
     }
+
     .modal-notice {
       padding: 16px;
       border-radius: 12px;
@@ -146,25 +205,51 @@
       color: #6B5E53;
       margin-bottom: 16px;
     }
+
     .time-range,
     .address-grid {
       display: grid;
       gap: 12px;
     }
-    .time-range { grid-template-columns: 1fr auto 1fr; align-items: center; }
-    .address-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+    .time-range {
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+    }
+
+    .address-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
     .form-hint {
       margin-top: 6px;
       color: #8C7E73;
       font-size: 13px;
       line-height: 1.5;
     }
+
     @media (max-width: 768px) {
       .filter-bar,
-      .address-grid { grid-template-columns: 1fr; }
-      .time-range { grid-template-columns: 1fr; }
-      .hosting-page-header { align-items: stretch; }
-      .hosting-page-header .btn { width: 100%; }
+      .address-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .time-range {
+        grid-template-columns: 1fr;
+      }
+
+      .hosting-page-header {
+        align-items: stretch;
+      }
+
+      .page-actions {
+        width: 100%;
+      }
+
+      .page-actions .btn,
+      .hosting-card-actions .btn {
+        width: 100%;
+      }
     }
   </style>
 </head>
@@ -182,8 +267,8 @@
         밥동무
       </a>
       <ul class="nav-links">
-        <li><a href="/pages/hostings.html" class="active">호스팅</a></li>
-        <li><a href="/pages/my-matches.html">내 매칭</a></li>
+        <li><a href="/pages/guardian.html">어르신 관리</a></li>
+        <li><a href="/pages/hostings.html" class="active">호스팅 관리</a></li>
         <li><a href="/pages/mypage.html">마이페이지</a></li>
       </ul>
       <button class="nav-toggle" type="button" onclick="toggleNav()" aria-label="메뉴 열기">
@@ -194,8 +279,8 @@
 
   <div class="nav-drawer" id="navDrawer" onclick="closeNav(event)">
     <div class="nav-drawer-content">
-      <a href="/pages/hostings.html" class="active">호스팅</a>
-      <a href="/pages/my-matches.html">내 매칭</a>
+      <a href="/pages/guardian.html">어르신 관리</a>
+      <a href="/pages/hostings.html" class="active">호스팅 관리</a>
       <a href="/pages/mypage.html">마이페이지</a>
     </div>
   </div>
@@ -204,17 +289,27 @@
     <div class="page-header slide-up hosting-page-header">
       <div>
         <h1>호스팅 관리</h1>
-        <p>내가 등록한 호스팅을 조회하고 새 호스팅을 등록할 수 있어요</p>
+        <p>보호자가 등록한 호스팅을 조회하고, 어르신별로 새 호스팅을 관리할 수 있어요.</p>
+        <div class="header-caption">보호자 전용 관리 화면</div>
       </div>
-      <button id="open-hosting-modal" class="btn btn-primary" type="button">+ 호스팅 등록</button>
+
+      <div class="page-actions">
+        <a href="/pages/guardian.html" class="btn btn-secondary">어르신 관리</a>
+        <button id="open-hosting-modal" class="btn btn-primary" type="button">+ 새 호스팅 등록</button>
+      </div>
     </div>
 
     <div id="message-box" class="message-box" role="status" aria-live="polite"></div>
 
     <div class="filter-bar slide-up stagger-1">
+      <select id="filter-senior" class="form-input">
+        <option value="">전체 어르신</option>
+      </select>
+
       <select id="filter-sigungu" class="form-input">
         <option value="">전체 시군구</option>
       </select>
+
       <select id="filter-status" class="form-input">
         <option value="">전체 상태</option>
         <option value="신청가능">신청가능</option>
@@ -223,6 +318,7 @@
         <option value="완료">완료</option>
         <option value="무산">무산</option>
       </select>
+
       <input id="filter-keyword" class="form-input" type="text" placeholder="메뉴 또는 주소 검색">
     </div>
 
@@ -236,20 +332,20 @@
         <path d="M35 36c-.8-3 1-6 5-6s5.5 3 5 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.3"/>
       </svg>
       <p id="empty-title">등록된 호스팅이 없어요</p>
-      <p id="empty-description" class="text-sm mt-sm">첫 호스팅을 등록해보세요.</p>
+      <p id="empty-description" class="text-sm mt-sm">어르신을 선택해 첫 호스팅을 등록해보세요.</p>
     </div>
   </main>
 
   <div class="modal-overlay" id="hosting-modal" role="dialog" aria-modal="true" aria-labelledby="hosting-modal-title">
     <div class="modal">
       <div class="modal-header">
-        <h3 id="hosting-modal-title">호스팅 등록</h3>
+        <h3 id="hosting-modal-title">새 호스팅 등록</h3>
         <button class="modal-close" id="hosting-modal-close" type="button" aria-label="닫기">✕</button>
       </div>
 
       <div id="senior-empty" class="modal-notice hidden">
         <p>등록된 어르신이 없어요.</p>
-        <p class="text-sm">호스팅을 등록하려면 먼저 어르신을 등록해주세요.</p>
+        <p class="text-sm mt-sm">호스팅을 등록하려면 먼저 어르신을 등록해주세요.</p>
         <a href="/pages/guardian.html" class="btn btn-primary mt-md">어르신 등록하러 가기</a>
       </div>
 
@@ -257,6 +353,7 @@
         <div class="form-group">
           <label class="form-label" for="hosting-senior">어르신</label>
           <select class="form-input" id="hosting-senior" required></select>
+          <p class="form-hint">선택한 어르신의 주소와 기본 동행 인원을 기준으로 호스팅이 생성돼요.</p>
         </div>
 
         <div class="form-group">
@@ -293,7 +390,7 @@
           <label class="form-label">호스팅 주소</label>
           <div class="modal-notice">
             <p id="hosting-address-preview">어르신을 선택하면 주소가 자동으로 표시돼요.</p>
-            <p class="text-sm mt-sm">호스팅 주소는 어르신 집으로 자동 고정돼요.</p>
+            <p class="text-sm mt-sm">호스팅 주소는 어르신 집 주소로 자동 적용돼요.</p>
           </div>
         </div>
 
@@ -332,7 +429,7 @@
           </div>
         </div>
 
-        <button id="hosting-submit-button" type="submit" class="btn btn-primary w-full">등록하기</button>
+        <button id="hosting-submit-button" type="submit" class="btn btn-primary w-full">호스팅 등록하기</button>
       </form>
     </div>
   </div>
@@ -346,10 +443,19 @@
   </footer>
 
   <script src="/js/api.js"></script>
-  <script>
+  <script type="module">
+    import { requireRoles } from '/js/authGuard.js';
+
+    const currentUser = requireRoles(['guardian', 'admin']);
+    if (!currentUser) {
+      throw new Error('접근 권한이 없습니다.');
+    }
+    
     const KST_TIME_ZONE = 'Asia/Seoul';
+
     let seniorsCache = [];
     let hostingItems = [];
+    let selectedSeniorIdFromQuery = '';
 
     function toggleNav() {
       const toggleElement = document.querySelector('.nav-toggle');
@@ -392,27 +498,40 @@
       return new Map(seniorsCache.map((senior) => [String(senior.senior_id), senior]));
     }
 
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    }
+
     function formatDateTimeRange(hostingAt, hostingEnd) {
       const startDate = new Date(hostingAt);
       const endDate = new Date(hostingEnd);
+
       const dateText = new Intl.DateTimeFormat('ko-KR', {
         timeZone: KST_TIME_ZONE,
         month: 'long',
         day: 'numeric',
         weekday: 'short',
       }).format(startDate);
+
       const startTimeText = new Intl.DateTimeFormat('ko-KR', {
         timeZone: KST_TIME_ZONE,
         hour: '2-digit',
         minute: '2-digit',
         hour12: false,
       }).format(startDate);
+
       const endTimeText = new Intl.DateTimeFormat('ko-KR', {
         timeZone: KST_TIME_ZONE,
         hour: '2-digit',
         minute: '2-digit',
         hour12: false,
       }).format(endDate);
+
       return `${dateText} · ${startTimeText} ~ ${endTimeText}`;
     }
 
@@ -433,9 +552,9 @@
         .join(' ')
         .trim();
 
-      const cardElement = document.createElement('a');
-      cardElement.href = `/pages/hosting-detail.html?id=${hosting.hosting_id}`;
+      const cardElement = document.createElement('article');
       cardElement.className = 'card hosting-card slide-up';
+      cardElement.dataset.seniorId = String(hosting.senior_id);
       cardElement.dataset.sigungu = hostingSigungu;
       cardElement.dataset.status = hosting.hosting_status ?? '';
       cardElement.dataset.keyword = [
@@ -460,35 +579,57 @@
               <div class="hosting-subtext">${escapeHtml(hostingSigungu || '-')}</div>
             </div>
           </div>
+
           <div class="hosting-menu">${escapeHtml(hosting.menu)}</div>
+
           <div class="hosting-meta">
             <span class="hosting-meta-row">${escapeHtml(formatDateTimeRange(hosting.hosting_at, hosting.hosting_end))}</span>
             <span class="badge ${statusMeta.className}">${escapeHtml(statusMeta.label)}</span>
           </div>
+
+          <div class="hosting-helper">
+            ${escapeHtml(`${hosting.max_people}명 모집 · 보호자 관리용 호스팅`)}
+          </div>
+
+          <div class="hosting-card-actions">
+            <a class="btn btn-primary" href="/pages/hosting-detail.html?id=${hosting.hosting_id}&view=guardian">
+              상세 보기
+            </a>
+            <a class="btn btn-secondary" href="/pages/guardian.html?senior_id=${hosting.senior_id}">
+              어르신 관리
+            </a>
+          </div>
         </div>
       `;
+
       return cardElement;
     }
 
-    function escapeHtml(value) {
-      return String(value ?? '')
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;')
-        .replaceAll("'", '&#39;');
+    function renderSeniorFilterOptions() {
+      const seniorFilterElement = document.querySelector('#filter-senior');
+      const previousValue = seniorFilterElement.value;
+
+      seniorFilterElement.innerHTML = '<option value="">전체 어르신</option>';
+
+      seniorsCache.forEach((senior) => {
+        seniorFilterElement.appendChild(
+          new Option(`${senior.name} 어르신`, String(senior.senior_id))
+        );
+      });
+
+      const nextValue = selectedSeniorIdFromQuery || previousValue;
+      seniorFilterElement.value = seniorsCache.some(
+        (senior) => String(senior.senior_id) === nextValue
+      ) ? nextValue : '';
     }
 
     function renderSigunguOptions() {
       const sigunguSelectElement = document.querySelector('#filter-sigungu');
       const previousValue = sigunguSelectElement.value;
-      const seniorMap = getSeniorMap();
 
       const sigunguSet = new Set(
         hostingItems
-          .map((hosting) => {
-            return hosting.sigungu ?? '';
-          })
+          .map((hosting) => hosting.sigungu ?? '')
           .filter(Boolean)
       );
 
@@ -508,6 +649,8 @@
       const emptyStateElement = document.querySelector('#empty-state');
       const emptyTitleElement = document.querySelector('#empty-title');
       const emptyDescriptionElement = document.querySelector('#empty-description');
+
+      const selectedSeniorId = document.querySelector('#filter-senior').value;
       const selectedSigungu = document.querySelector('#filter-sigungu').value;
       const selectedStatus = document.querySelector('#filter-status').value;
       const keyword = document.querySelector('#filter-keyword').value.trim().toLowerCase();
@@ -515,31 +658,40 @@
       hostingListElement.innerHTML = '';
 
       const filteredItems = hostingItems.filter((hosting) => {
+        const matchesSenior = !selectedSeniorId || String(hosting.senior_id) === selectedSeniorId;
         const matchesSigungu = !selectedSigungu || hosting.sigungu === selectedSigungu;
         const matchesStatus = !selectedStatus || hosting.hosting_status === selectedStatus;
-        const keywordTarget = [hosting.menu, hosting.road_address, hosting.detail_address, hosting.sigungu]
+        const keywordTarget = [
+          hosting.menu,
+          hosting.road_address,
+          hosting.detail_address,
+          hosting.sigungu,
+          seniorsCache.find((senior) => String(senior.senior_id) === String(hosting.senior_id))?.name,
+        ]
           .filter(Boolean)
           .join(' ')
           .toLowerCase();
         const matchesKeyword = !keyword || keywordTarget.includes(keyword);
-        return matchesSigungu && matchesStatus && matchesKeyword;
+
+        return matchesSenior && matchesSigungu && matchesStatus && matchesKeyword;
       });
 
       if (hostingItems.length === 0) {
         emptyStateElement.classList.remove('hidden');
         emptyTitleElement.textContent = '등록된 호스팅이 없어요';
-        emptyDescriptionElement.textContent = '첫 호스팅을 등록해보세요.';
+        emptyDescriptionElement.textContent = '어르신을 선택해 첫 호스팅을 등록해보세요.';
         return;
       }
 
       if (filteredItems.length === 0) {
         emptyStateElement.classList.remove('hidden');
         emptyTitleElement.textContent = '조건에 맞는 호스팅이 없어요';
-        emptyDescriptionElement.textContent = '필터를 바꾸면 다른 호스팅을 볼 수 있어요.';
+        emptyDescriptionElement.textContent = '어르신, 상태, 지역 필터를 바꾸면 다른 호스팅을 볼 수 있어요.';
         return;
       }
 
       emptyStateElement.classList.add('hidden');
+
       filteredItems.forEach((hosting) => {
         hostingListElement.appendChild(buildHostingCard(hosting));
       });
@@ -547,14 +699,15 @@
 
     function buildTimeOptions(selectElement, startHour, endHour) {
       selectElement.innerHTML = '';
+
       for (let hour = startHour; hour <= endHour; hour += 1) {
         for (let minute = 0; minute < 60; minute += 30) {
           if (hour === endHour && minute > 0) {
             break;
           }
+
           const value = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-          const label = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-          selectElement.appendChild(new Option(label, value));
+          selectElement.appendChild(new Option(value, value));
         }
       }
     }
@@ -570,8 +723,10 @@
       const now = new Date();
       const minDate = new Date(now.getTime() + (24 * 60 * 60 * 1000));
       const maxDate = new Date(now.getTime() + (14 * 24 * 60 * 60 * 1000));
+
       dateInputElement.min = minDate.toISOString().slice(0, 10);
       dateInputElement.max = maxDate.toISOString().slice(0, 10);
+
       if (!dateInputElement.value) {
         dateInputElement.value = dateInputElement.min;
       }
@@ -638,34 +793,21 @@
         seniorSelectElement.appendChild(new Option(optionLabel, senior.senior_id));
       });
 
-      if (seniorsCache.length === 1) {
-        seniorSelectElement.value = String(seniorsCache[0].senior_id);
-        fillAddressFieldsFromSenior(seniorsCache[0]);
+      const seniorIdForDefault = selectedSeniorIdFromQuery && seniorsCache.some(
+        (senior) => String(senior.senior_id) === selectedSeniorIdFromQuery
+      )
+        ? selectedSeniorIdFromQuery
+        : (seniorsCache.length === 1 ? String(seniorsCache[0].senior_id) : '');
+
+      if (seniorIdForDefault) {
+        seniorSelectElement.value = seniorIdForDefault;
+        const senior = seniorsCache.find(
+          (item) => String(item.senior_id) === seniorIdForDefault
+        );
+        fillAddressFieldsFromSenior(senior);
       } else {
         fillAddressFieldsFromSenior(null);
       }
-    }
-
-    async function loadSeniors() {
-      const seniors = await api('/seniors/?active_only=true');
-      seniorsCache = seniors;
-      renderSeniorOptions();
-    }
-
-    async function loadHostings() {
-      hostingItems = await api('/hostings/');
-      renderSigunguOptions();
-      renderHostings();
-    }
-
-    function openHostingModal() {
-      document.querySelector('#hosting-modal').classList.add('open');
-      document.body.style.overflow = 'hidden';
-    }
-
-    function closeHostingModal() {
-      document.querySelector('#hosting-modal').classList.remove('open');
-      document.body.style.overflow = '';
     }
 
     function resetHostingForm() {
@@ -673,8 +815,20 @@
       document.querySelector('#hosting-submit-button').disabled = false;
       updateDateConstraints();
 
+      const seniorSelectElement = document.querySelector('#hosting-senior');
+
+      if (selectedSeniorIdFromQuery && seniorsCache.some(
+        (senior) => String(senior.senior_id) === selectedSeniorIdFromQuery
+      )) {
+        seniorSelectElement.value = selectedSeniorIdFromQuery;
+        fillAddressFieldsFromSenior(
+          seniorsCache.find((senior) => String(senior.senior_id) === selectedSeniorIdFromQuery)
+        );
+        return;
+      }
+
       if (seniorsCache.length === 1) {
-        document.querySelector('#hosting-senior').value = String(seniorsCache[0].senior_id);
+        seniorSelectElement.value = String(seniorsCache[0].senior_id);
         fillAddressFieldsFromSenior(seniorsCache[0]);
       } else {
         fillAddressFieldsFromSenior(null);
@@ -700,23 +854,59 @@
       };
     }
 
+    function openHostingModal() {
+      document.querySelector('#hosting-modal').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeHostingModal() {
+      document.querySelector('#hosting-modal').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    function applyQueryParams() {
+      const params = new URLSearchParams(window.location.search);
+      selectedSeniorIdFromQuery = params.get('senior_id') ?? '';
+    }
+
+    async function loadSeniors() {
+      const seniors = await api('/seniors/?active_only=true');
+      seniorsCache = seniors;
+      renderSeniorOptions();
+      renderSeniorFilterOptions();
+    }
+
+    async function loadHostings() {
+      hostingItems = await api('/hostings/');
+      renderSigunguOptions();
+      renderHostings();
+    }
+
     async function initializePage() {
       try {
         hideMessage();
+        applyQueryParams();
         updateDateConstraints();
+
         buildTimeOptions(document.querySelector('#hosting-start-time'), 7, 22);
         buildTimeOptions(document.querySelector('#hosting-end-time'), 9, 22);
+
         document.querySelector('#hosting-start-time').value = '12:00';
         document.querySelector('#hosting-end-time').value = '14:00';
         document.querySelector('#hosting-date').value = getDefaultDateValue();
 
         await Promise.all([loadSeniors(), loadHostings()]);
+
+        if (selectedSeniorIdFromQuery) {
+          renderHostings();
+        }
       } catch (error) {
         console.error(error);
         showMessage(error?.message || '호스팅 정보를 불러오지 못했어요.', 'error');
       }
     }
 
+    document.querySelector('#filter-senior')?.addEventListener('change', renderHostings);
     document.querySelector('#filter-sigungu')?.addEventListener('change', renderHostings);
     document.querySelector('#filter-status')?.addEventListener('change', renderHostings);
     document.querySelector('#filter-keyword')?.addEventListener('input', renderHostings);
@@ -727,6 +917,7 @@
     });
 
     document.querySelector('#hosting-modal-close')?.addEventListener('click', closeHostingModal);
+
     document.querySelector('#hosting-modal')?.addEventListener('click', (event) => {
       if (event.target === event.currentTarget) {
         closeHostingModal();
@@ -740,22 +931,28 @@
     });
 
     document.querySelector('#hosting-senior')?.addEventListener('change', (event) => {
-      const selectedSenior = seniorsCache.find((senior) => String(senior.senior_id) === event.target.value);
+      const selectedSenior = seniorsCache.find(
+        (senior) => String(senior.senior_id) === event.target.value
+      );
       fillAddressFieldsFromSenior(selectedSenior);
     });
 
     document.querySelector('#hosting-form')?.addEventListener('submit', async (event) => {
       event.preventDefault();
+
       const submitButtonElement = document.querySelector('#hosting-submit-button');
 
       try {
         hideMessage();
         submitButtonElement.disabled = true;
+
         const payload = buildHostingPayload();
+
         await api('/hostings/', {
           method: 'POST',
           body: JSON.stringify(payload),
         });
+
         closeHostingModal();
         resetHostingForm();
         await loadHostings();

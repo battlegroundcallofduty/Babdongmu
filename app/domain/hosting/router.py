@@ -9,7 +9,9 @@ from app.domain.hosting.service import (
     cancel_hosting,
     create_hosting,
     get_hosting_detail,
+    get_public_hosting_detail,
     list_hostings_by_guardian,
+    list_hostings_for_volunteer,
 )
 from app.domain.user.dependency import require_guardian
 
@@ -49,6 +51,36 @@ async def list_hostings_endpoint(
     return await list_hostings_by_guardian(
         session=session,
         guardian_id=current_guardian.user_id,
+    )
+
+
+@router.get(
+    "/public",
+    response_model=list[HostingResponse],
+    status_code=status.HTTP_200_OK,
+)
+async def list_public_hostings_endpoint(
+    session: AsyncSession = Depends(get_db),
+) -> list[HostingResponse]:
+    """봉사자가 탐색 가능한 공개 호스팅 목록을 조회합니다."""
+
+    return await list_hostings_for_volunteer(session=session)
+
+
+@router.get(
+    "/public/{hosting_id}",
+    response_model=HostingResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def get_public_hosting_detail_endpoint(
+    hosting_id: int,
+    session: AsyncSession = Depends(get_db),
+) -> HostingResponse:
+    """봉사자가 조회 가능한 공개 호스팅 상세 정보를 조회합니다."""
+
+    return await get_public_hosting_detail(
+        session=session,
+        hosting_id=hosting_id,
     )
 
 
