@@ -61,7 +61,7 @@ async def get_hosting_counts_by_senior(
     stmt = select(
         func.count(Hosting.hosting_id).label("total_hosting_count"),
         func.count(Hosting.hosting_id)
-        .filter(Hosting.hosting_status == HostingStatus.FULL)
+        .filter(Hosting.hosting_status.in_([HostingStatus.FULL, HostingStatus.FIXED]))
         .label("full_hosting_count"),
     ).where(Hosting.senior_id == senior_id)
 
@@ -132,7 +132,7 @@ async def list_seniors_by_guardian(
             Senior,
             func.count(Hosting.hosting_id).label("total_hosting_count"),
             func.count(Hosting.hosting_id)
-            .filter(Hosting.hosting_status == HostingStatus.FULL)
+            .filter(Hosting.hosting_status.in_([HostingStatus.FULL, HostingStatus.FIXED]))
             .label("full_hosting_count"),
         )
         .outerjoin(Hosting, Hosting.senior_id == Senior.senior_id)

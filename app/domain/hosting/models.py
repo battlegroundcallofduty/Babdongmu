@@ -22,11 +22,12 @@ from app.database import Base
 class HostingStatus(str, enum.Enum):
     """호스팅 상태."""
 
-    OPEN = "신청가능"
-    FULL = "모집완료"
-    FAILED = "취소"
-    IN_PROGRESS = "진행중"
-    CLOSED = "완료"
+    OPEN = "OPEN"
+    FULL = "FULL"
+    FIXED = "FIXED"
+    FAILED = "FAILED"
+    IN_PROGRESS = "IN_PROGRESS"
+    CLOSED = "CLOSED"
 
 
 class AlarmType(str, enum.Enum):

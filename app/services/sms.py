@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.domain.hosting.models import AlarmType, Hosting, SmsLog
+from app.domain.senior.models import Senior
 from app.domain.user.service import get_user_by_id
 
 logger = logging.getLogger(__name__)
@@ -46,13 +47,19 @@ async def send_sms(
 
     to = receiver.phone_number
 
-    # 호스팅 정보 조회 (장문에서 필요)
+    # 호스팅 + 어르신 정보 조회 (장문에서 필요, JOIN으로 단일 쿼리)
     hosting = None
+    senior = None
     hosting_at_kst = None
     if use_long_message:
-        result = await db.execute(select(Hosting).where(Hosting.hosting_id == hosting_id))
-        hosting = result.scalar_one_or_none()
-        if hosting:
+        result = await db.execute(
+            select(Hosting, Senior)
+            .join(Senior, Hosting.senior_id == Senior.senior_id)
+            .where(Hosting.hosting_id == hosting_id)
+        )
+        row = result.one_or_none()
+        if row:
+            hosting, senior = row
             # SQLite는 naive datetime, PostgreSQL은 aware datetime(UTC) 반환
             # naive인 경우 UTC로 간주하고 KST로 변환
             dt = hosting.hosting_at
@@ -62,21 +69,18 @@ async def send_sms(
 
     # 메시지 생성
     if alarm_type == AlarmType.MATCH:
-        volunteer_name = "봉사자"
-        if volunteer_id:
-            volunteer = await get_user_by_id(volunteer_id, db)
-            volunteer_name = volunteer.name if volunteer else "봉사자"
-
         if use_long_message and hosting:
+            senior_name = senior.name if senior else "어르신"
             time_str = hosting_at_kst.strftime("%m월 %d일 %H:%M")
             message = (
-                f"[밥동무 호스팅 신청]\n\n"
-                f"{volunteer_name}님이 호스팅을 신청했습니다.\n\n"
-                f"메뉴: {hosting.menu}\n"
+                f"[밥동무 매칭 확정]\n\n"
+                f"호스팅 매칭이 확정되었습니다.\n\n"
+                f"어르신: {senior_name}\n"
+                f"장소: {hosting.road_address} {hosting.detail_address}\n"
                 f"일시: {time_str}"
             )
         else:
-            message = f"[밥동무] {volunteer_name}님이 호스팅을 신청했습니다."
+            message = "[밥동무] 호스팅 매칭이 확정되었습니다."
 
     elif alarm_type == AlarmType.CHECKIN:
         volunteer_name = "봉사자"
@@ -85,11 +89,11 @@ async def send_sms(
             volunteer_name = volunteer.name if volunteer else "봉사자"
 
         if use_long_message and hosting:
+            senior_name = senior.name if senior else "어르신"
             time_str = hosting_at_kst.strftime("%m월 %d일 %H:%M")
             message = (
                 f"[밥동무 방문 체크인]\n\n"
-                f"{volunteer_name}님이 방문 체크인했습니다.\n\n"
-                f"메뉴: {hosting.menu}\n"
+                f"{volunteer_name}님이 {senior_name} 어르신 댁에 방문했습니다.\n\n"
                 f"일시: {time_str}"
             )
         else:
@@ -98,11 +102,12 @@ async def send_sms(
     elif alarm_type == AlarmType.UPDATE:
         # if) 호스팅 수정 기능 추가 시 활성화
         if use_long_message and hosting:
+            senior_name = senior.name if senior else "어르신"
             time_str = hosting_at_kst.strftime("%m월 %d일 %H:%M")
             message = (
                 f"[밥동무 호스팅 수정]\n\n"
                 f"호스팅 정보가 수정되었습니다.\n\n"
-                f"메뉴: {hosting.menu}\n"
+                f"어르신: {senior_name}\n"
                 f"일시: {time_str}\n\n"
                 f"접속하여 상세 정보를 확인해주세요."
             )
@@ -127,11 +132,11 @@ async def send_sms(
             volunteer_name = volunteer.name if volunteer else "봉사자"
 
         if use_long_message and hosting:
+            senior_name = senior.name if senior else "어르신"
             time_str = hosting_at_kst.strftime("%m월 %d일 %H:%M")
             message = (
                 f"[밥동무 방문 완료]\n\n"
-                f"{volunteer_name}님의 방문이 완료되었습니다.\n\n"
-                f"메뉴: {hosting.menu}\n"
+                f"{volunteer_name}님이 {senior_name} 어르신 댁 방문을 완료했습니다.\n\n"
                 f"일시: {time_str}"
             )
         else:
@@ -143,6 +148,17 @@ async def send_sms(
     # SMS 발송
     is_send = await _send_via_solapi(to, message)
 
+    if is_send:
+        logger.info(
+            "SMS 발송 완료: hosting_id=%s receiver_id=%s alarm_type=%s",
+            hosting_id, receiver_id, alarm_type,
+        )
+    else:
+        logger.warning(
+            "SMS 발송 실패: hosting_id=%s receiver_id=%s alarm_type=%s",
+            hosting_id, receiver_id, alarm_type,
+        )
+
     log = SmsLog(
         hosting_id=hosting_id,
         receiver_id=receiver_id,
@@ -151,7 +167,7 @@ async def send_sms(
         contents=message,
     )
     db.add(log)
-    await db.commit()
+    await db.flush()
 
     return is_send
 

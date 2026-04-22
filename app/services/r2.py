@@ -146,6 +146,8 @@ def get_presigned_url(document_url: str, expires_in: int = 300) -> str:
     """비공개 R2 파일의 presigned URL을 반환합니다 (기본 5분 유효)."""
     bucket = settings.R2_PRIVATE_BUCKET
     prefix = f"{settings.R2_ENDPOINT}/{bucket}/"
+    if not document_url.startswith(prefix):
+        raise HTTPException(status_code=500, detail="잘못된 서류 URL")
     key = document_url[len(prefix):]
     client = _get_client()
     return client.generate_presigned_url(
