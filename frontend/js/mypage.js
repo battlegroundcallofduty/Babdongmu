@@ -49,9 +49,12 @@ async function uploadDocument(documentType, file) {
   return response.json();
 }
 
-// 업로드된 서류 (삭제 버튼 포함)
-function renderUploadedSlot(doc, label) {
+// 업로드된 서류 (승인완료 상태면 삭제 버튼 숨김)
+function renderUploadedSlot(doc, label, isLocked) {
   const fileName = doc.document_url.split('/').pop();  // R2 URL에서 파일명만 추출
+  const deleteBtn = isLocked
+    ? ''
+    : `<button class="btn btn-sm btn-danger delete-doc-btn" data-doc-id="${doc.document_id}" style="flex-shrink:0;">삭제</button>`;
   return `
     <div class="list-item" style="background:var(--surface); border:1px solid var(--border-light); border-radius:var(--radius-md); margin-bottom:8px;">
       <div style="min-width:0;">
@@ -60,7 +63,7 @@ function renderUploadedSlot(doc, label) {
           style="font-size:12px; color:var(--primary); margin-top:2px; display:block; word-break:break-all;">${fileName}</a>
         <div style="font-size:12px; color:var(--muted);">${formatDate(doc.created_at)} 업로드</div>
       </div>
-      <button class="btn btn-sm btn-danger delete-doc-btn" data-doc-id="${doc.document_id}" style="flex-shrink:0;">삭제</button>
+      ${deleteBtn}
     </div>`;
 }
 
@@ -108,23 +111,26 @@ function renderEmptyGuardianSlot() {
 
 // 역할에 맞는 서류 슬롯 전체 렌더링
 // 봉사자: 신분증 + 범죄경력 / 보호자: 신분증 + 복지관or가족
-function renderDocumentSlots(docs, userRole) {
+function renderDocumentSlots(docs, userRole, certFlag) {
   const container = document.getElementById('docs-list');
+  const isLocked = certFlag === 'approved';
+  // 승인완료면 삭제 버튼 비활성화
+  // certflag 받아서 approved인지 판단하고 isLocked 만들어 각 서류 슬롯에 넘김
 
   const idDoc = docs.find(d => d.document_type === 'identity_copy');
 
   // 공통: 신분증 사본
-  let html = idDoc ? renderUploadedSlot(idDoc, '신분증 사본') : renderEmptySlot('identity_copy', '신분증 사본');
+  let html = idDoc ? renderUploadedSlot(idDoc, '신분증 사본', isLocked) : renderEmptySlot('identity_copy', '신분증 사본');
 
   if (userRole === 'volunteer') {
     const crimDoc = docs.find(d => d.document_type === 'criminal_record');
     html += crimDoc
-      ? renderUploadedSlot(crimDoc, '범죄경력조회서')
+      ? renderUploadedSlot(crimDoc, '범죄경력조회서', isLocked)
       : renderEmptySlot('criminal_record', '범죄경력조회서');
   } else if (userRole === 'guardian') {
     const guardianDoc = docs.find(d => d.document_type === 'welfare_cert' || d.document_type === 'family_cert');
     html += guardianDoc
-      ? renderUploadedSlot(guardianDoc, DOC_TYPE_LABELS[guardianDoc.document_type])
+      ? renderUploadedSlot(guardianDoc, DOC_TYPE_LABELS[guardianDoc.document_type], isLocked)
       : renderEmptyGuardianSlot();
   }
 
@@ -132,14 +138,15 @@ function renderDocumentSlots(docs, userRole) {
 }
 
 // 서류 목록 로드
-// 즉시실행함수에서 me.user_role을 저장해두는 전역변수
+// 즉시실행함수에서 me.user_role, me.cert_flag를 저장해두는 전역변수
 let currentUserRole = null;
+let currentCertFlag = null;
 
 // api 호출 후 렌더링
 async function loadDocuments() {
-  try {
+  try {  // 서류목록 렌더링할때 현재역할, 현재인증상태 같이 넘김
     const docs = await api('/users/me/documents');
-    renderDocumentSlots(docs, currentUserRole);
+    renderDocumentSlots(docs, currentUserRole, currentCertFlag);
   } catch {
     document.getElementById('docs-list').innerHTML =
       '<p style="color:var(--muted); font-size:14px; padding:12px 0;">서류 목록을 불러오지 못했어요.</p>';
@@ -150,6 +157,7 @@ async function loadDocuments() {
 async function refreshCertBadge() {
   try {
     const me = await api('/users/me');
+    currentCertFlag = me.cert_flag;  // 전역변수 갱신 (loadDocuments가 최신 상태로 렌더링하도록)
     const certBadge = document.getElementById('cert-badge');
     if (me.cert_flag === 'approved') {
       certBadge.innerHTML = '<span class="badge badge-open">승인 완료</span>';
@@ -166,7 +174,9 @@ async function refreshCertBadge() {
     } else {
       rejectSection.classList.add('hidden');
     }
-  } catch { /* 실패해도 무시 */ }
+  } catch {
+    currentCertFlag = 'pending';  // 실패 시 업로드로 인해 pending이 됐을 것이므로 fallback
+  }
 }
 
 // 서류 클릭 이벤트 위임 (파일명 링크 열기 + 삭제 버튼)
@@ -210,7 +220,8 @@ document.getElementById('docs-list')?.addEventListener('change', async (e) => {
     : e.target.dataset.docType;
   try {
     await uploadDocument(docType, file);
-    await Promise.all([loadDocuments(), refreshCertBadge()]);
+    await refreshCertBadge();  // currentCertFlag 먼저 갱신
+    await loadDocuments();     // 갱신된 cert 상태로 서류 슬롯 렌더링
   } catch (err) {
     alert(`업로드 실패: ${err.message}`);
   }
@@ -253,8 +264,9 @@ document.getElementById('docs-list')?.addEventListener('change', async (e) => {
     }
     // 토큰 없거나 만료되면 비밀번호 변경폼 그냥 표시
 
-    // 역할 저장 후 서류 슬롯 로드
+    // 역할/인증상태 저장 후 서류 슬롯 로드
     currentUserRole = me.user_role;
+    currentCertFlag = me.cert_flag;
     await loadDocuments();
   } catch {
     // 토큰 없거나 만료되면 안내 후 로그인 페이지로
