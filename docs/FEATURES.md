@@ -33,6 +33,7 @@
 **비즈니스 로직**
 - 서류 업로드 후 관리자가 승인하면 `users.cert_flag = approved`로 변경
 - 반려 시 `cert_flag = rejected`로 변경, 반려 사유는 `users.cert_reject_reason`에 저장. 기존 서류 삭제 후 재업로드 필요
+- 서류 재업로드 시 `cert_flag` 자동으로 `pending`으로 리셋 → 관리자에게 재검토 요청
 - `cert_flag = approved` 상태인 봉사자만 호스팅 신청 가능
 - 업로드 중단 등으로 DB 연결 없이 R2에만 남은 파일(orphan)은 스케줄러가 주기적으로 정리 예정 (미구현)
 
@@ -177,7 +178,8 @@
 | 매칭 신청 | 봉사자가 호스팅 신청 시 | 보호자 | `match` |
 | 체크인 | 봉사자가 방문 체크인 시 | 보호자 | `checkin` |
 | 체크아웃 | 봉사자가 방문 체크아웃 시 | 보호자 | `checkout` |
-| 호스팅 삭제 | 호스팅 삭제 시 | 신청한 봉사자 전원 | `update` |
+| 호스팅 취소 (수동) | 보호자가 호스팅 삭제 시 | 승인된 봉사자 전원 | `delete` |
+| 호스팅 FAILED (스케줄러) | 모집 미달로 자동 무산 시 | 승인된 봉사자 전원 | `delete` |
 
 > SMS 서비스: Solapi(CoolSMS) 또는 알리고 사용 예정  
 > 수신자가 여러 명인 경우 수신자별로 `sms_logs` row 생성
@@ -190,5 +192,5 @@
 |--------|------|
 | Solapi / 알리고 | SMS 발송 |
 | Gemini AI | 어르신 소개글 자동 생성 (후기 3건 이상 시) |
-| Cloudflare R2 | 파일 저장. 공개 버킷(`babdongmu-public`) — 후기 이미지. 비공개 버킷(`babdongmu-private`) — 신원 서류 |
+| Cloudflare R2 | 파일 저장. 공개 버킷(`babdongmu-public`) — 후기 이미지. 비공개 버킷(`babdongmu-private`) — 신원 서류 (presigned URL로 5분 임시 접근) |
 | 주소 API | 마이페이지 주소 입력 연동 |

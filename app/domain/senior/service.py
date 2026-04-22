@@ -295,3 +295,23 @@ async def delete_senior(
 
     await session.delete(senior)
     await session.commit()
+
+
+async def get_senior_id_by_qr(
+    session: AsyncSession,
+    qr_uuid: str,
+) -> int:
+    """QR UUID로 senior_id를 역조회합니다."""
+
+    result = await session.execute(
+        select(Senior.senior_id).where(Senior.qr_code == qr_uuid)
+    )
+    senior_id = result.scalar_one_or_none()
+
+    if senior_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="유효하지 않은 QR 코드입니다.",
+        )
+
+    return senior_id

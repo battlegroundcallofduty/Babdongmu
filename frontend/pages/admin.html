@@ -417,10 +417,17 @@
           for (const d of user.documents) {
             const a = document.createElement('a');
             a.className = 'doc-link';
-            a.href = safeUrl(d.document_url);
-            a.target = '_blank';
-            a.rel = 'noopener';
+            a.href = '#';
             a.textContent = DOC_TYPE_LABEL[d.document_type] ?? d.document_type;
+            a.onclick = async (e) => {
+              e.preventDefault();
+              try {
+                const { url } = await api(`/users/documents/${d.document_id}/presigned-url`);
+                window.open(url, '_blank', 'noopener');
+              } catch {
+                showToast('서류를 불러올 수 없어요', 'error');
+              }
+            };
             linksDiv.appendChild(a);
           }
 

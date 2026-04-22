@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     R2_PRIVATE_BUCKET: str = ""  # 비공개 버킷 (신원 서류)
     R2_PUBLIC_URL: str = ""      # 공개 버킷 CDN URL
 
+    # 프론트엔드 base URL (QR 코드에 담을 체크인 페이지 URL 생성에 사용)
+    FRONTEND_BASE_URL: str = "http://localhost:8000"
+
     # 개발 모드 (True일 때만 테스트 라우터 등록)
     DEBUG: bool = False
 

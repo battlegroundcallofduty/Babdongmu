@@ -148,8 +148,31 @@
       window.location.href = '/pages/login.html';
     }
 
+    const role = localStorage.getItem('user_role');
+    if (role && role !== 'volunteer') {
+      window.location.href = '/pages/hostings.html';
+    }
+
     const params = new URLSearchParams(window.location.search);
-    const seniorId = params.get('senior_id');
+    const qrUuid = params.get('qr_uuid');
+    let seniorId = null;
+
+    async function initPage() {
+      if (!qrUuid) {
+        document.getElementById('checkin-btn').disabled = true;
+        document.getElementById('checkout-btn').disabled = true;
+        showToast('유효하지 않은 QR 코드입니다.', 'error');
+        return;
+      }
+      try {
+        const data = await api(`/seniors/qr/${qrUuid}`);
+        seniorId = data.senior_id;
+      } catch (e) {
+        document.getElementById('checkin-btn').disabled = true;
+        document.getElementById('checkout-btn').disabled = true;
+        showToast('QR 코드를 확인할 수 없습니다.', 'error');
+      }
+    }
 
     function showToast(message, type = '') {
       const toast = document.getElementById('toast');
@@ -193,6 +216,8 @@
         setLoading('checkout-btn', false);
       }
     }
+
+    initPage();
 
     function toggleNav() {
       const toggle = document.querySelector('.nav-toggle');
