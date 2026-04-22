@@ -4,7 +4,7 @@ import random
 import string
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import select, update
+from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import hash_password, verify_password
@@ -219,7 +219,10 @@ async def verify_phone_code(phone_number: str, code: str, db: AsyncSession) -> b
     if verification is None:
         return None
     # 이미 인증에 사용된 코드, 시간 만료된 코드 -> None 반환
-    if verification.is_verified or verification.expires_at < datetime.now(timezone.utc):
+    expires_at = verification.expires_at
+    if expires_at.tzinfo is None: # 타임존 없으면 utc 붙여주기
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    if verification.is_verified or expires_at < datetime.now(timezone.utc):
         return None
     if verification.code != code:
         return False
@@ -227,5 +230,13 @@ async def verify_phone_code(phone_number: str, code: str, db: AsyncSession) -> b
     verification.is_verified = True
     await db.commit()
     return True
+
+
+async def delete_phone_verifications(phone_number: str, db: AsyncSession) -> None:
+    """가입 완료 후, 해당 번호의 인증 기록 전체 삭제."""
+    await db.execute(
+        delete(PhoneVerification).where(PhoneVerification.phone_number == phone_number)
+    )
+    await db.commit()
 # TODO: 스케줄러 추가예정
 # (R2 고아 서류파일,리뷰사진 + phone_verifications 만료된행 하루에 한번 정리)

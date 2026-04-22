@@ -60,11 +60,17 @@ document.querySelectorAll('input[type="file"]').forEach(input => {
 // SMS 인증
 let phoneVerified = false;
 
+// 하이픈·공백 제거후 010+8자리 검증, 유효하지 않은 형식은 null
+function normalizePhone(raw) {
+  const digits = raw.trim().replace(/[-\s]/g, '');
+  return /^010\d{8}$/.test(digits) ? digits : null;
+}
+
 // 인증하기 버튼
 document.querySelector('#btn-send-code')?.addEventListener('click', async () => {
-  const phone = document.querySelector('#phone').value.trim();
+  const phone = normalizePhone(document.querySelector('#phone').value);
   if (!phone) {
-    alert('전화번호를 입력해주세요.');
+    alert('올바른 전화번호를 입력해주세요. (예: 01012345678)');
     return;
   }
 
@@ -92,7 +98,7 @@ document.querySelector('#btn-send-code')?.addEventListener('click', async () => 
 
 // 확인 버튼
 document.querySelector('#btn-verify-code')?.addEventListener('click', async () => {
-  const phone = document.querySelector('#phone').value.trim();
+  const phone = normalizePhone(document.querySelector('#phone').value);
   const code = document.querySelector('#verify-code').value.trim();
   const verifyMsg = document.querySelector('#verify-msg');
 
@@ -132,7 +138,6 @@ document.querySelector('#phone')?.addEventListener('input', () => {
   document.querySelector('#verify-code').value = '';
   document.querySelector('#btn-send-code').disabled = false;
   document.querySelector('#btn-send-code').textContent = '인증하기';
-  document.querySelector('#phone').readOnly = false;
 });
 
 // 파일 업로드 함수(파일: json에 못담아서 multipart 씀)
@@ -201,6 +206,9 @@ document.querySelector('#register-form')?.addEventListener('submit', async (e) =
     if (!ok) return;
   }
 
+  const submitBtn = document.querySelector('#register-form button[type="submit"]');
+  submitBtn.disabled = true;  // 가입 제출 시작하면 버튼 비활성화
+
   let token = null; // catch에서 가입 성공 판단 위해 try 바깥에 선언
 
   try {
@@ -212,7 +220,7 @@ document.querySelector('#register-form')?.addEventListener('submit', async (e) =
         password,
         password_confirm: passwordConfirm,
         name: document.querySelector('#name').value,
-        phone_number: document.querySelector('#phone').value,
+        phone_number: normalizePhone(document.querySelector('#phone').value),
         user_role: role,
         address: document.querySelector('#district').value,
       }),
@@ -237,6 +245,7 @@ document.querySelector('#register-form')?.addEventListener('submit', async (e) =
 
     window.location.href = '/pages/login.html?registered=1';
   } catch (err) {
+    submitBtn.disabled = false;  // 가입 실패하면 다시 버튼 활성화
     if (token) {
       // 서류는 회원가입 필수값이 아님
       // 서류 업로드 실패해도 계정유지(가입처리), 로그인 후 마이페이지에서 재업로드 가능

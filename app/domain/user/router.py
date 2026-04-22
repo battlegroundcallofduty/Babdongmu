@@ -31,6 +31,7 @@ from app.domain.user.service import (
     get_document_by_id,
     get_documents_by_user_id,
     get_user_by_email,
+    delete_phone_verifications,
     send_phone_verification,
     verify_phone_code,
 )
@@ -71,6 +72,7 @@ async def register(body: UserRegisterRequest, db: AsyncSession = Depends(get_db)
         address=body.address,
         db=db,
     )
+    await delete_phone_verifications(body.phone_number, db)
     access_token = create_access_token({"sub": str(user.user_id)})
     return RegisterResponse(user=user, access_token=access_token)
 
@@ -225,16 +227,16 @@ async def send_verification(body: SmsSendRequest, db: AsyncSession = Depends(get
 
 @router.post("/phone/verify", status_code=status.HTTP_204_NO_CONTENT)
 async def verify_verification(body: SmsVerifyRequest, db: AsyncSession = Depends(get_db)):
-    """SMS 인증 코드 확인"""
+    """SMS 인증 번호 확인"""
     result = await verify_phone_code(body.phone_number, body.code, db)
     if result is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="인증 코드가 만료되었습니다. 다시 요청해주세요.",
+            detail="인증 번호가 만료되었습니다. 다시 요청해주세요.",
         )
     if result is False:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="인증 코드가 일치하지 않습니다.",
+            detail="인증 번호가 일치하지 않습니다.",
         )
 # TODO: service 또는 router에 가입 전 동일번호 존재여부 조회후 409 반환예정 / 폰번 unique 고려
