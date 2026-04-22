@@ -48,7 +48,7 @@ class UserUpdateRequest(BaseModel):
     """회원정보 수정 요청 (마이페이지)"""
 
     name: str | None = None
-    phone_number: str | None = None
+    email: EmailStr | None = None
     address: str | None = None
 
 

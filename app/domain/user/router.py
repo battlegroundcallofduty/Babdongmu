@@ -20,6 +20,7 @@ from app.domain.user.schemas import (
     UserLoginRequest,
     UserRegisterRequest,
     UserResponse,
+    UserUpdateRequest,
 )
 from app.domain.user.service import (
     authenticate_user,
@@ -31,6 +32,8 @@ from app.domain.user.service import (
     get_document_by_id,
     get_documents_by_user_id,
     get_user_by_email,
+    update_user,
+    delete_phone_verifications,
     send_phone_verification,
     verify_phone_code,
 )
@@ -71,6 +74,7 @@ async def register(body: UserRegisterRequest, db: AsyncSession = Depends(get_db)
         address=body.address,
         db=db,
     )
+    await delete_phone_verifications(body.phone_number, db)
     access_token = create_access_token({"sub": str(user.user_id)})
     return RegisterResponse(user=user, access_token=access_token)
 
@@ -94,6 +98,37 @@ async def login(body: UserLoginRequest, db: AsyncSession = Depends(get_db)):
 async def get_me(current_user: User = Depends(get_current_user)):
     """현재 로그인한 유저 정보 반환"""
     return current_user
+
+
+# ── 마이페이지 ───────────────────
+@router.patch("/me", response_model=UserResponse)
+async def update_me(
+    body: UserUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """마이페이지: 회원정보 수정 (이름, 이메일, 활동 동네)"""
+    update_data = body.model_dump(exclude_none=True)
+    if "email" in update_data:
+        update_data["email"] = update_data["email"].lower()
+        if update_data["email"] != current_user.email:
+            existing = await get_user_by_email(update_data["email"], db)
+            if existing:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="이미 사용 중인 이메일입니다.",
+                )
+    updated = await update_user(
+        current_user.user_id,
+        db,
+        **update_data,
+    )
+    if updated is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="유저를 찾을 수 없습니다.",
+        )
+    return updated
 
 
 @router.patch("/me/password", status_code=status.HTTP_204_NO_CONTENT)
@@ -225,16 +260,16 @@ async def send_verification(body: SmsSendRequest, db: AsyncSession = Depends(get
 
 @router.post("/phone/verify", status_code=status.HTTP_204_NO_CONTENT)
 async def verify_verification(body: SmsVerifyRequest, db: AsyncSession = Depends(get_db)):
-    """SMS 인증 코드 확인"""
+    """SMS 인증 번호 확인"""
     result = await verify_phone_code(body.phone_number, body.code, db)
     if result is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="인증 코드가 만료되었습니다. 다시 요청해주세요.",
+            detail="인증 번호가 만료되었습니다. 다시 요청해주세요.",
         )
     if result is False:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="인증 코드가 일치하지 않습니다.",
+            detail="인증 번호가 일치하지 않습니다.",
         )
 # TODO: service 또는 router에 가입 전 동일번호 존재여부 조회후 409 반환예정 / 폰번 unique 고려

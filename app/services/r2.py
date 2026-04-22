@@ -3,8 +3,10 @@
 import enum
 import logging
 import uuid
+from io import BytesIO
 
 import boto3
+from PIL import Image, UnidentifiedImageError
 from botocore.client import BaseClient
 from botocore.exceptions import BotoCoreError, ClientError
 from fastapi import HTTPException, UploadFile
@@ -99,13 +101,21 @@ async def upload_image(
     if file.content_type not in types:
         raise HTTPException(status_code=400, detail="허용되지 않는 파일 형식입니다.")
 
-    contents = await file.read()
+    contents = await file.read() # 파일의 바이트 데이터
 
     if len(contents) > MAX_FILE_SIZE:
         raise HTTPException(status_code=400, detail="파일 크기는 최대 5MB까지 허용됩니다.")
 
     if not _verify_magic(file.content_type, contents):
         raise HTTPException(status_code=400, detail="허용되지 않는 파일 형식입니다.")
+
+    # 이미지 파일은 Pillow로 실제 구조 파싱 (polyglot 방어)
+    if file.content_type in {"image/jpeg", "image/png"}:
+        try:
+            img = Image.open(BytesIO(contents))
+            img.verify() # 진짜 이미지 데이터인지 해석
+        except (UnidentifiedImageError, Exception):
+            raise HTTPException(status_code=400, detail="허용되지 않는 파일 형식입니다.")
 
     ext = CONTENT_TYPE_EXT.get(file.content_type, "bin")
     key = f"{folder}/{uuid.uuid4().hex}.{ext}"

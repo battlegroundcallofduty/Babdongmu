@@ -57,6 +57,104 @@ document.querySelectorAll('input[type="file"]').forEach(input => {
   });
 });
 
+// 활동 동네 주소 검색
+document.querySelector('#btn-search-address')?.addEventListener('click', () => {
+  if (!window.daum?.Postcode) {
+    alert('주소 검색을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
+    return;
+  }
+
+  new window.daum.Postcode({
+    oncomplete(data) {
+      const parts = [data.sido, data.sigungu, data.bname].filter(Boolean);
+      document.querySelector('#district').value = parts.join(' ');
+    },
+  }).open();
+});
+
+// SMS 인증
+let phoneVerified = false;
+
+// 하이픈·공백 제거후 010+8자리 검증, 유효하지 않은 형식은 null
+function normalizePhone(raw) {
+  const digits = raw.trim().replace(/[-\s]/g, '');
+  return /^010\d{8}$/.test(digits) ? digits : null;
+}
+
+// 인증하기 버튼
+document.querySelector('#btn-send-code')?.addEventListener('click', async () => {
+  const phone = normalizePhone(document.querySelector('#phone').value);
+  if (!phone) {
+    alert('올바른 전화번호를 입력해주세요. (예: 01012345678)');
+    return;
+  }
+
+  const btn = document.querySelector('#btn-send-code');
+  btn.disabled = true;
+  btn.textContent = '발송 중...';
+
+  try {
+    await api('/users/phone/send', {
+      method: 'POST',
+      body: JSON.stringify({ phone_number: phone }),
+    });
+    document.querySelector('#verify-group').classList.remove('hidden');
+    document.querySelector('#verify-msg').textContent = '인증번호가 발송됐습니다. 3분 이내에 입력해주세요.';
+    document.querySelector('#verify-msg').style.color = '';
+    phoneVerified = false;
+    btn.textContent = '재발송';
+  } catch (err) {
+    alert(err.message || 'SMS 발송에 실패했습니다. 잠시 후 다시 시도해주세요.');
+    btn.textContent = '인증하기';
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+// 확인 버튼
+document.querySelector('#btn-verify-code')?.addEventListener('click', async () => {
+  const phone = normalizePhone(document.querySelector('#phone').value);
+  const code = document.querySelector('#verify-code').value.trim();
+  const verifyMsg = document.querySelector('#verify-msg');
+
+  if (!code) {
+    verifyMsg.textContent = '인증번호를 입력해주세요.';
+    verifyMsg.style.color = 'var(--color-error, #e53e3e)';
+    return;
+  }
+
+  const btn = document.querySelector('#btn-verify-code');
+  btn.disabled = true;
+
+  try {
+    await api('/users/phone/verify', {
+      method: 'POST',
+      body: JSON.stringify({ phone_number: phone, code }),
+    });
+    phoneVerified = true;
+    verifyMsg.textContent = '인증이 완료됐습니다.';
+    verifyMsg.style.color = 'var(--color-success, #38a169)';
+    document.querySelector('#btn-send-code').disabled = true;
+    btn.disabled = true;
+    document.querySelector('#phone').readOnly = true;
+    document.querySelector('#verify-code').readOnly = true;
+  } catch (err) {
+    phoneVerified = false;
+    verifyMsg.textContent = err.message || '인증에 실패했습니다.';
+    verifyMsg.style.color = 'var(--color-error, #e53e3e)';
+    btn.disabled = false;
+  }
+});
+
+// 전화번호 변경 시(번호 입력폼 수정 시) 인증 초기화
+document.querySelector('#phone')?.addEventListener('input', () => {
+  phoneVerified = false;
+  document.querySelector('#verify-group').classList.add('hidden');
+  document.querySelector('#verify-code').value = '';
+  document.querySelector('#btn-send-code').disabled = false;
+  document.querySelector('#btn-send-code').textContent = '인증하기';
+});
+
 // 파일 업로드 함수(파일: json에 못담아서 multipart 씀)
 async function uploadDocument(token, documentType, file) {
   const formData = new FormData();  // FormData: multipart 요청 생성
@@ -104,6 +202,18 @@ document.querySelector('#register-form')?.addEventListener('submit', async (e) =
     return;
   }
 
+  if (!phoneVerified) {
+    errorMsg.textContent = '전화번호 인증을 완료해주세요.';
+    errorMsg.classList.remove('hidden');
+    return;
+  }
+
+  if (!document.querySelector('#district').value) {
+    errorMsg.textContent = '활동 동네를 검색해주세요.';
+    errorMsg.classList.remove('hidden');
+    return;
+  }
+
   errorMsg.classList.add('hidden');
 
   const role = document.querySelector('#role').value;
@@ -117,6 +227,9 @@ document.querySelector('#register-form')?.addEventListener('submit', async (e) =
     if (!ok) return;
   }
 
+  const submitBtn = document.querySelector('#register-form button[type="submit"]');
+  submitBtn.disabled = true;  // 가입 제출 시작하면 버튼 비활성화
+
   let token = null; // catch에서 가입 성공 판단 위해 try 바깥에 선언
 
   try {
@@ -128,7 +241,7 @@ document.querySelector('#register-form')?.addEventListener('submit', async (e) =
         password,
         password_confirm: passwordConfirm,
         name: document.querySelector('#name').value,
-        phone_number: document.querySelector('#phone').value,
+        phone_number: normalizePhone(document.querySelector('#phone').value),
         user_role: role,
         address: document.querySelector('#district').value,
       }),
@@ -153,6 +266,7 @@ document.querySelector('#register-form')?.addEventListener('submit', async (e) =
 
     window.location.href = '/pages/login.html?registered=1';
   } catch (err) {
+    submitBtn.disabled = false;  // 가입 실패하면 다시 버튼 활성화
     if (token) {
       // 서류는 회원가입 필수값이 아님
       // 서류 업로드 실패해도 계정유지(가입처리), 로그인 후 마이페이지에서 재업로드 가능
