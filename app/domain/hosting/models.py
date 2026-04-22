@@ -25,7 +25,7 @@ class HostingStatus(str, enum.Enum):
     OPEN = "신청가능"
     FULL = "모집완료"
     FIXED = "확정"
-    FAILED = "무산"
+    FAILED = "취소"
     IN_PROGRESS = "진행중"
     CLOSED = "완료"
 

@@ -219,7 +219,7 @@ async def run_hosting_status_scheduler(
         logger.info("스케줄러 커밋 완료: 호스팅 %d건 상태 변경", changed_count)
     sms_tasks = []
 
-    # 보호자 + 봉사자 전원에게 알림 (FAILED: 무산, FIXED: 매칭 확정)
+    # 보호자 + 봉사자 전원에게 알림 (FAILED: 취소, FIXED: 매칭 확정)
     for hid, (alarm_type, guardian_id, vt_ids) in notification_map.items():
         sms_tasks.append(
             send_sms(
