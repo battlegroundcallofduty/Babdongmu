@@ -1,5 +1,7 @@
 """호스팅 비즈니스 로직."""
 
+import asyncio
+import logging
 from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException, status
@@ -11,6 +13,8 @@ from app.domain.hosting.schemas import HostingCreateRequest, HostingResponse
 from app.domain.match.models import MatchingInfo, MatchStatus
 from app.domain.senior.models import Senior
 from app.services.sms import send_sms
+
+logger = logging.getLogger(__name__)
 
 
 async def get_guardian_senior_by_id(
@@ -96,11 +100,15 @@ def process_hosting_status_by_time(
     if now >= deadline_at and current_status == HostingStatus.OPEN:
         return HostingStatus.FAILED
 
-    # 2. 시작 시각이 되었고 모집완료 상태면 진행중으로 변경
-    if now >= hosting_at and current_status == HostingStatus.FULL:
+    # 2. 시작 12시간 전이고 모집완료 상태면 확정
+    if now >= deadline_at and current_status == HostingStatus.FULL:
+        return HostingStatus.FIXED
+
+    # 3. 시작 시각이 되었고 확정 상태면 진행중으로 변경
+    if now >= hosting_at and current_status == HostingStatus.FIXED:
         return HostingStatus.IN_PROGRESS
 
-    # 3. 종료 시점 처리
+    # 4. 종료 시점 처리
     if now >= hosting_end:
         if current_status == HostingStatus.IN_PROGRESS:
             return HostingStatus.CLOSED
@@ -108,6 +116,7 @@ def process_hosting_status_by_time(
         if current_status in {
             HostingStatus.OPEN,
             HostingStatus.FULL,
+            HostingStatus.FIXED,
         }:
             return HostingStatus.FAILED
 
@@ -164,6 +173,7 @@ async def run_hosting_status_scheduler(
             [
                 HostingStatus.OPEN,
                 HostingStatus.FULL,
+                HostingStatus.FIXED,
                 HostingStatus.IN_PROGRESS,
             ]
         )
@@ -175,6 +185,8 @@ async def run_hosting_status_scheduler(
     changed_count = 0
     # FAILED 전환된 호스팅의 봉사자 ID 수집 (commit 전 APPROVED 상태일 때 조회)
     failed_hosting_volunteer_map: dict[int, list[int]] = {}
+    # FIXED 전환된 호스팅의 보호자 + 봉사자 ID 수집 (commit 전 조회)
+    fixed_hosting_sms_map: dict[int, tuple[int, list[int]]] = {}
 
     for hosting in hostings:
         new_status = process_hosting_status_by_time(hosting=hosting)
@@ -194,6 +206,10 @@ async def run_hosting_status_scheduler(
                 session=session,
                 hosting_id=hosting.hosting_id,
             )
+        elif new_status == HostingStatus.FIXED:
+            vt_ids = await get_approved_volunteer_ids(session, hosting.hosting_id)
+            senior = await session.get(Senior, hosting.senior_id)
+            fixed_hosting_sms_map[hosting.hosting_id] = (senior.guardian_id, vt_ids)
         elif new_status == HostingStatus.CLOSED:
             changed_count += await mark_matches_not_visited(
                 session=session,
@@ -203,15 +219,44 @@ async def run_hosting_status_scheduler(
     if changed_count > 0:
         await session.commit()
 
-    # SMS 발송 (commit 이후 — 신청한 봉사자 전원에게 호스팅 무산 알림)
-    for hosting_id, vt_ids in failed_hosting_volunteer_map.items():
+    sms_tasks = []
+
+    # FAILED: 신청한 봉사자 전원에게 호스팅 무산 알림
+    for hid, vt_ids in failed_hosting_volunteer_map.items():
         for vt_id in vt_ids:
-            await send_sms(
-                db=session,
-                hosting_id=hosting_id,
-                receiver_id=vt_id,
-                alarm_type=AlarmType.DELETE,
+            sms_tasks.append(
+                send_sms(
+                    db=session,
+                    hosting_id=hid,
+                    receiver_id=vt_id,
+                    alarm_type=AlarmType.DELETE,
+                )
             )
+
+    # FIXED: 보호자 + 봉사자 전원에게 매칭 확정 알림
+    for hid, (guardian_id, vt_ids) in fixed_hosting_sms_map.items():
+        sms_tasks.append(
+            send_sms(
+                db=session,
+                hosting_id=hid,
+                receiver_id=guardian_id,
+                alarm_type=AlarmType.MATCH,
+            )
+        )
+        for vt_id in vt_ids:
+            sms_tasks.append(
+                send_sms(
+                    db=session,
+                    hosting_id=hid,
+                    receiver_id=vt_id,
+                    alarm_type=AlarmType.MATCH,
+                )
+            )
+
+    results = await asyncio.gather(*sms_tasks, return_exceptions=True)
+    for result in results:
+        if isinstance(result, Exception):
+            logger.warning("SMS 발송 실패: %s", result)
 
     return changed_count
 
@@ -318,10 +363,14 @@ async def cancel_hosting(
         hosting_id=hosting_id,
     )
 
-    if hosting.hosting_status in {HostingStatus.IN_PROGRESS, HostingStatus.CLOSED}:
+    if hosting.hosting_status in {
+        HostingStatus.FIXED,
+        HostingStatus.IN_PROGRESS,
+        HostingStatus.CLOSED,
+    }:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="이미 진행 중이거나 완료된 호스팅은 무산 처리할 수 없습니다.",
+            detail="호스팅 확정 / 진행 중 / 완료 시에는 취소할 수 없습니다.",
         )
 
     hosting.hosting_status = HostingStatus.FAILED
@@ -333,12 +382,19 @@ async def cancel_hosting(
     await session.refresh(hosting)
 
     # SMS 발송 — 신청한 봉사자 전원에게 호스팅 취소 알림
+    sms_tasks = []
     for vt_id in vt_ids:
-        await send_sms(
-            db=session,
-            hosting_id=hosting_id,
-            receiver_id=vt_id,
-            alarm_type=AlarmType.DELETE,
+        sms_tasks.append(
+            send_sms(
+                db=session,
+                hosting_id=hosting_id,
+                receiver_id=vt_id,
+                alarm_type=AlarmType.DELETE,
+            )
         )
+    results = await asyncio.gather(*sms_tasks, return_exceptions=True)
+    for result in results:
+        if isinstance(result, Exception):
+            logger.warning("SMS 발송 실패: %s", result)
 
     return HostingResponse.model_validate(hosting)

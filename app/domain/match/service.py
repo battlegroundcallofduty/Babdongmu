@@ -63,15 +63,6 @@ async def create_match(db: AsyncSession, hosting_id: int, vt_id: int) -> Matchin
     await db.commit()
     await db.refresh(match)
 
-    guardian_id = await _get_guardian_id(db, hosting.senior_id)
-    await send_sms(
-        db=db,
-        hosting_id=hosting_id,
-        receiver_id=guardian_id,
-        alarm_type=AlarmType.MATCH,
-        volunteer_id=vt_id,
-    )
-
     return match
 
 
