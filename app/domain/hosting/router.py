@@ -113,7 +113,7 @@ async def cancel_hosting_endpoint(
     session: AsyncSession = Depends(get_db),
     current_guardian=Depends(require_guardian),
 ) -> HostingResponse:
-    """호스팅을 무산 처리합니다."""
+    """호스팅을 취소 처리합니다."""
 
     return await cancel_hosting(
         session=session,

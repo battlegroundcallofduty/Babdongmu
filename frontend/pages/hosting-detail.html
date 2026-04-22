@@ -238,7 +238,7 @@
       </section>
 
       <div class="action-row slide-up stagger-1">
-        <button id="cancel-hosting-button" class="btn btn-secondary hidden" type="button">호스팅 무산 처리</button>
+        <button id="cancel-hosting-button" class="btn btn-secondary hidden" type="button">호스팅 취소 처리</button>
         <button id="apply-hosting-button" class="btn btn-primary hidden" type="button">이 호스팅 신청하기</button>
       </div>
 
@@ -360,7 +360,7 @@
       const metaMap = {
         '신청가능': { label: '신청가능', className: 'badge-open' },
         '모집완료': { label: '모집완료', className: 'badge-full' },
-        '무산': { label: '무산', className: 'badge-failed' },
+        '취소': { label: '취소', className: 'badge-failed' },
         '진행중': { label: '진행중', className: 'badge-progress' },
         '완료': { label: '완료', className: 'badge-closed' },
       };
@@ -554,12 +554,12 @@
 
       if (isGuardianView()) {
         cancelButtonElement.classList.remove('hidden');
-        cancelButtonElement.disabled = !['신청가능', '모집완료', '무산'].includes(hostingDetail.hosting_status);
+        cancelButtonElement.disabled = !['신청가능', '모집완료', '취소'].includes(hostingDetail.hosting_status);
 
-        if (hostingDetail.hosting_status === '무산') {
-          cancelButtonElement.textContent = '이미 무산된 호스팅';
+        if (hostingDetail.hosting_status === '취소') {
+          cancelButtonElement.textContent = '이미 취소된 호스팅';
         } else {
-          cancelButtonElement.textContent = '호스팅 무산 처리';
+          cancelButtonElement.textContent = '호스팅 취소 처리';
         }
 
         return;
@@ -645,11 +645,11 @@
     }
 
     async function cancelHosting() {
-      if (!hostingDetail || hostingDetail.hosting_status === '무산') {
+      if (!hostingDetail || hostingDetail.hosting_status === '취소') {
         return;
       }
 
-      const isConfirmed = window.confirm('이 호스팅을 무산 처리할까요?');
+      const isConfirmed = window.confirm('이 호스팅을 취소 처리할까요?');
       if (!isConfirmed) {
         return;
       }
@@ -660,10 +660,10 @@
           method: 'PATCH',
         });
         await loadDetail();
-        showMessage('호스팅이 무산 처리되었어요.', 'success');
+        showMessage('호스팅이 취소 처리되었어요.', 'success');
       } catch (error) {
         console.error(error);
-        showMessage(error?.message || '호스팅 무산 처리에 실패했어요.', 'error');
+        showMessage(error?.message || '호스팅 취소 처리에 실패했어요.', 'error');
       }
     }
 
