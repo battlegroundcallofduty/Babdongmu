@@ -93,8 +93,9 @@ class Hosting(Base):
 
     updated_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True),
-        nullable=True,
+        nullable=False,
         default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
     )
 
 
