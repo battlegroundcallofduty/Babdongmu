@@ -288,13 +288,7 @@
 
   <script src="/js/api.js"></script>
   <script src="/js/admin.js"></script>
-  <script type="module">
-    import { requireRoles } from '/js/authGuard.js';
-
-    const currentUser = requireRoles(['admin']);
-    if (!currentUser) {
-      throw new Error('접근 권한이 없습니다.');
-    }
+  <script>
     // ── XSS 방어 헬퍼 ───────────────────────────────────────
     // href 속성에 javascript: URI 삽입 방지
     function safeUrl(url) {
