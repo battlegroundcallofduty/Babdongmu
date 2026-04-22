@@ -182,66 +182,51 @@ async def run_hosting_status_scheduler(
     result = await session.execute(stmt)
     hostings = result.scalars().all()
 
-    changed_count = 0
-    # FAILED 전환된 호스팅의 봉사자 ID 수집 (commit 전 APPROVED 상태일 때 조회)
-    failed_hosting_volunteer_map: dict[int, list[int]] = {}
-    # FIXED 전환된 호스팅의 보호자 + 봉사자 ID 수집 (commit 전 조회)
-    fixed_hosting_sms_map: dict[int, tuple[int, list[int]]] = {}
+    changed_count = 0      # 호스팅 상태 변경 건수 (반환값 + 로그용)
+    match_changed_count = 0  # 매칭 NOT_VISITED 처리 건수 (커밋 트리거용)
+    # SMS 발송 대상 수집 (commit 전 APPROVED 상태일 때 조회)
+    # hosting_id → (alarm_type, guardian_id, [vt_ids])
+    notification_map: dict[int, tuple[AlarmType, int, list[int]]] = {}
 
     for hosting in hostings:
         new_status = process_hosting_status_by_time(hosting=hosting)
-
         if new_status is None:
             continue
 
         if hosting.hosting_status != new_status:
+            prev_status = hosting.hosting_status
             hosting.hosting_status = new_status
             changed_count += 1
+            logger.info(
+                "호스팅 ID=%d 상태 전환: %s → %s",
+                hosting.hosting_id, prev_status, new_status,
+            )
 
-        if new_status == HostingStatus.FAILED:
-            failed_hosting_volunteer_map[hosting.hosting_id] = (
-                await get_approved_volunteer_ids(session, hosting.hosting_id)
-            )
-            changed_count += await mark_matches_not_visited(
-                session=session,
-                hosting_id=hosting.hosting_id,
-            )
-        elif new_status == HostingStatus.FIXED:
+        if new_status in {HostingStatus.FAILED, HostingStatus.FIXED}:
             vt_ids = await get_approved_volunteer_ids(session, hosting.hosting_id)
             senior = await session.get(Senior, hosting.senior_id)
-            fixed_hosting_sms_map[hosting.hosting_id] = (senior.guardian_id, vt_ids)
-        elif new_status == HostingStatus.CLOSED:
-            changed_count += await mark_matches_not_visited(
+            alarm_type = AlarmType.DELETE if new_status == HostingStatus.FAILED else AlarmType.MATCH
+            notification_map[hosting.hosting_id] = (alarm_type, senior.guardian_id, vt_ids)
+
+        if new_status in {HostingStatus.FAILED, HostingStatus.CLOSED}:
+            match_changed_count += await mark_matches_not_visited(
                 session=session,
                 hosting_id=hosting.hosting_id,
             )
 
     if changed_count > 0:
         await session.commit()
-
+        logger.info("스케줄러 커밋 완료: 호스팅 %d건 상태 변경", changed_count)
     sms_tasks = []
 
-    # FAILED: 신청한 봉사자 전원에게 호스팅 무산 알림
-    for hid, vt_ids in failed_hosting_volunteer_map.items():
-        for vt_id in vt_ids:
-            sms_tasks.append(
-                send_sms(
-                    db=session,
-                    hosting_id=hid,
-                    receiver_id=vt_id,
-                    alarm_type=AlarmType.DELETE,
-                    use_long_message=True,
-                )
-            )
-
-    # FIXED: 보호자 + 봉사자 전원에게 매칭 확정 알림
-    for hid, (guardian_id, vt_ids) in fixed_hosting_sms_map.items():
+    # 보호자 + 봉사자 전원에게 알림 (FAILED: 무산, FIXED: 매칭 확정)
+    for hid, (alarm_type, guardian_id, vt_ids) in notification_map.items():
         sms_tasks.append(
             send_sms(
                 db=session,
                 hosting_id=hid,
                 receiver_id=guardian_id,
-                alarm_type=AlarmType.MATCH,
+                alarm_type=alarm_type,
                 use_long_message=True,
             )
         )
@@ -251,7 +236,7 @@ async def run_hosting_status_scheduler(
                     db=session,
                     hosting_id=hid,
                     receiver_id=vt_id,
-                    alarm_type=AlarmType.MATCH,
+                    alarm_type=alarm_type,
                     use_long_message=True,
                 )
             )
@@ -260,6 +245,9 @@ async def run_hosting_status_scheduler(
     for result in results:
         if isinstance(result, Exception):
             logger.warning("SMS 발송 실패: %s", result)
+
+    if sms_tasks:
+        await session.commit()
 
     return changed_count
 
@@ -400,5 +388,8 @@ async def cancel_hosting(
     for result in results:
         if isinstance(result, Exception):
             logger.warning("SMS 발송 실패: %s", result)
+
+    if sms_tasks:
+        await session.commit()
 
     return HostingResponse.model_validate(hosting)

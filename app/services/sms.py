@@ -167,7 +167,7 @@ async def send_sms(
         contents=message,
     )
     db.add(log)
-    await db.commit()
+    await db.flush()
 
     return is_send
 

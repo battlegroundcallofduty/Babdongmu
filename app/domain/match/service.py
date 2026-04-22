@@ -234,6 +234,7 @@ async def check_in(db: AsyncSession, senior_id: int, vt_id: int) -> MatchingInfo
         alarm_type=AlarmType.CHECKIN,
         volunteer_id=vt_id,
     )
+    await db.commit()
 
     return match
 
@@ -268,5 +269,6 @@ async def check_out(db: AsyncSession, senior_id: int, vt_id: int) -> MatchingInf
         alarm_type=AlarmType.CHECKOUT,
         volunteer_id=vt_id,
     )
+    await db.commit()
 
     return match
