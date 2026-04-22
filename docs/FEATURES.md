@@ -86,17 +86,20 @@
 | 상태 | 설명 |
 |------|------|
 | `OPEN : 신청가능` | 모집 중 |
-| `FULL : 모집완료` | 정원 마감 and Check in 전 상태|
+| `FULL : 모집완료` | 정원 마감 and Check in 전 상태 |
+| `FIXED : 확정` | 호스팅 시작 -12시간 시점에 FULL이면 확정. 보호자/봉사자 전원에게 매칭 확정 SMS 발송 |
 | `FAILED: 보호자 취소 또는 호스팅 시작 -12시간 시점까지 모집 미달로 무산` | 호스팅 무산 |
-| `IN_PROGRESS: 호스팅 진행 중` | check in 상태|
-| `CLOSED : 정상완료` | IN_PROGRESS -> CLOSED 그 외의 CASE	-> FAILED
+| `IN_PROGRESS: 호스팅 진행 중` | check in 상태 |
+| `CLOSED : 정상완료` | IN_PROGRESS -> CLOSED 그 외의 CASE -> FAILED
 
 **스케줄러 작업**
-- FAILED : 호스팅 시작 시간 -12시간 시점에 체크하여 OPEN이면 -> FAILED , 해당하는 호스팅에 매칭 테이블이 존재한다면(신청한 사람이 있다면) APPROVED -> NOT_VISITED 교체 
+- FIXED : 호스팅 시작 시간 -12시간 시점에 체크하여 FULL이면 -> FIXED, 보호자 및 승인된 봉사자 전원에게 매칭 확정 SMS 발송
+
+- FAILED : 호스팅 시작 시간 -12시간 시점에 체크하여 OPEN이면 -> FAILED, 보호자 및 해당 호스팅에 신청한 봉사자 전원에게 호스팅 취소 SMS 발송. 매칭 테이블이 존재한다면 APPROVED -> NOT_VISITED 교체
 
 - CLOSED : 호스팅 종료 시간 시점에 체크하여  
 				IN_PROGRESS -> CLOSED 
-				그 외의 CASE	-> FAILED
+				그 외의 CASE -> FAILED
 				해당하는 호스팅에 매칭 테이블이 존재한다면(신청한 사람이 있다면) 
 				checkin이 없으면 -> NOT_VISITED 교체
 				checkin만 있는 경우 -> NOT_VISITED 교체
@@ -143,7 +146,7 @@
 - `actual_volunteer_time`(최종 봉사시간)은 관리자가 어드민 페이지에서 별도 부여
 
 **비즈니스 로직**
-- 신청 시 → 보호자에게 SMS 발송 (`alarm_type: match`)
+- 신청 시 → SMS 발송 없음
 - 체크인 시 → 보호자에게 SMS 발송 (`alarm_type: checkin`). 첫 번째 체크인이면 `hosting_status` → `진행중`으로 변경
 - 체크아웃 시 → 보호자에게 SMS 발송 (`alarm_type: checkout`)
 - 취소 시 → `hosting_status`가 `모집완료`였다면 `신청가능`으로 되돌림. 호스팅 12시간 전부터는 취소 불가
@@ -175,11 +178,11 @@
 
 | 트리거 | 발송 시점 | 수신자 | alarm_type |
 |--------|-----------|--------|------------|
-| 매칭 신청 | 봉사자가 호스팅 신청 시 | 보호자 | `match` |
+| 매칭 확정 (스케줄러) | 호스팅 시작 -12시간 시점에 FULL → FIXED 전환 시 | 보호자 + 승인된 봉사자 전원 | `match` |
 | 체크인 | 봉사자가 방문 체크인 시 | 보호자 | `checkin` |
 | 체크아웃 | 봉사자가 방문 체크아웃 시 | 보호자 | `checkout` |
 | 호스팅 취소 (수동) | 보호자가 호스팅 삭제 시 | 승인된 봉사자 전원 | `delete` |
-| 호스팅 FAILED (스케줄러) | 모집 미달로 자동 무산 시 | 승인된 봉사자 전원 | `delete` |
+| 호스팅 FAILED (스케줄러) | 모집 미달로 자동 무산 시 | 보호자 + 승인된 봉사자 전원 | `delete` |
 
 > SMS 서비스: Solapi(CoolSMS) 또는 알리고 사용 예정  
 > 수신자가 여러 명인 경우 수신자별로 `sms_logs` row 생성
