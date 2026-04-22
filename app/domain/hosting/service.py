@@ -230,6 +230,7 @@ async def run_hosting_status_scheduler(
                     hosting_id=hid,
                     receiver_id=vt_id,
                     alarm_type=AlarmType.DELETE,
+                    use_long_message=True,
                 )
             )
 
@@ -241,6 +242,7 @@ async def run_hosting_status_scheduler(
                 hosting_id=hid,
                 receiver_id=guardian_id,
                 alarm_type=AlarmType.MATCH,
+                use_long_message=True,
             )
         )
         for vt_id in vt_ids:
@@ -250,6 +252,7 @@ async def run_hosting_status_scheduler(
                     hosting_id=hid,
                     receiver_id=vt_id,
                     alarm_type=AlarmType.MATCH,
+                    use_long_message=True,
                 )
             )
 
@@ -390,6 +393,7 @@ async def cancel_hosting(
                 hosting_id=hosting_id,
                 receiver_id=vt_id,
                 alarm_type=AlarmType.DELETE,
+                use_long_message=True,
             )
         )
     results = await asyncio.gather(*sms_tasks, return_exceptions=True)
