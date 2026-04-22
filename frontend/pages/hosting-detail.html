@@ -358,11 +358,12 @@
 
     function getStatusMeta(status) {
       const metaMap = {
-        '신청가능': { label: '신청가능', className: 'badge-open' },
-        '모집완료': { label: '모집완료', className: 'badge-full' },
-        '취소': { label: '취소', className: 'badge-failed' },
-        '진행중': { label: '진행중', className: 'badge-progress' },
-        '완료': { label: '완료', className: 'badge-closed' },
+        'OPEN': { label: '신청가능', className: 'badge-open' },
+        'FULL': { label: '모집완료', className: 'badge-full' },
+        'FIXED': { label: '확정', className: 'badge-full' },
+        'FAILED': { label: '취소', className: 'badge-failed' },
+        'IN_PROGRESS': { label: '진행중', className: 'badge-progress' },
+        'CLOSED': { label: '완료', className: 'badge-closed' },
       };
 
       return metaMap[status] ?? { label: status ?? '-', className: 'badge-closed' };
@@ -442,7 +443,7 @@
     }
 
     function isApplyEnabled(status) {
-      return status === '신청가능';
+      return status === 'OPEN';
     }
 
     function configurePageByViewMode() {
@@ -554,9 +555,9 @@
 
       if (isGuardianView()) {
         cancelButtonElement.classList.remove('hidden');
-        cancelButtonElement.disabled = !['신청가능', '모집완료', '취소'].includes(hostingDetail.hosting_status);
+        cancelButtonElement.disabled = !['OPEN', 'FULL', 'FAILED'].includes(hostingDetail.hosting_status);
 
-        if (hostingDetail.hosting_status === '취소') {
+        if (hostingDetail.hosting_status === 'FAILED') {
           cancelButtonElement.textContent = '이미 취소된 호스팅';
         } else {
           cancelButtonElement.textContent = '호스팅 취소 처리';
@@ -645,7 +646,7 @@
     }
 
     async function cancelHosting() {
-      if (!hostingDetail || hostingDetail.hosting_status === '취소') {
+      if (!hostingDetail || hostingDetail.hosting_status === 'FAILED') {
         return;
       }
 
