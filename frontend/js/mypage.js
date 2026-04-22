@@ -75,7 +75,7 @@ function renderEmptySlot(docType, label) {
       <label class="btn btn-sm btn-primary" style="cursor:pointer; flex-shrink:0;">
         업로드
         <input type="file" class="upload-input"
-          style="position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer;"
+          style="display:none;"
           data-doc-type="${docType}"
           accept=".jpg,.jpeg,.png,.pdf,.hwp,.docx">
       </label>
@@ -99,7 +99,7 @@ function renderEmptyGuardianSlot() {
         <label class="btn btn-sm btn-primary" style="cursor:pointer;">
           업로드
           <input type="file" class="upload-input guardian-upload"
-            style="position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer;"
+            style="display:none;"
             accept=".jpg,.jpeg,.png,.pdf,.hwp,.docx">
         </label>
       </div>

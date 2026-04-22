@@ -67,7 +67,9 @@ async def authenticate_user(email: str, password: str, db: AsyncSession) -> User
     user = await get_user_by_email(email, db)
     if user is None:
         return None
-    # 카카오 함수 만들면 비밀번호 관련 방어 추가 예정
+    # 카카오 전용 계정은 비밀번호 로그인 불가
+    if user.password is None:
+        return None
     if not verify_password(password, user.password):
         return None
     return user
