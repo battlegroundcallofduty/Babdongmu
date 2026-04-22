@@ -57,6 +57,21 @@ document.querySelectorAll('input[type="file"]').forEach(input => {
   });
 });
 
+// 활동 동네 주소 검색
+document.querySelector('#btn-search-address')?.addEventListener('click', () => {
+  if (!window.daum?.Postcode) {
+    alert('주소 검색을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
+    return;
+  }
+
+  new window.daum.Postcode({
+    oncomplete(data) {
+      const parts = [data.sido, data.sigungu, data.bname].filter(Boolean);
+      document.querySelector('#district').value = parts.join(' ');
+    },
+  }).open();
+});
+
 // SMS 인증
 let phoneVerified = false;
 
@@ -189,6 +204,12 @@ document.querySelector('#register-form')?.addEventListener('submit', async (e) =
 
   if (!phoneVerified) {
     errorMsg.textContent = '전화번호 인증을 완료해주세요.';
+    errorMsg.classList.remove('hidden');
+    return;
+  }
+
+  if (!document.querySelector('#district').value) {
+    errorMsg.textContent = '활동 동네를 검색해주세요.';
     errorMsg.classList.remove('hidden');
     return;
   }
