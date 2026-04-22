@@ -8,7 +8,14 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import hash_password, verify_password
-from app.domain.user.models import Document, DocumentType, PhoneVerification, User, UserRole
+from app.domain.user.models import (
+    CertFlag,
+    Document,
+    DocumentType,
+    PhoneVerification,
+    User,
+    UserRole,
+)
 
 # update_user 허용 리스트
 ALLOWED_UPDATE_FIELDS = {"name", "phone_number", "address"}
@@ -127,13 +134,19 @@ async def get_documents_by_user_id(user_id: int, db: AsyncSession) -> list[Docum
 async def create_document(
     user_id: int, document_type: DocumentType, document_url: str, db: AsyncSession
 ) -> Document:
-    """서류 업로드"""
+    """서류 업로드 (cert_flag를 PENDING으로 리셋해 관리자가 재검토하도록 함)"""
     document = Document(
         user_id=user_id,
         document_type=document_type,
         document_url=document_url,
     )
     db.add(document)
+
+    user = await get_user_by_id(user_id, db)
+    if user is not None:
+        user.cert_flag = CertFlag.PENDING
+        user.cert_reject_reason = None
+
     await db.commit()
     await db.refresh(document)
     return document

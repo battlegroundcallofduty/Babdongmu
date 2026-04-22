@@ -34,7 +34,13 @@ from app.domain.user.service import (
     send_phone_verification,
     verify_phone_code,
 )
-from app.services.r2 import DOCUMENT_CONTENT_TYPES, BucketType, delete_image, upload_image
+from app.services.r2 import (
+    DOCUMENT_CONTENT_TYPES,
+    BucketType,
+    delete_image,
+    get_presigned_url,
+    upload_image,
+)
 
 router = APIRouter()
 
@@ -156,7 +162,6 @@ async def upload_document(
     )
     return document
 
-
 @router.get("/me/documents", response_model=list[DocumentResponse])
 async def get_my_documents(
     current_user: User = Depends(get_current_user),
@@ -164,7 +169,6 @@ async def get_my_documents(
 ):
     """마이페이지: 내 서류 목록 조회"""
     return await get_documents_by_user_id(current_user.user_id, db)
-
 
 # 204: 삭제 후 응답 바디 X(성공했지만 돌려줄 내용 x)
 @router.delete("/me/documents/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -187,6 +191,24 @@ async def remove_document(
         )
     await delete_image(document.document_url)  # R2 파일 먼저 삭제
     await delete_document(document_id, db)
+
+@router.get("/documents/{document_id}/presigned-url")
+async def get_document_url(
+    document_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """서류 presigned URL 반환 (본인 서류 또는 관리자만 접근 가능, 5분 유효)."""
+    document = await get_document_by_id(document_id, db)
+    if document is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="서류를 찾을 수 없습니다."
+        )
+    if current_user.user_role != UserRole.ADMIN and document.user_id != current_user.user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="접근 권한이 없습니다."
+        )
+    return {"url": get_presigned_url(document.document_url)}
 
 
 # ── SMS 인증 ───────────────────

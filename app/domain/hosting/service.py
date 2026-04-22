@@ -6,10 +6,11 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domain.hosting.models import Hosting, HostingStatus
+from app.domain.hosting.models import AlarmType, Hosting, HostingStatus
 from app.domain.hosting.schemas import HostingCreateRequest, HostingResponse
 from app.domain.match.models import MatchingInfo, MatchStatus
 from app.domain.senior.models import Senior
+from app.services.sms import send_sms
 
 
 async def get_guardian_senior_by_id(
@@ -113,6 +114,20 @@ def process_hosting_status_by_time(
     return None
 
 
+async def get_approved_volunteer_ids(
+    session: AsyncSession,
+    hosting_id: int,
+) -> list[int]:
+    """호스팅에 APPROVED 상태인 봉사자 ID 목록을 반환합니다."""
+    result = await session.execute(
+        select(MatchingInfo.vt_id).where(
+            MatchingInfo.hosting_id == hosting_id,
+            MatchingInfo.match_status == MatchStatus.APPROVED,
+        )
+    )
+    return list(result.scalars().all())
+
+
 async def mark_matches_not_visited(
     session: AsyncSession,
     hosting_id: int,
@@ -158,6 +173,8 @@ async def run_hosting_status_scheduler(
     hostings = result.scalars().all()
 
     changed_count = 0
+    # FAILED 전환된 호스팅의 봉사자 ID 수집 (commit 전 APPROVED 상태일 때 조회)
+    failed_hosting_volunteer_map: dict[int, list[int]] = {}
 
     for hosting in hostings:
         new_status = process_hosting_status_by_time(hosting=hosting)
@@ -169,7 +186,15 @@ async def run_hosting_status_scheduler(
             hosting.hosting_status = new_status
             changed_count += 1
 
-        if new_status in {HostingStatus.FAILED, HostingStatus.CLOSED}:
+        if new_status == HostingStatus.FAILED:
+            failed_hosting_volunteer_map[hosting.hosting_id] = (
+                await get_approved_volunteer_ids(session, hosting.hosting_id)
+            )
+            changed_count += await mark_matches_not_visited(
+                session=session,
+                hosting_id=hosting.hosting_id,
+            )
+        elif new_status == HostingStatus.CLOSED:
             changed_count += await mark_matches_not_visited(
                 session=session,
                 hosting_id=hosting.hosting_id,
@@ -177,6 +202,16 @@ async def run_hosting_status_scheduler(
 
     if changed_count > 0:
         await session.commit()
+
+    # SMS 발송 (commit 이후 — 신청한 봉사자 전원에게 호스팅 무산 알림)
+    for hosting_id, vt_ids in failed_hosting_volunteer_map.items():
+        for vt_id in vt_ids:
+            await send_sms(
+                db=session,
+                hosting_id=hosting_id,
+                receiver_id=vt_id,
+                alarm_type=AlarmType.DELETE,
+            )
 
     return changed_count
 
@@ -290,7 +325,20 @@ async def cancel_hosting(
         )
 
     hosting.hosting_status = HostingStatus.FAILED
+
+    # commit 전 APPROVED 봉사자 목록 수집
+    vt_ids = await get_approved_volunteer_ids(session, hosting_id)
+
     await session.commit()
     await session.refresh(hosting)
+
+    # SMS 발송 — 신청한 봉사자 전원에게 호스팅 취소 알림
+    for vt_id in vt_ids:
+        await send_sms(
+            db=session,
+            hosting_id=hosting_id,
+            receiver_id=vt_id,
+            alarm_type=AlarmType.DELETE,
+        )
 
     return HostingResponse.model_validate(hosting)

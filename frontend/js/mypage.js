@@ -56,7 +56,8 @@ function renderUploadedSlot(doc, label) {
     <div class="list-item" style="background:var(--surface); border:1px solid var(--border-light); border-radius:var(--radius-md); margin-bottom:8px;">
       <div style="min-width:0;">
         <div style="font-weight:600; font-size:14px;">${label}</div>
-        <div style="font-size:12px; color:var(--muted); margin-top:2px;">${fileName}</div>
+        <a class="open-doc-link" data-doc-id="${doc.document_id}" href="#"
+          style="font-size:12px; color:var(--primary); margin-top:2px; display:block; word-break:break-all;">${fileName}</a>
         <div style="font-size:12px; color:var(--muted);">${formatDate(doc.created_at)} 업로드</div>
       </div>
       <button class="btn btn-sm btn-danger delete-doc-btn" data-doc-id="${doc.document_id}" style="flex-shrink:0;">삭제</button>
@@ -145,8 +146,46 @@ async function loadDocuments() {
   }
 }
 
-// 서류 삭제 (이벤트 위임: docs-list에 이벤트 달고, 클릭 시 삭제버튼 확인)
+// 서류 업로드/삭제 후 인증 상태 뱃지 최신화
+async function refreshCertBadge() {
+  try {
+    const me = await api('/users/me');
+    const certBadge = document.getElementById('cert-badge');
+    if (me.cert_flag === 'approved') {
+      certBadge.innerHTML = '<span class="badge badge-open">승인 완료</span>';
+    } else if (me.cert_flag === 'pending') {
+      certBadge.innerHTML = '<span class="badge badge-pending">검토 중</span>';
+    } else if (me.cert_flag === 'rejected') {
+      certBadge.innerHTML = '<span class="badge badge-cancelled">반려됨</span>';
+    }
+    const rejectSection = document.getElementById('reject-reason-section');
+    const rejectMsg = document.getElementById('reject-reason-msg');
+    if (me.cert_flag === 'rejected' && me.cert_reject_reason) {
+      rejectMsg.textContent = me.cert_reject_reason;
+      rejectSection.classList.remove('hidden');
+    } else {
+      rejectSection.classList.add('hidden');
+    }
+  } catch { /* 실패해도 무시 */ }
+}
+
+// 서류 클릭 이벤트 위임 (파일명 링크 열기 + 삭제 버튼)
 document.getElementById('docs-list')?.addEventListener('click', async (e) => {
+  // 파일명 링크 클릭 → presigned URL로 새 탭 열기
+  const docLink = e.target.closest('.open-doc-link');
+  if (docLink) {
+    e.preventDefault();
+    const docId = docLink.dataset.docId;
+    try {
+      const { url } = await api(`/users/documents/${docId}/presigned-url`);
+      window.open(url, '_blank', 'noopener');
+    } catch {
+      alert('서류를 불러올 수 없어요. 잠시 후 다시 시도해주세요.');
+    }
+    return;
+  }
+
+  // 삭제 버튼 클릭
   const deleteBtn = e.target.closest('.delete-doc-btn');
   if (!deleteBtn) return;
   const docId = deleteBtn.dataset.docId;
@@ -171,7 +210,7 @@ document.getElementById('docs-list')?.addEventListener('change', async (e) => {
     : e.target.dataset.docType;
   try {
     await uploadDocument(docType, file);
-    await loadDocuments();
+    await Promise.all([loadDocuments(), refreshCertBadge()]);
   } catch (err) {
     alert(`업로드 실패: ${err.message}`);
   }

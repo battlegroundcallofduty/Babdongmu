@@ -15,24 +15,12 @@ from app.domain.senior.schemas import (
 )
 
 
-async def build_senior_response(
-    session: AsyncSession,
+def build_senior_response(
     senior: Senior,
+    total_hosting_count: int = 0,
+    full_hosting_count: int = 0,
 ) -> SeniorResponse:
     """어르신 응답 데이터를 생성합니다."""
-
-    total_count_stmt = select(func.count(Hosting.hosting_id)).where(
-        Hosting.senior_id == senior.senior_id,
-    )
-    total_count_result = await session.execute(total_count_stmt)
-    total_hosting_count = total_count_result.scalar_one()
-
-    full_count_stmt = select(func.count(Hosting.hosting_id)).where(
-        Hosting.senior_id == senior.senior_id,
-        Hosting.hosting_status == HostingStatus.FULL,
-    )
-    full_count_result = await session.execute(full_count_stmt)
-    full_hosting_count = full_count_result.scalar_one()
 
     return SeniorResponse(
         senior_id=senior.senior_id,
@@ -62,6 +50,28 @@ async def build_senior_response(
         created_at=senior.created_at,
         updated_at=senior.updated_at,
     )
+
+
+async def get_hosting_counts_by_senior(
+    session: AsyncSession,
+    senior_id: int,
+) -> tuple[int, int]:
+    """어르신 1명의 호스팅 집계값을 조회합니다."""
+
+    stmt = select(
+        func.count(Hosting.hosting_id).label("total_hosting_count"),
+        func.count(Hosting.hosting_id)
+        .filter(Hosting.hosting_status == HostingStatus.FULL)
+        .label("full_hosting_count"),
+    ).where(Hosting.senior_id == senior_id)
+
+    result = await session.execute(stmt)
+    row = result.one()
+
+    total_hosting_count = row.total_hosting_count or 0
+    full_hosting_count = row.full_hosting_count or 0
+
+    return total_hosting_count, full_hosting_count
 
 
 async def create_senior(
@@ -98,9 +108,15 @@ async def create_senior(
     await session.commit()
     await session.refresh(senior)
 
-    return await build_senior_response(
+    total_hosting_count, full_hosting_count = await get_hosting_counts_by_senior(
         session=session,
+        senior_id=senior.senior_id,
+    )
+
+    return build_senior_response(
         senior=senior,
+        total_hosting_count=total_hosting_count,
+        full_hosting_count=full_hosting_count,
     )
 
 
@@ -111,26 +127,34 @@ async def list_seniors_by_guardian(
 ) -> list[SeniorResponse]:
     """보호자 기준 어르신 목록을 조회합니다."""
 
-    stmt = select(Senior).where(Senior.guardian_id == guardian_id)
+    stmt = (
+        select(
+            Senior,
+            func.count(Hosting.hosting_id).label("total_hosting_count"),
+            func.count(Hosting.hosting_id)
+            .filter(Hosting.hosting_status == HostingStatus.FULL)
+            .label("full_hosting_count"),
+        )
+        .outerjoin(Hosting, Hosting.senior_id == Senior.senior_id)
+        .where(Senior.guardian_id == guardian_id)
+    )
 
     if active_only:
         stmt = stmt.where(Senior.active_flag.is_(True))
 
-    stmt = stmt.order_by(Senior.created_at.desc())
+    stmt = stmt.group_by(Senior.senior_id).order_by(Senior.created_at.desc())
 
     result = await session.execute(stmt)
-    seniors = result.scalars().all()
+    rows = result.all()
 
-    responses: list[SeniorResponse] = []
-
-    for senior in seniors:
-        response = await build_senior_response(
-            session=session,
+    return [
+        build_senior_response(
             senior=senior,
+            total_hosting_count=total_hosting_count or 0,
+            full_hosting_count=full_hosting_count or 0,
         )
-        responses.append(response)
-
-    return responses
+        for senior, total_hosting_count, full_hosting_count in rows
+    ]
 
 
 async def get_senior_by_id(
@@ -150,9 +174,15 @@ async def get_senior_by_id(
             detail="어르신 정보를 찾을 수 없습니다.",
         )
 
-    return await build_senior_response(
+    total_hosting_count, full_hosting_count = await get_hosting_counts_by_senior(
         session=session,
+        senior_id=senior.senior_id,
+    )
+
+    return build_senior_response(
         senior=senior,
+        total_hosting_count=total_hosting_count,
+        full_hosting_count=full_hosting_count,
     )
 
 
@@ -204,9 +234,15 @@ async def update_senior(
     await session.commit()
     await session.refresh(senior)
 
-    return await build_senior_response(
+    total_hosting_count, full_hosting_count = await get_hosting_counts_by_senior(
         session=session,
+        senior_id=senior.senior_id,
+    )
+
+    return build_senior_response(
         senior=senior,
+        total_hosting_count=total_hosting_count,
+        full_hosting_count=full_hosting_count,
     )
 
 
@@ -259,3 +295,23 @@ async def delete_senior(
 
     await session.delete(senior)
     await session.commit()
+
+
+async def get_senior_id_by_qr(
+    session: AsyncSession,
+    qr_uuid: str,
+) -> int:
+    """QR UUID로 senior_id를 역조회합니다."""
+
+    result = await session.execute(
+        select(Senior.senior_id).where(Senior.qr_code == qr_uuid)
+    )
+    senior_id = result.scalar_one_or_none()
+
+    if senior_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="유효하지 않은 QR 코드입니다.",
+        )
+
+    return senior_id
