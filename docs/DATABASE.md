@@ -131,7 +131,7 @@ alembic upgrade head  # 로컬 반영 (DEBUG=False인 경우)
 | lat | FLOAT nullable | 위도 |
 | lng | FLOAT nullable | 경도 |
 | sigungu_code | VARCHAR(20) nullable | 시군구 코드 |
-| hosting_status | ENUM | 모집 상태 (`신청가능` / `모집완료` / `무산` / `진행중` / `완료`). 기본값 `신청가능` |
+| hosting_status | ENUM | 모집 상태 (`신청가능` / `모집완료` / `취소` / `진행중` / `완료`). 기본값 `신청가능` |
 | created_at | TIMESTAMP | 생성일 |
 
 ---

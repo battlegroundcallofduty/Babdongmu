@@ -203,7 +203,7 @@ async def run_hosting_status_scheduler(
     if changed_count > 0:
         await session.commit()
 
-    # SMS 발송 (commit 이후 — 신청한 봉사자 전원에게 호스팅 무산 알림)
+    # SMS 발송 (commit 이후 — 신청한 봉사자 전원에게 호스팅 취소 알림)
     for hosting_id, vt_ids in failed_hosting_volunteer_map.items():
         for vt_id in vt_ids:
             await send_sms(
@@ -321,7 +321,7 @@ async def cancel_hosting(
     if hosting.hosting_status in {HostingStatus.IN_PROGRESS, HostingStatus.CLOSED}:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="이미 진행 중이거나 완료된 호스팅은 무산 처리할 수 없습니다.",
+            detail="이미 진행 중이거나 완료된 호스팅은 취소 처리할 수 없습니다.",
         )
 
     hosting.hosting_status = HostingStatus.FAILED
@@ -339,6 +339,46 @@ async def cancel_hosting(
             hosting_id=hosting_id,
             receiver_id=vt_id,
             alarm_type=AlarmType.DELETE,
+        )
+
+    return HostingResponse.model_validate(hosting)
+
+
+async def list_hostings_for_volunteer(
+    session: AsyncSession,
+) -> list[HostingResponse]:
+    """봉사자가 탐색 가능한 공개 호스팅 목록을 조회합니다."""
+
+    stmt = (
+        select(Hosting)
+        .where(Hosting.hosting_status == HostingStatus.OPEN)
+        .order_by(Hosting.hosting_at.asc(), Hosting.created_at.desc())
+    )
+
+    result = await session.execute(stmt)
+    hostings = result.scalars().all()
+
+    return [HostingResponse.model_validate(hosting) for hosting in hostings]
+
+
+async def get_public_hosting_detail(
+    session: AsyncSession,
+    hosting_id: int,
+) -> HostingResponse:
+    """봉사자가 조회 가능한 공개 호스팅 상세 정보를 반환합니다."""
+
+    stmt = select(Hosting).where(
+        Hosting.hosting_id == hosting_id,
+        Hosting.hosting_status == HostingStatus.OPEN,
+    )
+
+    result = await session.execute(stmt)
+    hosting = result.scalar_one_or_none()
+
+    if hosting is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="조회 가능한 호스팅 정보를 찾을 수 없습니다.",
         )
 
     return HostingResponse.model_validate(hosting)

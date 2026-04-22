@@ -24,7 +24,7 @@ class HostingStatus(str, enum.Enum):
 
     OPEN = "신청가능"
     FULL = "모집완료"
-    FAILED = "무산"
+    FAILED = "취소"
     IN_PROGRESS = "진행중"
     CLOSED = "완료"
 
@@ -93,8 +93,9 @@ class Hosting(Base):
 
     updated_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True),
-        nullable=True,
+        nullable=False,
         default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
     )
 
 
