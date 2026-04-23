@@ -15,11 +15,12 @@ jobs:
         env:
           DUCKDNS_TOKEN: ${{ secrets.DUCKDNS_TOKEN }}
           DUCKDNS_SUBDOMAIN: ${{ secrets.DUCKDNS_SUBDOMAIN }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
-          envs: DUCKDNS_TOKEN,DUCKDNS_SUBDOMAIN
+          envs: DUCKDNS_TOKEN,DUCKDNS_SUBDOMAIN,POSTGRES_PASSWORD
           script: |
             set -euo pipefail
             cd ~/babdongmu
@@ -58,6 +59,8 @@ jobs:
             echo "::STAGE:: docker build/up"
             export PUBLIC_DOMAIN="${DUCKDNS_SUBDOMAIN}.duckdns.org"
             export FRONTEND_BASE_URL="https://${PUBLIC_DOMAIN}"
+            # envs 로 이미 주입됐지만 docker-compose interpolation 을 위해 명시적 export
+            export POSTGRES_PASSWORD="${POSTGRES_PASSWORD}"
             docker-compose build
             docker-compose up -d postgres
             docker-compose run --rm app alembic upgrade head
