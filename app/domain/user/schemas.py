@@ -70,6 +70,8 @@ class PasswordChangeRequest(BaseModel):
     def passwords_match(self):
         if self.new_password != self.new_password_confirm:
             raise ValueError("새 비밀번호가 일치하지 않습니다.")
+        if self.current_password == self.new_password:
+            raise ValueError("새 비밀번호가 현재 비밀번호와 같습니다.")
         return self
 
 
