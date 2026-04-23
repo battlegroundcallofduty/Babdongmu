@@ -12,14 +12,30 @@ jobs:
     steps:
       - name: EC2 배포
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          DUCKDNS_TOKEN: ${{ secrets.DUCKDNS_TOKEN }}
+          DUCKDNS_SUBDOMAIN: ${{ secrets.DUCKDNS_SUBDOMAIN }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
+          envs: DUCKDNS_TOKEN,DUCKDNS_SUBDOMAIN
           script: |
             set -euo pipefail
             cd ~/babdongmu
             git fetch origin && git reset --hard origin/main
+
+            # Duck DNS 설정 (멱등). 토큰/서브도메인은 GitHub Secrets → 원격 env 로 주입.
+            mkdir -p ~/duckdns
+            chmod 700 ~/duckdns
+            ( umask 177 && printf '%s' "$DUCKDNS_TOKEN" > ~/duckdns/token )
+            ( umask 177 && printf '%s' "$DUCKDNS_SUBDOMAIN" > ~/duckdns/subdomain )
+            install -m 700 scripts/duckdns-update.sh ~/duckdns/duck.sh
+            ( crontab -l 2>/dev/null | grep -vF 'duckdns/duck.sh' ; echo '*/5 * * * * /home/ec2-user/duckdns/duck.sh' ) | crontab -
+            ~/duckdns/duck.sh
+
+            # Caddy 가 인증서 발급할 도메인. docker-compose 가 자동 참조.
+            export PUBLIC_DOMAIN="${DUCKDNS_SUBDOMAIN}.duckdns.org"
             docker-compose build
             docker-compose up -d postgres
             docker-compose run --rm app alembic upgrade head
