@@ -34,8 +34,9 @@ jobs:
             ( crontab -l 2>/dev/null | grep -vF 'duckdns/duck.sh' ; echo '*/5 * * * * /home/ec2-user/duckdns/duck.sh' ) | crontab -
             ~/duckdns/duck.sh
 
-            # Caddy 가 인증서 발급할 도메인. docker-compose 가 자동 참조.
+            # Caddy 인증서 발급 도메인 + QR URL base. docker-compose 가 이 값으로 치환.
             export PUBLIC_DOMAIN="${DUCKDNS_SUBDOMAIN}.duckdns.org"
+            export FRONTEND_BASE_URL="https://${PUBLIC_DOMAIN}"
             docker-compose build
             docker-compose up -d postgres
             docker-compose run --rm app alembic upgrade head

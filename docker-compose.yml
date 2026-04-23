@@ -10,6 +10,8 @@ services:
       - .env
     environment:
       DATABASE_URL: postgresql+psycopg://babdongmu:babdongmu1234@postgres:5432/babdongmu
+      # QR 체크인 URL 생성 base. 운영에선 deploy.yml 이 https 도메인으로 export.
+      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-http://localhost:8000}
     depends_on:
       postgres:
         condition: service_healthy
