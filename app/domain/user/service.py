@@ -18,7 +18,7 @@ from app.domain.user.models import (
 )
 
 # update_user 허용 리스트
-ALLOWED_UPDATE_FIELDS = {"name", "email", "address"}
+ALLOWED_UPDATE_FIELDS = {"address"}
 
 
 # —— 유저 ─────────

@@ -326,18 +326,12 @@ document.querySelector('#password-form')?.addEventListener('submit', async (e) =
 
 // 내 정보 수정 모드 진입
 function enterEditMode() {
-  document.getElementById('input-name').value = document.getElementById('user-name').textContent;
-  document.getElementById('input-email').value = document.getElementById('user-email').textContent;
   document.getElementById('input-district').value = document.getElementById('user-district').textContent;
 
   // span 숨김
-  document.getElementById('user-name').classList.add('hidden');
-  document.getElementById('user-email').classList.add('hidden');
   document.getElementById('user-district').classList.add('hidden');
 
   // input 보임
-  document.getElementById('input-name').classList.remove('hidden');
-  document.getElementById('input-email').classList.remove('hidden');
   document.getElementById('district-edit').style.display = 'flex';
 
   document.getElementById('btn-edit-info').classList.add('hidden'); // 수정버튼 숨김
@@ -351,12 +345,7 @@ function enterEditMode() {
 
 // 내 정보 수정 모드 종료(enterEditMode의 반대)
 function exitEditMode() {
-  document.getElementById('user-name').classList.remove('hidden');
-  document.getElementById('user-email').classList.remove('hidden');
   document.getElementById('user-district').classList.remove('hidden');
-
-  document.getElementById('input-name').classList.add('hidden');
-  document.getElementById('input-email').classList.add('hidden');
   document.getElementById('district-edit').style.display = 'none';
 
   document.getElementById('btn-edit-info').classList.remove('hidden');
@@ -371,14 +360,12 @@ document.querySelector('#btn-cancel-info')?.addEventListener('click', () => {
 });
 
 document.querySelector('#btn-save-info')?.addEventListener('click', async () => {
-  const name = document.getElementById('input-name').value.trim();
-  const email = document.getElementById('input-email').value.trim();
   const address = document.getElementById('input-district').value.trim();
   const infoMsg = document.getElementById('info-msg');
   const saveBtn = document.getElementById('btn-save-info');
 
-  if (!name || !email || !address) {
-    infoMsg.textContent = '이름, 이메일, 활동 동네를 모두 입력해주세요.';
+  if (!address) {
+    infoMsg.textContent = '주소를 입력해주세요.';
     infoMsg.className = 'alert alert-error';
     return;
   }
@@ -387,20 +374,15 @@ document.querySelector('#btn-save-info')?.addEventListener('click', async () => 
   try {
     const updated = await api('/users/me', {
       method: 'PATCH',
-      body: JSON.stringify({ name, email, address }),
+      body: JSON.stringify({ address }),
     });
 
     // 내 정보 텍스트 갱신
-    document.getElementById('user-name').textContent = updated.name;
-    document.getElementById('user-email').textContent = updated.email;
     document.getElementById('user-district').textContent = updated.address;
 
     // 프로필 카드 갱신
     const roleLabel = { volunteer: '봉사자', guardian: '보호자', admin: '관리자' }[updated.user_role] ?? updated.user_role;
-    document.getElementById('profile-avatar').textContent = updated.name[0];
-    document.getElementById('profile-name').textContent = updated.name;
     document.getElementById('profile-role-district').textContent = `${roleLabel} · ${updated.address}`;
-    document.getElementById('profile-contact').textContent = `${updated.email} · ${updated.phone_number}`;
 
     exitEditMode();
     infoMsg.textContent = '정보가 수정됐습니다.';
@@ -413,7 +395,7 @@ document.querySelector('#btn-save-info')?.addEventListener('click', async () => 
   }
 });
 
-// 활동 동네 주소 검색 (register.js와 동일)
+// 주소 검색 (register.js와 동일)
 document.querySelector('#btn-search-address-mypage')?.addEventListener('click', () => {
   if (!window.daum?.Postcode) {
     alert('주소 검색을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');

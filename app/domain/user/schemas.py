@@ -47,8 +47,6 @@ class UserLoginRequest(BaseModel):
 class UserUpdateRequest(BaseModel):
     """회원정보 수정 요청 (마이페이지)"""
 
-    name: str | None = Field(None, min_length=1)
-    email: EmailStr | None = None
     address: str | None = Field(None, min_length=1, max_length=255)
 
 

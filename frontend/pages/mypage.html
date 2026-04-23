@@ -58,27 +58,25 @@
     </div>
 
     <div class="detail-section slide-up stagger-3">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-md);">
+      <div style="margin-bottom:var(--space-md);">
         <h3 style="margin:0;">내 정보</h3>
-        <button id="btn-edit-info" class="btn btn-ghost btn-sm">수정</button>
       </div>
       <div class="detail-row">
         <span class="detail-label">이름</span>
         <span class="detail-value" id="user-name">-</span>
-        <input class="form-input hidden" id="input-name" type="text" style="flex:1;">
       </div>
       <div class="detail-row">
         <span class="detail-label">이메일</span>
         <span class="detail-value" id="user-email">-</span>
-        <input class="form-input hidden" id="input-email" type="email" style="flex:1;">
       </div>
       <div class="detail-row">
         <span class="detail-label">전화번호</span>
         <span class="detail-value" id="user-phone">-</span>
       </div>
       <div class="detail-row">
-        <span class="detail-label">활동 동네</span>
+        <span class="detail-label">주소</span>
         <span class="detail-value" id="user-district">-</span>
+        <button id="btn-edit-info" class="btn btn-ghost btn-sm">수정</button>
         <div id="district-edit" style="display:none; gap:8px; flex:1;">
           <input class="form-input" id="input-district" type="text" readonly style="flex:1;">
           <button type="button" id="btn-search-address-mypage" class="btn btn-secondary btn-sm" style="white-space:nowrap;">주소 검색</button>
