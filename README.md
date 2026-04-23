@@ -2,7 +2,7 @@
 
 독거 어르신을 위한 식사 동반 플랫폼 - FastAPI 백엔드
 
-[http://15.164.233.129:8000/](https://babdongmu.duckdns.org/)
+https://babdongmu.duckdns.org/
 
 ## 기술 스택
 
