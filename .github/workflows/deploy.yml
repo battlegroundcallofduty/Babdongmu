@@ -43,7 +43,13 @@ jobs:
             install -m 700 scripts/duckdns-update.sh ~/duckdns/duck.sh
 
             echo "::STAGE:: crontab register"
-            ( crontab -l 2>/dev/null | grep -vF 'duckdns/duck.sh' ; echo '*/5 * * * * /home/ec2-user/duckdns/duck.sh' ) | crontab -
+            # 기존 crontab 이 없으면 crontab -l 이 exit 1. pipefail 우회용으로 tmp 파일 사용.
+            CRONTAB_TMP=$(mktemp)
+            crontab -l 2>/dev/null > "$CRONTAB_TMP" || true
+            sed -i '/duckdns\/duck.sh/d' "$CRONTAB_TMP"
+            echo '*/5 * * * * /home/ec2-user/duckdns/duck.sh' >> "$CRONTAB_TMP"
+            crontab "$CRONTAB_TMP"
+            rm -f "$CRONTAB_TMP"
 
             echo "::STAGE:: duckdns first run"
             ~/duckdns/duck.sh
