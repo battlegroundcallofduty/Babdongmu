@@ -52,7 +52,8 @@ jobs:
             rm -f "$CRONTAB_TMP"
 
             echo "::STAGE:: duckdns first run"
-            ~/duckdns/duck.sh
+            # 실패해도 배포 중단하지 않음. 5분 cron 이 자동 재시도.
+            ~/duckdns/duck.sh || echo "::WARNING:: duckdns first sync failed, cron will retry"
 
             echo "::STAGE:: docker build/up"
             export PUBLIC_DOMAIN="${DUCKDNS_SUBDOMAIN}.duckdns.org"
@@ -62,4 +63,9 @@ jobs:
             docker-compose run --rm app alembic upgrade head
             docker-compose up -d --wait
             docker image prune -f
+
+            echo "::STAGE:: verify https"
+            # Caddy 가 Let's Encrypt 인증서 받을 때까지 최대 60초 재시도. 실패면 배포도 실패로 처리.
+            curl -fsS --retry 12 --retry-delay 5 --retry-all-errors \
+              "https://${PUBLIC_DOMAIN}/openapi.json" -o /dev/null
             echo "::STAGE:: done"

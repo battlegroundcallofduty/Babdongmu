@@ -51,6 +51,12 @@ services:
     depends_on:
       app:
         condition: service_healthy
+    # Caddy admin API(2019) 로 프로세스 상태 체크. 인증서 발급 여부와 무관하게 프로세스 살아있는지만.
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:2019/config/"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
     restart: unless-stopped
 
 volumes:
