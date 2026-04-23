@@ -2,7 +2,6 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <link rel="icon" href="/assets/icons/favicon.png" type="image/png">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>관리자 대시보드 - 밥동무</title>
   <link rel="stylesheet" href="/css/common.css">
@@ -260,11 +259,7 @@
     </div>
   </main>
 
-  <footer class="footer">
-    <div class="footer-inner">
-      <div class="footer-bottom">&copy; 2026 밥동무. 독거 어르신을 위한 식사 동반 플랫폼</div>
-    </div>
-  </footer>
+  <div id="footer-placeholder"></div>
 
   <div class="toast" id="toast"></div>
 
@@ -289,6 +284,7 @@
 
   <script src="/js/api.js"></script>
   <script src="/js/admin.js"></script>
+  <script src="/js/base.js"></script>
   <script>
     // ── XSS 방어 헬퍼 ───────────────────────────────────────
     // href 속성에 javascript: URI 삽입 방지
