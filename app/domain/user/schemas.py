@@ -19,7 +19,7 @@ class UserRegisterRequest(BaseModel):
     name: str = Field(min_length=1)
     phone_number: str = Field(min_length=1)
     user_role: UserRole  # volunteer | guardian
-    address: str = Field(min_length=1)
+    address: str = Field(min_length=1, max_length=255)
 
     @field_validator("password")  # 특정 필드(비번) 하나
     # userregisterrequest 객체가 없는 상태라서 클래스(cls) 받음
@@ -49,7 +49,7 @@ class UserUpdateRequest(BaseModel):
 
     name: str | None = Field(None, min_length=1)
     email: EmailStr | None = None
-    address: str | None = Field(None, min_length=1)
+    address: str | None = Field(None, min_length=1, max_length=255)
 
 
 class PasswordChangeRequest(BaseModel):
