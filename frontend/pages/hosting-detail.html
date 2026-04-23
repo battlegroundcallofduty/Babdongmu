@@ -8,7 +8,11 @@
   <link rel="stylesheet" href="/css/common.css">
   <style>
     .hidden { display: none !important; }
-    .page-shell { max-width: 720px; }
+
+    .page-shell {
+      max-width: 720px;
+    }
+
     .profile-card,
     .detail-section,
     .empty-panel {
@@ -18,12 +22,14 @@
       padding: 24px;
       box-shadow: 0 10px 30px rgba(44, 36, 32, 0.05);
     }
+
     .profile-card {
       display: flex;
       gap: 16px;
       align-items: center;
       margin-bottom: 24px;
     }
+
     .profile-avatar {
       width: 64px;
       height: 64px;
@@ -37,10 +43,12 @@
       font-weight: 700;
       flex-shrink: 0;
     }
+
     .profile-details h2 {
       margin: 0 0 8px;
       font-size: 28px;
     }
+
     .profile-meta,
     .profile-summary,
     .detail-value,
@@ -48,16 +56,33 @@
       color: #6B5E53;
       line-height: 1.6;
     }
+
     .profile-summary {
       margin-top: 12px;
     }
+
+    .role-caption {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: #F8F5F1;
+      color: #6B5E53;
+      font-size: 13px;
+      font-weight: 600;
+      margin-top: 10px;
+    }
+
     .detail-section {
       margin-bottom: 24px;
     }
+
     .detail-section h3 {
       margin-top: 0;
       margin-bottom: 18px;
     }
+
     .detail-row {
       display: grid;
       grid-template-columns: 120px 1fr;
@@ -65,11 +90,16 @@
       padding: 12px 0;
       border-bottom: 1px solid #F2ECE6;
     }
-    .detail-row:last-child { border-bottom: 0; }
+
+    .detail-row:last-child {
+      border-bottom: 0;
+    }
+
     .detail-label {
       color: #8C7E73;
       font-weight: 600;
     }
+
     .badge {
       display: inline-flex;
       align-items: center;
@@ -80,17 +110,25 @@
       font-weight: 700;
       white-space: nowrap;
     }
+
     .badge-open { background: #EDF5ED; color: #3A6B39; }
     .badge-full { background: #FDF5E6; color: #8B6914; }
     .badge-failed { background: #FDECEC; color: #B44646; }
     .badge-progress { background: #EEF3FF; color: #4269B4; }
     .badge-closed { background: #F0EBE6; color: #6B5E53; }
+
     .action-row {
       display: flex;
       gap: 12px;
       flex-wrap: wrap;
       margin-bottom: 24px;
     }
+
+    .action-row .btn {
+      flex: 1;
+      min-width: 0;
+    }
+
     .message-box {
       display: none;
       border-radius: 12px;
@@ -99,10 +137,12 @@
       border: 1px solid #E8E0D8;
       background: #fff;
     }
+
     .message-box.show { display: block; }
     .message-box.success { background: #F6FBF6; color: #2E5D2E; border-color: #D8EAD8; }
     .message-box.error { background: #FFF6F6; color: #9A3838; border-color: #F1D0D0; }
     .message-box.info { background: #F8F5F1; color: #6B5E53; }
+
     .back-link {
       display: inline-flex;
       gap: 8px;
@@ -111,21 +151,34 @@
       text-decoration: none;
       margin-bottom: 24px;
     }
+
     .back-link svg {
       width: 20px;
       height: 20px;
     }
+
     .empty-panel {
       text-align: center;
     }
+
     .empty-panel h2 {
       margin-top: 0;
       margin-bottom: 10px;
     }
+
     @media (max-width: 768px) {
-      .detail-row { grid-template-columns: 1fr; gap: 8px; }
-      .action-row .btn { width: 100%; }
-      .profile-card { align-items: flex-start; }
+      .detail-row {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      .action-row .btn {
+        width: 100%;
+      }
+
+      .profile-card {
+        align-items: flex-start;
+      }
     }
   </style>
 </head>
@@ -142,11 +195,13 @@
         </svg>
         밥동무
       </a>
-      <ul class="nav-links">
-        <li><a href="/pages/hostings.html" class="active">호스팅</a></li>
-        <li><a href="/pages/my-matches.html">내 매칭</a></li>
+
+      <ul id="desktop-nav-links" class="nav-links">
+        <li><a id="desktop-nav-primary" href="/pages/hostings.html">호스팅 관리</a></li>
+        <li><a id="desktop-nav-secondary" href="/pages/my-matches.html">내 매칭</a></li>
         <li><a href="/pages/mypage.html">마이페이지</a></li>
       </ul>
+
       <button class="nav-toggle" type="button" onclick="toggleNav()" aria-label="메뉴 열기">
         <span></span><span></span><span></span>
       </button>
@@ -155,34 +210,36 @@
 
   <div class="nav-drawer" id="navDrawer" onclick="closeNav(event)">
     <div class="nav-drawer-content">
-      <a href="/pages/hostings.html" class="active">호스팅</a>
-      <a href="/pages/my-matches.html">내 매칭</a>
+      <a id="drawer-nav-primary" href="/pages/hostings.html">호스팅 관리</a>
+      <a id="drawer-nav-secondary" href="/pages/my-matches.html">내 매칭</a>
       <a href="/pages/mypage.html">마이페이지</a>
     </div>
   </div>
 
   <main class="container page-shell">
-    <a href="/pages/hostings.html" class="back-link slide-up">
+    <a id="back-link" href="/pages/hostings.html" class="back-link slide-up">
       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <path d="M12 4l-6 6 6 6"/>
       </svg>
-      목록으로
+      <span id="back-link-text">목록으로</span>
     </a>
 
     <div id="message-box" class="message-box" role="status" aria-live="polite"></div>
 
     <div id="detail-content" class="hidden">
       <section class="profile-card slide-up">
-        <div id="senior-avatar" class="profile-avatar">어</div>
+        <div id="senior-avatar" class="profile-avatar">밥</div>
         <div class="profile-details">
-          <h2 id="senior-name">어르신</h2>
+          <h2 id="senior-name">호스팅</h2>
           <p id="senior-meta" class="profile-meta">-</p>
           <p id="senior-summary" class="profile-summary hidden"></p>
+          <div id="role-caption" class="role-caption">상세 보기</div>
         </div>
       </section>
 
       <div class="action-row slide-up stagger-1">
-        <button id="cancel-hosting-button" class="btn btn-secondary" type="button">호스팅 무산 처리</button>
+        <button id="cancel-hosting-button" class="btn btn-secondary hidden" type="button">호스팅 취소 처리</button>
+        <button id="apply-hosting-button" class="btn btn-primary hidden" type="button">이 호스팅 신청하기</button>
       </div>
 
       <section class="detail-section slide-up stagger-2">
@@ -253,10 +310,25 @@
   </footer>
 
   <script src="/js/api.js"></script>
-  <script>
+  <script type="module">
+    import {
+      requireAuth,
+      redirectByRole,
+      validateHostingDetailAccess,
+    } from '/js/authGuard.js';
+
+    const currentUser = requireAuth();
+    if (!currentUser) {
+      throw new Error('로그인이 필요합니다.');
+    }
+
     const KST_TIME_ZONE = 'Asia/Seoul';
+    const VIEW_MODE_GUARDIAN = 'guardian';
+    const VIEW_MODE_VOLUNTEER = 'volunteer';
+
     let hostingDetail = null;
     let seniorDetail = null;
+    let viewMode = VIEW_MODE_GUARDIAN;
 
     function toggleNav() {
       const toggleElement = document.querySelector('.nav-toggle');
@@ -286,12 +358,14 @@
 
     function getStatusMeta(status) {
       const metaMap = {
-        '신청가능': { label: '신청가능', className: 'badge-open' },
-        '모집완료': { label: '모집완료', className: 'badge-full' },
-        '무산': { label: '무산', className: 'badge-failed' },
-        '진행중': { label: '진행중', className: 'badge-progress' },
-        '완료': { label: '완료', className: 'badge-closed' },
+        'OPEN': { label: '신청가능', className: 'badge-open' },
+        'FULL': { label: '모집완료', className: 'badge-full' },
+        'FIXED': { label: '확정', className: 'badge-full' },
+        'FAILED': { label: '취소', className: 'badge-failed' },
+        'IN_PROGRESS': { label: '진행중', className: 'badge-progress' },
+        'CLOSED': { label: '완료', className: 'badge-closed' },
       };
+
       return metaMap[status] ?? { label: status ?? '-', className: 'badge-closed' };
     }
 
@@ -303,9 +377,22 @@
     }
 
     function formatDateTimeRange(hostingAt, hostingEnd) {
-      const dateText = formatDate(hostingAt, { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' });
-      const startTimeText = formatDate(hostingAt, { hour: '2-digit', minute: '2-digit', hour12: false });
-      const endTimeText = formatDate(hostingEnd, { hour: '2-digit', minute: '2-digit', hour12: false });
+      const dateText = formatDate(hostingAt, {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        weekday: 'short',
+      });
+      const startTimeText = formatDate(hostingAt, {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      });
+      const endTimeText = formatDate(hostingEnd, {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      });
       return `${dateText} ${startTimeText} ~ ${endTimeText}`;
     }
 
@@ -313,37 +400,186 @@
       document.querySelector(selector).textContent = value || '-';
     }
 
-    function renderDetail() {
-      const statusMeta = getStatusMeta(hostingDetail.hosting_status);
-      const fullSeniorName = seniorDetail?.name ? `${seniorDetail.name} 어르신` : `어르신 #${hostingDetail.senior_id}`;
-      const seniorAvatarText = seniorDetail?.name ? seniorDetail.name.charAt(0) : '어';
-      const seniorMetaParts = [];
+    function getViewMode() {
+      const params = new URLSearchParams(window.location.search);
+      const requestedViewMode = params.get('view');
 
-      if (typeof seniorDetail?.age === 'number') {
-        seniorMetaParts.push(`${seniorDetail.age}세`);
+      if (requestedViewMode === VIEW_MODE_VOLUNTEER) {
+        return VIEW_MODE_VOLUNTEER;
       }
+
+      return VIEW_MODE_GUARDIAN;
+    }
+
+    function getHostingId() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('id');
+    }
+
+    function getBackLinkHref() {
+      return viewMode === VIEW_MODE_VOLUNTEER
+        ? '/pages/hosting-match.html'
+        : '/pages/hostings.html';
+    }
+
+    function getBackLinkText() {
+      return viewMode === VIEW_MODE_VOLUNTEER
+        ? '호스팅 탐색으로'
+        : '호스팅 관리로';
+    }
+
+    function getDetailApiPath(hostingId) {
+      return viewMode === VIEW_MODE_VOLUNTEER
+        ? `/hostings/public/${hostingId}`
+        : `/hostings/${hostingId}`;
+    }
+
+    function isVolunteerView() {
+      return viewMode === VIEW_MODE_VOLUNTEER;
+    }
+
+    function isGuardianView() {
+      return viewMode === VIEW_MODE_GUARDIAN;
+    }
+
+    function isApplyEnabled(status) {
+      return status === 'OPEN';
+    }
+
+    function configurePageByViewMode() {
+      const backLinkElement = document.querySelector('#back-link');
+      const backLinkTextElement = document.querySelector('#back-link-text');
+      const desktopPrimaryElement = document.querySelector('#desktop-nav-primary');
+      const drawerPrimaryElement = document.querySelector('#drawer-nav-primary');
+      const desktopSecondaryElement = document.querySelector('#desktop-nav-secondary');
+      const drawerSecondaryElement = document.querySelector('#drawer-nav-secondary');
+      const roleCaptionElement = document.querySelector('#role-caption');
+
+      backLinkElement.href = getBackLinkHref();
+      backLinkTextElement.textContent = getBackLinkText();
+
+      if (isVolunteerView()) {
+        desktopPrimaryElement.textContent = '호스팅 탐색';
+        desktopPrimaryElement.href = '/pages/hosting-match.html';
+        desktopPrimaryElement.classList.add('active');
+
+        drawerPrimaryElement.textContent = '호스팅 탐색';
+        drawerPrimaryElement.href = '/pages/hosting-match.html';
+        drawerPrimaryElement.classList.add('active');
+
+        desktopSecondaryElement.textContent = '내 매칭';
+        desktopSecondaryElement.href = '/pages/my-matches.html';
+
+        drawerSecondaryElement.textContent = '내 매칭';
+        drawerSecondaryElement.href = '/pages/my-matches.html';
+
+        roleCaptionElement.textContent = '봉사자용 상세 화면';
+      } else {
+        desktopPrimaryElement.textContent = '호스팅 관리';
+        desktopPrimaryElement.href = '/pages/hostings.html';
+        desktopPrimaryElement.classList.add('active');
+
+        drawerPrimaryElement.textContent = '호스팅 관리';
+        drawerPrimaryElement.href = '/pages/hostings.html';
+        drawerPrimaryElement.classList.add('active');
+
+        desktopSecondaryElement.textContent = '내 매칭';
+        desktopSecondaryElement.href = '/pages/my-matches.html';
+
+        drawerSecondaryElement.textContent = '내 매칭';
+        drawerSecondaryElement.href = '/pages/my-matches.html';
+
+        roleCaptionElement.textContent = '보호자용 관리 상세 화면';
+      }
+    }
+
+    function renderProfileHeader() {
+      const seniorAvatarElement = document.querySelector('#senior-avatar');
+      const seniorNameElement = document.querySelector('#senior-name');
+      const seniorMetaElement = document.querySelector('#senior-meta');
+      const summaryElement = document.querySelector('#senior-summary');
+
       const hostingAddress = [hostingDetail?.road_address, hostingDetail?.detail_address]
         .filter(Boolean)
         .join(' ');
 
-      if (hostingAddress) {
-        seniorMetaParts.push(hostingAddress);
+      if (isGuardianView()) {
+        const fullSeniorName = seniorDetail?.name
+          ? `${seniorDetail.name} 어르신`
+          : `어르신 #${hostingDetail.senior_id}`;
+        const seniorAvatarText = seniorDetail?.name ? seniorDetail.name.charAt(0) : '어';
+        const seniorMetaParts = [];
+
+        if (typeof seniorDetail?.age === 'number') {
+          seniorMetaParts.push(`${seniorDetail.age}세`);
+        }
+
+        if (hostingAddress) {
+          seniorMetaParts.push(hostingAddress);
+        }
+
+        seniorAvatarElement.textContent = seniorAvatarText;
+        seniorNameElement.textContent = fullSeniorName;
+        seniorMetaElement.textContent = seniorMetaParts.join(' · ') || '-';
+
+        if (seniorDetail?.ai_summary) {
+          summaryElement.textContent = seniorDetail.ai_summary;
+          summaryElement.classList.remove('hidden');
+        } else {
+          summaryElement.textContent = '';
+          summaryElement.classList.add('hidden');
+        }
+
+        return;
       }
+
+      seniorAvatarElement.textContent = (hostingDetail?.sigungu ?? '밥').charAt(0);
+      seniorNameElement.textContent = hostingDetail?.sigungu
+        ? `${hostingDetail.sigungu} 호스팅`
+        : '호스팅 상세';
+      seniorMetaElement.textContent = [
+        hostingAddress,
+        hostingDetail?.bname,
+      ].filter(Boolean).join(' · ') || '-';
+
+      summaryElement.textContent = '식사 동행을 신청하기 전에 일정과 주소 정보를 확인해보세요.';
+      summaryElement.classList.remove('hidden');
+    }
+
+    function renderActionButtons() {
+      const cancelButtonElement = document.querySelector('#cancel-hosting-button');
+      const applyButtonElement = document.querySelector('#apply-hosting-button');
+
+      cancelButtonElement.classList.add('hidden');
+      applyButtonElement.classList.add('hidden');
+
+      if (isGuardianView()) {
+        cancelButtonElement.classList.remove('hidden');
+        cancelButtonElement.disabled = !['OPEN', 'FULL', 'FAILED'].includes(hostingDetail.hosting_status);
+
+        if (hostingDetail.hosting_status === 'FAILED') {
+          cancelButtonElement.textContent = '이미 취소된 호스팅';
+        } else {
+          cancelButtonElement.textContent = '호스팅 취소 처리';
+        }
+
+        return;
+      }
+
+      applyButtonElement.classList.remove('hidden');
+      applyButtonElement.disabled = !isApplyEnabled(hostingDetail.hosting_status);
+      applyButtonElement.textContent = isApplyEnabled(hostingDetail.hosting_status)
+        ? '이 호스팅 신청하기'
+        : '현재 신청할 수 없어요';
+    }
+
+    function renderDetail() {
+      const statusMeta = getStatusMeta(hostingDetail.hosting_status);
 
       document.querySelector('#detail-content').classList.remove('hidden');
       document.querySelector('#empty-panel').classList.add('hidden');
-      document.querySelector('#senior-avatar').textContent = seniorAvatarText;
-      document.querySelector('#senior-name').textContent = fullSeniorName;
-      document.querySelector('#senior-meta').textContent = seniorMetaParts.join(' · ') || '-';
 
-      const summaryElement = document.querySelector('#senior-summary');
-      if (seniorDetail?.ai_summary) {
-        summaryElement.textContent = seniorDetail.ai_summary;
-        summaryElement.classList.remove('hidden');
-      } else {
-        summaryElement.textContent = '';
-        summaryElement.classList.add('hidden');
-      }
+      renderProfileHeader();
 
       document.querySelector('#hosting-status').innerHTML = `<span class="badge ${statusMeta.className}">${statusMeta.label}</span>`;
       setText('#hosting-menu', hostingDetail.menu);
@@ -362,21 +598,27 @@
       setText('#hosting-detail-address', hostingDetail.detail_address);
       setText('#hosting-sigungu', hostingDetail.sigungu);
       setText('#hosting-region', [hostingDetail.sido, hostingDetail.bname].filter(Boolean).join(' / ') || '-');
-      setText('#hosting-building', [hostingDetail.building_name, hostingDetail.is_apartment === null || hostingDetail.is_apartment === undefined ? '' : (hostingDetail.is_apartment ? '아파트' : '비아파트')].filter(Boolean).join(' / ') || '-');
-      setText('#hosting-coordinates', hostingDetail.lat && hostingDetail.lng ? `${hostingDetail.lat}, ${hostingDetail.lng}` : '-');
+      setText(
+        '#hosting-building',
+        [
+          hostingDetail.building_name,
+          hostingDetail.is_apartment === null || hostingDetail.is_apartment === undefined
+            ? ''
+            : (hostingDetail.is_apartment ? '아파트' : '비아파트'),
+        ].filter(Boolean).join(' / ') || '-'
+      );
+      setText(
+        '#hosting-coordinates',
+        hostingDetail.lat && hostingDetail.lng
+          ? `${hostingDetail.lat}, ${hostingDetail.lng}`
+          : '-'
+      );
 
-      const cancelButtonElement = document.querySelector('#cancel-hosting-button');
-      cancelButtonElement.disabled = !['신청가능', '모집완료', '무산'].includes(hostingDetail.hosting_status);
-      if (hostingDetail.hosting_status === '무산') {
-        cancelButtonElement.textContent = '이미 무산된 호스팅';
-      } else {
-        cancelButtonElement.textContent = '호스팅 무산 처리';
-      }
+      renderActionButtons();
     }
 
     async function loadDetail() {
-      const params = new URLSearchParams(window.location.search);
-      const hostingId = params.get('id');
+      const hostingId = getHostingId();
 
       if (!hostingId) {
         document.querySelector('#empty-panel').classList.remove('hidden');
@@ -385,8 +627,15 @@
 
       try {
         hideMessage();
-        hostingDetail = await api(`/hostings/${hostingId}`);
-        seniorDetail = await api(`/seniors/${hostingDetail.senior_id}`);
+
+        hostingDetail = await api(getDetailApiPath(hostingId));
+
+        if (isGuardianView()) {
+          seniorDetail = await api(`/seniors/${hostingDetail.senior_id}`);
+        } else {
+          seniorDetail = null;
+        }
+
         renderDetail();
       } catch (error) {
         console.error(error);
@@ -396,12 +645,12 @@
       }
     }
 
-    document.querySelector('#cancel-hosting-button')?.addEventListener('click', async () => {
-      if (!hostingDetail || hostingDetail.hosting_status === '무산') {
+    async function cancelHosting() {
+      if (!hostingDetail || hostingDetail.hosting_status === 'FAILED') {
         return;
       }
 
-      const isConfirmed = window.confirm('이 호스팅을 무산 처리할까요?');
+      const isConfirmed = window.confirm('이 호스팅을 취소 처리할까요?');
       if (!isConfirmed) {
         return;
       }
@@ -412,13 +661,55 @@
           method: 'PATCH',
         });
         await loadDetail();
-        showMessage('호스팅이 무산 처리되었어요.', 'success');
+        showMessage('호스팅이 취소 처리되었어요.', 'success');
       } catch (error) {
         console.error(error);
-        showMessage(error?.message || '호스팅 무산 처리에 실패했어요.', 'error');
+        showMessage(error?.message || '호스팅 취소 처리에 실패했어요.', 'error');
       }
+    }
+
+    async function applyToHosting() {
+      if (!hostingDetail || !isApplyEnabled(hostingDetail.hosting_status)) {
+        return;
+      }
+
+      const isConfirmed = window.confirm('이 호스팅에 신청할까요?');
+      if (!isConfirmed) {
+        return;
+      }
+
+      try {
+        hideMessage();
+        await api('/matches/', {
+          method: 'POST',
+          body: JSON.stringify({
+            hosting_id: hostingDetail.hosting_id,
+          }),
+        });
+        showMessage('호스팅 신청이 완료되었어요.', 'success');
+        await loadDetail();
+      } catch (error) {
+        console.error(error);
+        showMessage(error?.message || '호스팅 신청에 실패했어요.', 'error');
+      }
+    }
+
+    document.querySelector('#cancel-hosting-button')?.addEventListener('click', async () => {
+      await cancelHosting();
     });
 
+    document.querySelector('#apply-hosting-button')?.addEventListener('click', async () => {
+      await applyToHosting();
+    });
+
+    viewMode = getViewMode();
+
+    if (!validateHostingDetailAccess(viewMode, currentUser.user_role)) {
+      redirectByRole(currentUser.user_role);
+      throw new Error('접근 권한이 없습니다.');
+    }
+
+    configurePageByViewMode();
     loadDetail();
   </script>
 </body>

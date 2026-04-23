@@ -39,10 +39,10 @@ async def init_db() -> None:
 
     if not db_exists:
         import asyncio
+        import subprocess
+        import sys
 
         import app.domain  # noqa: F401 — 모든 모델을 Base.metadata에 등록
-        from alembic import command
-        from alembic.config import Config
 
         # 테이블 생성
         async with engine.begin() as conn:
@@ -51,15 +51,24 @@ async def init_db() -> None:
         # create_all은 SQL만 실행하고 alembic_version을 남기지 않음.
         # 다음 기동 때 upgrade head가 001을 재실행하려다 충돌하는 걸 막기 위해
         # "지금 DB가 최신 revision 상태"임을 alembic에 기록만 해둠.
-        alembic_cfg = Config("alembic.ini")
-        await asyncio.to_thread(command.stamp, alembic_cfg, "head")
+        # asyncio.to_thread + subprocess.run 조합:
+        # - env.py의 asyncio.run() 중첩 데드락(Windows ProactorEventLoop) 우회
+        # - SelectorEventLoop(--reload 모드)에서 create_subprocess_exec 미지원 우회
+        await asyncio.to_thread(
+            subprocess.run,
+            [sys.executable, "-m", "alembic", "stamp", "head"],
+            check=True,
+        )
     elif settings.DEBUG:
         import asyncio
+        import subprocess
+        import sys
 
-        from alembic import command
-        from alembic.config import Config
-        alembic_cfg = Config("alembic.ini")
-        await asyncio.to_thread(command.upgrade, alembic_cfg, "head")
+        await asyncio.to_thread(
+            subprocess.run,
+            [sys.executable, "-m", "alembic", "upgrade", "head"],
+            check=True,
+        )
 
 
 async def close_db() -> None:

@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>호스팅 탐색 - 밥동무</title>
+  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/common.css">
+  <style>
+    .hidden { display: none !important; }
+
+    .match-page-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .header-badges {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: #F8F5F1;
+      color: #6B5E53;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .filter-bar {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .result-summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 18px;
+      color: #6B5E53;
+      font-size: 14px;
+    }
+
+    .hosting-card {
+      height: 100%;
+    }
+
+    .hosting-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .hosting-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: 700;
+      background: linear-gradient(135deg, #D4763C, #5B8C5A);
+      flex-shrink: 0;
+    }
+
+    .hosting-name {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .hosting-address,
+    .hosting-subtext,
+    .hosting-meta-row,
+    .hosting-helper,
+    .hosting-desc {
+      color: #8C7E73;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .hosting-menu {
+      font-size: 20px;
+      font-weight: 700;
+      color: #D4763C;
+      margin-bottom: 14px;
+    }
+
+    .hosting-desc {
+      margin-bottom: 14px;
+      min-height: 42px;
+    }
+
+    .hosting-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    .hosting-helper {
+      margin-bottom: 16px;
+    }
+
+    .hosting-card-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .hosting-card-actions .btn {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .badge-open { background: #EDF5ED; color: #3A6B39; }
+    .badge-full { background: #FDF5E6; color: #8B6914; }
+    .badge-failed { background: #FDECEC; color: #B44646; }
+    .badge-progress { background: #EEF3FF; color: #4269B4; }
+    .badge-closed { background: #F0EBE6; color: #6B5E53; }
+
+    .message-box {
+      display: none;
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 16px;
+      border: 1px solid #E8E0D8;
+      background: #fff;
+    }
+
+    .message-box.show { display: block; }
+    .message-box.success { background: #F6FBF6; color: #2E5D2E; border-color: #D8EAD8; }
+    .message-box.error { background: #FFF6F6; color: #9A3838; border-color: #F1D0D0; }
+    .message-box.info { background: #F8F5F1; color: #6B5E53; }
+
+    .empty-state {
+      padding: 56px 24px;
+      text-align: center;
+    }
+
+    .empty-state-icon {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 16px;
+      color: #D4763C;
+    }
+
+    .quick-panel {
+      background: #fff;
+      border: 1px solid #E8E0D8;
+      border-radius: 16px;
+      padding: 18px 20px;
+      margin-bottom: 24px;
+      color: #6B5E53;
+      box-shadow: 0 10px 30px rgba(44, 36, 32, 0.05);
+    }
+
+    .quick-panel h3 {
+      margin: 0 0 8px;
+      color: #2C2420;
+    }
+
+    .quick-panel p {
+      margin: 0;
+      line-height: 1.6;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.4);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      z-index: 30;
+    }
+
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      width: min(100%, 640px);
+      max-height: calc(100vh - 48px);
+      overflow-y: auto;
+      background: #fff;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 18px 50px rgba(44, 36, 32, 0.14);
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .modal-close {
+      border: 0;
+      background: transparent;
+      font-size: 22px;
+      cursor: pointer;
+      color: #8C7E73;
+    }
+
+    .detail-box {
+      background: #F8F5F1;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .detail-box p {
+      margin: 0;
+      line-height: 1.7;
+      color: #6B5E53;
+    }
+
+    .detail-grid {
+      display: grid;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .detail-row {
+      display: grid;
+      grid-template-columns: 100px 1fr;
+      gap: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #F2ECE6;
+    }
+
+    .detail-row:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .detail-label {
+      color: #8C7E73;
+      font-weight: 600;
+    }
+
+    .detail-value {
+      color: #2C2420;
+      line-height: 1.6;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .modal-actions .btn {
+      flex: 1;
+    }
+
+    @media (max-width: 768px) {
+      .filter-bar {
+        grid-template-columns: 1fr;
+      }
+
+      .detail-row {
+        grid-template-columns: 1fr;
+        gap: 6px;
+      }
+
+      .hosting-card-actions .btn,
+      .modal-actions .btn {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="/" class="nav-logo">
+        <svg class="nav-logo-icon" viewBox="0 0 32 32" fill="none">
+          <circle cx="16" cy="16" r="14" fill="#D4763C" opacity="0.12"/>
+          <path d="M8 18c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke="#D4763C" stroke-width="2" stroke-linecap="round"/>
+          <path d="M6 18h20v1c0 3.3-2.7 6-6 6h-8c-3.3 0-6-2.7-6-6v-1z" fill="#D4763C" opacity="0.2"/>
+          <ellipse cx="16" cy="18" rx="10" ry="2" fill="#D4763C" opacity="0.15"/>
+          <path d="M13 14c-.5-2 .5-4 3-4s3.5 2 3 4" stroke="#5B8C5A" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+        </svg>
+        밥동무
+      </a>
+      <ul class="nav-links">
+        <li><a href="/pages/hosting-match.html" class="active">호스팅 탐색</a></li>
+        <li><a href="/pages/my-matches.html">내 매칭</a></li>
+        <li><a href="/pages/mypage.html">마이페이지</a></li>
+      </ul>
+      <button class="nav-toggle" type="button" onclick="toggleNav()" aria-label="메뉴 열기">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <div class="nav-drawer" id="navDrawer" onclick="closeNav(event)">
+    <div class="nav-drawer-content">
+      <a href="/pages/hosting-match.html" class="active">호스팅 탐색</a>
+      <a href="/pages/my-matches.html">내 매칭</a>
+      <a href="/pages/mypage.html">마이페이지</a>
+    </div>
+  </div>
+
+  <main class="container">
+    <div class="page-header slide-up match-page-header">
+      <div>
+        <h1>호스팅 탐색</h1>
+        <p>지역과 시간, 메뉴를 살펴보고 나와 맞는 식사 동행 호스팅을 찾아보세요.</p>
+        <div class="header-badges">
+          <span class="header-badge">봉사자 전용 탐색 화면</span>
+          <span class="header-badge">신청가능 호스팅 우선</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="message-box" class="message-box" role="status" aria-live="polite"></div>
+
+    <section class="quick-panel slide-up stagger-1">
+      <h3>어떻게 고르면 좋을까요?</h3>
+      <p>가까운 지역, 부담 없는 시간대, 함께 먹고 싶은 메뉴를 기준으로 찾아보세요. 상세 보기에서 시간과 주소를 확인한 뒤 바로 신청할 수 있게 구성했어요.</p>
+    </section>
+
+    <div class="filter-bar slide-up stagger-2">
+      <select id="filter-sigungu" class="form-input">
+        <option value="">전체 시군구</option>
+      </select>
+
+      <select id="filter-status" class="form-input">
+        <option value="">전체 상태</option>
+        <option value="OPEN">신청가능</option>
+        <option value="FULL">모집완료</option>
+        <option value="FIXED">확정</option>
+        <option value="IN_PROGRESS">진행중</option>
+        <option value="CLOSED">완료</option>
+        <option value="FAILED">취소</option>
+      </select>
+
+      <select id="filter-sort" class="form-input">
+        <option value="soonest">가까운 일정순</option>
+        <option value="latest">최근 등록순</option>
+      </select>
+
+      <input id="filter-keyword" class="form-input" type="text" placeholder="메뉴 또는 지역 검색">
+    </div>
+
+    <div class="result-summary slide-up stagger-3">
+      <span id="result-count">0건</span>
+      <span>신청 전 상세 정보를 꼭 확인해주세요.</span>
+    </div>
+
+    <div id="hosting-list" class="grid grid-3"></div>
+
+    <div id="empty-state" class="empty-state hidden">
+      <svg class="empty-state-icon" viewBox="0 0 80 80" fill="none">
+        <circle cx="40" cy="40" r="36" fill="currentColor" opacity="0.06"/>
+        <path d="M24 44c0-8.8 7.2-16 16-16s16 7.2 16 16" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M20 44h40v2c0 6.6-5.4 12-12 12H32c-6.6 0-12-5.4-12-12v-2z" fill="currentColor" opacity="0.08"/>
+        <path d="M35 36c-.8-3 1-6 5-6s5.5 3 5 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.3"/>
+      </svg>
+      <p id="empty-title">지금 볼 수 있는 호스팅이 없어요</p>
+      <p id="empty-description" class="text-sm mt-sm">조금 뒤에 다시 확인하거나 필터를 바꿔보세요.</p>
+    </div>
+  </main>
+
+  <div class="modal-overlay" id="hosting-preview-modal" role="dialog" aria-modal="true" aria-labelledby="hosting-preview-title">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="hosting-preview-title">호스팅 상세 미리보기</h3>
+        <button class="modal-close" id="hosting-preview-close" type="button" aria-label="닫기">✕</button>
+      </div>
+
+      <div class="detail-box">
+        <p id="preview-summary">선택한 호스팅의 내용을 불러오고 있어요.</p>
+      </div>
+
+      <div class="detail-grid">
+        <div class="detail-row">
+          <span class="detail-label">메뉴</span>
+          <span id="preview-menu" class="detail-value">-</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">일시</span>
+          <span id="preview-datetime" class="detail-value">-</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">상태</span>
+          <span id="preview-status" class="detail-value">-</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">주소</span>
+          <span id="preview-address" class="detail-value">-</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">모집 인원</span>
+          <span id="preview-max-people" class="detail-value">-</span>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <a id="preview-detail-link" href="#" class="btn btn-secondary">상세 페이지로 보기</a>
+        <button id="preview-apply-button" type="button" class="btn btn-primary">이 호스팅 신청하기</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-bottom">
+        &copy; 2026 밥동무. 독거 어르신을 위한 식사 동반 플랫폼
+      </div>
+    </div>
+  </footer>
+
+  <script src="/js/api.js"></script>
+    <script type="module">
+    import { requireRoles } from '/js/authGuard.js';
+
+    const currentUser = requireRoles(['volunteer', 'admin']);
+    if (!currentUser) {
+        throw new Error('접근 권한이 없습니다.');
+    }
+    
+    const KST_TIME_ZONE = 'Asia/Seoul';
+
+    // 봉사자용 공개 API가 생기면 이 경로만 맞추면 됩니다.
+    const VOLUNTEER_HOSTINGS_API = '/hostings/public';
+    const VOLUNTEER_MATCHES_API = '/matches/';
+
+    let hostingItems = [];
+    let selectedHosting = null;
+
+    function toggleNav() {
+      const toggleElement = document.querySelector('.nav-toggle');
+      const drawerElement = document.querySelector('#navDrawer');
+      toggleElement.classList.toggle('active');
+      drawerElement.classList.toggle('open');
+      document.body.style.overflow = drawerElement.classList.contains('open') ? 'hidden' : '';
+    }
+
+    function closeNav(event) {
+      if (event.target === event.currentTarget) {
+        toggleNav();
+      }
+    }
+
+    function showMessage(message, type = 'info') {
+      const messageBoxElement = document.querySelector('#message-box');
+      messageBoxElement.textContent = message;
+      messageBoxElement.className = `message-box show ${type}`;
+    }
+
+    function hideMessage() {
+      const messageBoxElement = document.querySelector('#message-box');
+      messageBoxElement.textContent = '';
+      messageBoxElement.className = 'message-box';
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    }
+
+    function getStatusMeta(status) {
+      const metaMap = {
+        'OPEN': { label: '신청가능', className: 'badge-open' },
+        'FULL': { label: '모집완료', className: 'badge-full' },
+        'FIXED': { label: '확정', className: 'badge-full' },
+        'FAILED': { label: '취소', className: 'badge-failed' },
+        'IN_PROGRESS': { label: '진행중', className: 'badge-progress' },
+        'CLOSED': { label: '완료', className: 'badge-closed' },
+      };
+
+      return metaMap[status] ?? { label: status ?? '-', className: 'badge-closed' };
+    }
+
+    function formatDateTimeRange(hostingAt, hostingEnd) {
+      const startDate = new Date(hostingAt);
+      const endDate = new Date(hostingEnd);
+
+      const dateText = new Intl.DateTimeFormat('ko-KR', {
+        timeZone: KST_TIME_ZONE,
+        month: 'long',
+        day: 'numeric',
+        weekday: 'short',
+      }).format(startDate);
+
+      const startTimeText = new Intl.DateTimeFormat('ko-KR', {
+        timeZone: KST_TIME_ZONE,
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      }).format(startDate);
+
+      const endTimeText = new Intl.DateTimeFormat('ko-KR', {
+        timeZone: KST_TIME_ZONE,
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      }).format(endDate);
+
+      return `${dateText} · ${startTimeText} ~ ${endTimeText}`;
+    }
+
+    function buildAddress(hosting) {
+      return [hosting?.road_address, hosting?.detail_address]
+        .filter(Boolean)
+        .join(' ')
+        .trim();
+    }
+
+    function buildCardDescription(hosting) {
+      const sigungu = hosting?.sigungu ?? '';
+      const bname = hosting?.bname ?? '';
+      const menu = hosting?.menu ?? '';
+
+      const parts = [];
+      if (sigungu) {
+        parts.push(sigungu);
+      }
+      if (bname) {
+        parts.push(bname);
+      }
+
+      const regionText = parts.join(' · ');
+      if (regionText && menu) {
+        return `${regionText}에서 함께 ${menu}를 드실 수 있는 호스팅이에요.`;
+      }
+
+      return '상세 정보를 확인하고 일정과 주소를 살펴보세요.';
+    }
+
+    function isApplyEnabled(status) {
+      return status === 'OPEN';
+    }
+
+    function buildHostingCard(hosting) {
+      const statusMeta = getStatusMeta(hosting.hosting_status);
+      const avatarText = (hosting.sigungu ?? '밥').charAt(0);
+      const fullAddress = buildAddress(hosting);
+
+      const cardElement = document.createElement('article');
+      cardElement.className = 'card hosting-card slide-up';
+      cardElement.dataset.sigungu = hosting.sigungu ?? '';
+      cardElement.dataset.status = hosting.hosting_status ?? '';
+      cardElement.dataset.keyword = [
+        hosting.menu,
+        hosting.sigungu,
+        hosting.bname,
+        hosting.road_address,
+        hosting.detail_address,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+
+      cardElement.innerHTML = `
+        <div class="card-body">
+          <div class="hosting-header">
+            <div class="hosting-avatar">${escapeHtml(avatarText)}</div>
+            <div>
+              <div class="hosting-name">${escapeHtml(hosting.sigungu || '호스팅')}</div>
+              <div class="hosting-address">${escapeHtml(fullAddress || '-')}</div>
+              <div class="hosting-subtext">${escapeHtml(hosting.bname || '지역 기반 호스팅')}</div>
+            </div>
+          </div>
+
+          <div class="hosting-menu">${escapeHtml(hosting.menu || '-')}</div>
+          <div class="hosting-desc">${escapeHtml(buildCardDescription(hosting))}</div>
+
+          <div class="hosting-meta">
+            <span class="hosting-meta-row">${escapeHtml(formatDateTimeRange(hosting.hosting_at, hosting.hosting_end))}</span>
+            <span class="badge ${statusMeta.className}">${escapeHtml(statusMeta.label)}</span>
+          </div>
+
+          <div class="hosting-helper">${escapeHtml(`${hosting.max_people}명 모집 · ${hosting.sigungu || '지역'} 호스팅`)}</div>
+
+          <div class="hosting-card-actions">
+            <a class="btn btn-secondary" href="/pages/hosting-detail.html?id=${hosting.hosting_id}&view=volunteer">
+              상세 보기
+            </a>
+            <button
+              type="button"
+              class="btn btn-primary"
+              data-action="open-preview"
+              data-hosting-id="${hosting.hosting_id}"
+              ${isApplyEnabled(hosting.hosting_status) ? '' : 'disabled'}
+            >
+              ${isApplyEnabled(hosting.hosting_status) ? '신청하기' : '신청 불가'}
+            </button>
+          </div>
+        </div>
+      `;
+
+      return cardElement;
+    }
+
+    function renderSigunguOptions() {
+      const sigunguSelectElement = document.querySelector('#filter-sigungu');
+      const previousValue = sigunguSelectElement.value;
+
+      const sigunguSet = new Set(
+        hostingItems
+          .map((hosting) => hosting.sigungu ?? '')
+          .filter(Boolean)
+      );
+
+      sigunguSelectElement.innerHTML = '<option value="">전체 시군구</option>';
+
+      [...sigunguSet]
+        .sort((left, right) => left.localeCompare(right, 'ko'))
+        .forEach((sigungu) => {
+          sigunguSelectElement.appendChild(new Option(sigungu, sigungu));
+        });
+
+      sigunguSelectElement.value = [...sigunguSet].includes(previousValue) ? previousValue : '';
+    }
+
+    function sortHostings(items) {
+      const selectedSort = document.querySelector('#filter-sort').value;
+
+      const clonedItems = [...items];
+
+      if (selectedSort === 'latest') {
+        clonedItems.sort((left, right) => new Date(right.created_at) - new Date(left.created_at));
+        return clonedItems;
+      }
+
+      clonedItems.sort((left, right) => new Date(left.hosting_at) - new Date(right.hosting_at));
+      return clonedItems;
+    }
+
+    function renderHostings() {
+      const hostingListElement = document.querySelector('#hosting-list');
+      const emptyStateElement = document.querySelector('#empty-state');
+      const emptyTitleElement = document.querySelector('#empty-title');
+      const emptyDescriptionElement = document.querySelector('#empty-description');
+      const resultCountElement = document.querySelector('#result-count');
+
+      const selectedSigungu = document.querySelector('#filter-sigungu').value;
+      const selectedStatus = document.querySelector('#filter-status').value;
+      const keyword = document.querySelector('#filter-keyword').value.trim().toLowerCase();
+
+      hostingListElement.innerHTML = '';
+
+      const filteredItems = hostingItems.filter((hosting) => {
+        const matchesSigungu = !selectedSigungu || hosting.sigungu === selectedSigungu;
+        const matchesStatus = !selectedStatus || hosting.hosting_status === selectedStatus;
+
+        const keywordTarget = [
+          hosting.menu,
+          hosting.sigungu,
+          hosting.bname,
+          hosting.road_address,
+          hosting.detail_address,
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+
+        const matchesKeyword = !keyword || keywordTarget.includes(keyword);
+
+        return matchesSigungu && matchesStatus && matchesKeyword;
+      });
+
+      const sortedItems = sortHostings(filteredItems);
+      resultCountElement.textContent = `${sortedItems.length}건`;
+
+      if (hostingItems.length === 0) {
+        emptyStateElement.classList.remove('hidden');
+        emptyTitleElement.textContent = '지금 볼 수 있는 호스팅이 없어요';
+        emptyDescriptionElement.textContent = '조금 뒤에 다시 확인해주세요.';
+        return;
+      }
+
+      if (sortedItems.length === 0) {
+        emptyStateElement.classList.remove('hidden');
+        emptyTitleElement.textContent = '조건에 맞는 호스팅이 없어요';
+        emptyDescriptionElement.textContent = '지역, 상태, 검색어를 바꿔보세요.';
+        return;
+      }
+
+      emptyStateElement.classList.add('hidden');
+
+      sortedItems.forEach((hosting) => {
+        hostingListElement.appendChild(buildHostingCard(hosting));
+      });
+    }
+
+    function openPreviewModal() {
+      document.querySelector('#hosting-preview-modal').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closePreviewModal() {
+      document.querySelector('#hosting-preview-modal').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    function fillPreviewModal(hosting) {
+      selectedHosting = hosting;
+
+      const statusMeta = getStatusMeta(hosting.hosting_status);
+      const fullAddress = buildAddress(hosting);
+
+      document.querySelector('#preview-summary').textContent =
+        `${hosting.sigungu || '해당 지역'}에서 진행되는 ${hosting.menu || '식사'} 호스팅이에요. 일정과 주소를 확인한 뒤 신청해보세요.`;
+
+      document.querySelector('#preview-menu').textContent = hosting.menu || '-';
+      document.querySelector('#preview-datetime').textContent = formatDateTimeRange(hosting.hosting_at, hosting.hosting_end);
+      document.querySelector('#preview-status').innerHTML = `<span class="badge ${statusMeta.className}">${escapeHtml(statusMeta.label)}</span>`;
+      document.querySelector('#preview-address').textContent = fullAddress || '-';
+      document.querySelector('#preview-max-people').textContent = `${hosting.max_people}명`;
+
+      document.querySelector('#preview-detail-link').href = `/pages/hosting-detail.html?id=${hosting.hosting_id}`;
+
+      const applyButtonElement = document.querySelector('#preview-apply-button');
+      applyButtonElement.disabled = !isApplyEnabled(hosting.hosting_status);
+      applyButtonElement.textContent = isApplyEnabled(hosting.hosting_status)
+        ? '이 호스팅 신청하기'
+        : '현재 신청할 수 없어요';
+    }
+
+    async function loadHostings() {
+      hostingItems = await api(VOLUNTEER_HOSTINGS_API);
+      renderSigunguOptions();
+      renderHostings();
+    }
+
+    async function applyToHosting(hostingId) {
+      await api(VOLUNTEER_MATCHES_API, {
+        method: 'POST',
+        body: JSON.stringify({
+          hosting_id: hostingId,
+        }),
+      });
+    }
+
+    async function initializePage() {
+      try {
+        hideMessage();
+        await loadHostings();
+      } catch (error) {
+        console.error(error);
+
+        // 공개용 봉사자 API가 아직 없는 경우를 위한 안내
+        showMessage(
+          error?.message || '봉사자용 호스팅 목록을 불러오지 못했어요. 공개 호스팅 API가 연결되었는지 확인해주세요.',
+          'error'
+        );
+      }
+    }
+
+    document.querySelector('#filter-sigungu')?.addEventListener('change', renderHostings);
+    document.querySelector('#filter-status')?.addEventListener('change', renderHostings);
+    document.querySelector('#filter-sort')?.addEventListener('change', renderHostings);
+    document.querySelector('#filter-keyword')?.addEventListener('input', renderHostings);
+
+    document.querySelector('#hosting-list')?.addEventListener('click', (event) => {
+      const actionButton = event.target.closest('[data-action="open-preview"]');
+      if (!actionButton || actionButton.disabled) {
+        return;
+      }
+
+      const hostingId = Number(actionButton.dataset.hostingId);
+      const hosting = hostingItems.find((item) => item.hosting_id === hostingId);
+
+      if (!hosting) {
+        return;
+      }
+
+      fillPreviewModal(hosting);
+      openPreviewModal();
+    });
+
+    document.querySelector('#hosting-preview-close')?.addEventListener('click', closePreviewModal);
+
+    document.querySelector('#hosting-preview-modal')?.addEventListener('click', (event) => {
+      if (event.target === event.currentTarget) {
+        closePreviewModal();
+      }
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && document.querySelector('#hosting-preview-modal').classList.contains('open')) {
+        closePreviewModal();
+      }
+    });
+
+    document.querySelector('#preview-apply-button')?.addEventListener('click', async () => {
+      if (!selectedHosting || !isApplyEnabled(selectedHosting.hosting_status)) {
+        return;
+      }
+
+      const isConfirmed = window.confirm('이 호스팅에 신청할까요?');
+      if (!isConfirmed) {
+        return;
+      }
+
+      try {
+        hideMessage();
+        await applyToHosting(selectedHosting.hosting_id);
+        closePreviewModal();
+        showMessage('호스팅 신청이 완료되었어요.', 'success');
+        await loadHostings();
+      } catch (error) {
+        console.error(error);
+        showMessage(error?.message || '호스팅 신청에 실패했어요.', 'error');
+      }
+    });
+
+    initializePage();
+  </script>
+</body>
+</html>

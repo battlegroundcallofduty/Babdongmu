@@ -1,15 +1,20 @@
 """호스팅 비즈니스 로직."""
 
+import asyncio
+import logging
 from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domain.hosting.models import Hosting, HostingStatus
+from app.domain.hosting.models import AlarmType, Hosting, HostingStatus
 from app.domain.hosting.schemas import HostingCreateRequest, HostingResponse
 from app.domain.match.models import MatchingInfo, MatchStatus
 from app.domain.senior.models import Senior
+from app.services.sms import send_sms
+
+logger = logging.getLogger(__name__)
 
 
 async def get_guardian_senior_by_id(
@@ -95,11 +100,15 @@ def process_hosting_status_by_time(
     if now >= deadline_at and current_status == HostingStatus.OPEN:
         return HostingStatus.FAILED
 
-    # 2. 시작 시각이 되었고 모집완료 상태면 진행중으로 변경
-    if now >= hosting_at and current_status == HostingStatus.FULL:
+    # 2. 시작 12시간 전이고 모집완료 상태면 확정
+    if now >= deadline_at and current_status == HostingStatus.FULL:
+        return HostingStatus.FIXED
+
+    # 3. 시작 시각이 되었고 확정 상태면 진행중으로 변경
+    if now >= hosting_at and current_status == HostingStatus.FIXED:
         return HostingStatus.IN_PROGRESS
 
-    # 3. 종료 시점 처리
+    # 4. 종료 시점 처리
     if now >= hosting_end:
         if current_status == HostingStatus.IN_PROGRESS:
             return HostingStatus.CLOSED
@@ -107,10 +116,25 @@ def process_hosting_status_by_time(
         if current_status in {
             HostingStatus.OPEN,
             HostingStatus.FULL,
+            HostingStatus.FIXED,
         }:
             return HostingStatus.FAILED
 
     return None
+
+
+async def get_approved_volunteer_ids(
+    session: AsyncSession,
+    hosting_id: int,
+) -> list[int]:
+    """호스팅에 APPROVED 상태인 봉사자 ID 목록을 반환합니다."""
+    result = await session.execute(
+        select(MatchingInfo.vt_id).where(
+            MatchingInfo.hosting_id == hosting_id,
+            MatchingInfo.match_status == MatchStatus.APPROVED,
+        )
+    )
+    return list(result.scalars().all())
 
 
 async def mark_matches_not_visited(
@@ -149,6 +173,7 @@ async def run_hosting_status_scheduler(
             [
                 HostingStatus.OPEN,
                 HostingStatus.FULL,
+                HostingStatus.FIXED,
                 HostingStatus.IN_PROGRESS,
             ]
         )
@@ -157,25 +182,71 @@ async def run_hosting_status_scheduler(
     result = await session.execute(stmt)
     hostings = result.scalars().all()
 
-    changed_count = 0
+    changed_count = 0      # 호스팅 상태 변경 건수 (반환값 + 로그용)
+    match_changed_count = 0  # 매칭 NOT_VISITED 처리 건수 (커밋 트리거용)
+    # SMS 발송 대상 수집 (commit 전 APPROVED 상태일 때 조회)
+    # hosting_id → (alarm_type, guardian_id, [vt_ids])
+    notification_map: dict[int, tuple[AlarmType, int, list[int]]] = {}
 
     for hosting in hostings:
         new_status = process_hosting_status_by_time(hosting=hosting)
-
         if new_status is None:
             continue
 
         if hosting.hosting_status != new_status:
+            prev_status = hosting.hosting_status
             hosting.hosting_status = new_status
             changed_count += 1
+            logger.info(
+                "호스팅 ID=%d 상태 전환: %s → %s",
+                hosting.hosting_id, prev_status, new_status,
+            )
+
+        if new_status in {HostingStatus.FAILED, HostingStatus.FIXED}:
+            vt_ids = await get_approved_volunteer_ids(session, hosting.hosting_id)
+            senior = await session.get(Senior, hosting.senior_id)
+            alarm_type = AlarmType.DELETE if new_status == HostingStatus.FAILED else AlarmType.MATCH
+            notification_map[hosting.hosting_id] = (alarm_type, senior.guardian_id, vt_ids)
 
         if new_status in {HostingStatus.FAILED, HostingStatus.CLOSED}:
-            changed_count += await mark_matches_not_visited(
+            match_changed_count += await mark_matches_not_visited(
                 session=session,
                 hosting_id=hosting.hosting_id,
             )
 
     if changed_count > 0:
+        await session.commit()
+        logger.info("스케줄러 커밋 완료: 호스팅 %d건 상태 변경", changed_count)
+    sms_tasks = []
+
+    # 보호자 + 봉사자 전원에게 알림 (FAILED: 취소, FIXED: 매칭 확정)
+    for hid, (alarm_type, guardian_id, vt_ids) in notification_map.items():
+        sms_tasks.append(
+            send_sms(
+                db=session,
+                hosting_id=hid,
+                receiver_id=guardian_id,
+                alarm_type=alarm_type,
+                use_long_message=True,
+            )
+        )
+        for vt_id in vt_ids:
+            sms_tasks.append(
+                send_sms(
+                    db=session,
+                    hosting_id=hid,
+                    receiver_id=vt_id,
+                    alarm_type=alarm_type,
+                    use_long_message=True,
+                )
+            )
+
+    results = await asyncio.gather(*sms_tasks, return_exceptions=True)
+    for result in results:
+        if isinstance(result, Exception):
+            logger.warning("SMS 발송 실패: %s", result)
+
+    if sms_tasks:
         await session.commit()
 
     return changed_count
@@ -283,14 +354,82 @@ async def cancel_hosting(
         hosting_id=hosting_id,
     )
 
-    if hosting.hosting_status in {HostingStatus.IN_PROGRESS, HostingStatus.CLOSED}:
+    if hosting.hosting_status in {
+        HostingStatus.FIXED,
+        HostingStatus.IN_PROGRESS,
+        HostingStatus.CLOSED,
+    }:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="이미 진행 중이거나 완료된 호스팅은 무산 처리할 수 없습니다.",
+            detail="호스팅 확정 / 진행 중 / 완료 시에는 취소할 수 없습니다.",
         )
 
     hosting.hosting_status = HostingStatus.FAILED
+
+    # commit 전 APPROVED 봉사자 목록 수집
+    vt_ids = await get_approved_volunteer_ids(session, hosting_id)
+
     await session.commit()
     await session.refresh(hosting)
+
+    # SMS 발송 — 신청한 봉사자 전원에게 호스팅 취소 알림
+    sms_tasks = []
+    for vt_id in vt_ids:
+        sms_tasks.append(
+            send_sms(
+                db=session,
+                hosting_id=hosting_id,
+                receiver_id=vt_id,
+                alarm_type=AlarmType.DELETE,
+                use_long_message=True,
+            )
+        )
+    results = await asyncio.gather(*sms_tasks, return_exceptions=True)
+    for result in results:
+        if isinstance(result, Exception):
+            logger.warning("SMS 발송 실패: %s", result)
+
+    if sms_tasks:
+        await session.commit()
+
+    return HostingResponse.model_validate(hosting)
+
+
+async def list_hostings_for_volunteer(
+    session: AsyncSession,
+) -> list[HostingResponse]:
+    """봉사자가 탐색 가능한 공개 호스팅 목록을 조회합니다."""
+
+    stmt = (
+        select(Hosting)
+        .where(Hosting.hosting_status == HostingStatus.OPEN)
+        .order_by(Hosting.hosting_at.asc(), Hosting.created_at.desc())
+    )
+
+    result = await session.execute(stmt)
+    hostings = result.scalars().all()
+
+    return [HostingResponse.model_validate(hosting) for hosting in hostings]
+
+
+async def get_public_hosting_detail(
+    session: AsyncSession,
+    hosting_id: int,
+) -> HostingResponse:
+    """봉사자가 조회 가능한 공개 호스팅 상세 정보를 반환합니다."""
+
+    stmt = select(Hosting).where(
+        Hosting.hosting_id == hosting_id,
+        Hosting.hosting_status == HostingStatus.OPEN,
+    )
+
+    result = await session.execute(stmt)
+    hosting = result.scalar_one_or_none()
+
+    if hosting is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="조회 가능한 호스팅 정보를 찾을 수 없습니다.",
+        )
 
     return HostingResponse.model_validate(hosting)

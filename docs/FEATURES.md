@@ -33,6 +33,7 @@
 **비즈니스 로직**
 - 서류 업로드 후 관리자가 승인하면 `users.cert_flag = approved`로 변경
 - 반려 시 `cert_flag = rejected`로 변경, 반려 사유는 `users.cert_reject_reason`에 저장. 기존 서류 삭제 후 재업로드 필요
+- 서류 재업로드 시 `cert_flag` 자동으로 `pending`으로 리셋 → 관리자에게 재검토 요청
 - `cert_flag = approved` 상태인 봉사자만 호스팅 신청 가능
 - 업로드 중단 등으로 DB 연결 없이 R2에만 남은 파일(orphan)은 스케줄러가 주기적으로 정리 예정 (미구현)
 
@@ -85,17 +86,20 @@
 | 상태 | 설명 |
 |------|------|
 | `OPEN : 신청가능` | 모집 중 |
-| `FULL : 모집완료` | 정원 마감 and Check in 전 상태|
-| `FAILED: 보호자 취소 또는 호스팅 시작 -12시간 시점까지 모집 미달로 무산` | 호스팅 무산 |
-| `IN_PROGRESS: 호스팅 진행 중` | check in 상태|
-| `CLOSED : 정상완료` | IN_PROGRESS -> CLOSED 그 외의 CASE	-> FAILED
+| `FULL : 모집완료` | 정원 마감 and Check in 전 상태 |
+| `FIXED : 확정` | 호스팅 시작 -12시간 시점에 FULL이면 확정. 보호자/봉사자 전원에게 매칭 확정 SMS 발송 |
+| `FAILED: 보호자 취소 또는 호스팅 시작 -12시간 시점까지 모집 미달로 취소` | 호스팅 취소 |
+| `IN_PROGRESS: 호스팅 진행 중` | check in 상태 |
+| `CLOSED : 정상완료` | IN_PROGRESS -> CLOSED 그 외의 CASE -> FAILED
 
 **스케줄러 작업**
-- FAILED : 호스팅 시작 시간 -12시간 시점에 체크하여 OPEN이면 -> FAILED , 해당하는 호스팅에 매칭 테이블이 존재한다면(신청한 사람이 있다면) APPROVED -> NOT_VISITED 교체 
+- FIXED : 호스팅 시작 시간 -12시간 시점에 체크하여 FULL이면 -> FIXED, 보호자 및 승인된 봉사자 전원에게 매칭 확정 SMS 발송
+
+- FAILED : 호스팅 시작 시간 -12시간 시점에 체크하여 OPEN이면 -> FAILED, 보호자 및 해당 호스팅에 신청한 봉사자 전원에게 호스팅 취소 SMS 발송. 매칭 테이블이 존재한다면 APPROVED -> NOT_VISITED 교체
 
 - CLOSED : 호스팅 종료 시간 시점에 체크하여  
 				IN_PROGRESS -> CLOSED 
-				그 외의 CASE	-> FAILED
+				그 외의 CASE -> FAILED
 				해당하는 호스팅에 매칭 테이블이 존재한다면(신청한 사람이 있다면) 
 				checkin이 없으면 -> NOT_VISITED 교체
 				checkin만 있는 경우 -> NOT_VISITED 교체
@@ -142,7 +146,7 @@
 - `actual_volunteer_time`(최종 봉사시간)은 관리자가 어드민 페이지에서 별도 부여
 
 **비즈니스 로직**
-- 신청 시 → 보호자에게 SMS 발송 (`alarm_type: match`)
+- 신청 시 → SMS 발송 없음
 - 체크인 시 → 보호자에게 SMS 발송 (`alarm_type: checkin`). 첫 번째 체크인이면 `hosting_status` → `진행중`으로 변경
 - 체크아웃 시 → 보호자에게 SMS 발송 (`alarm_type: checkout`)
 - 취소 시 → `hosting_status`가 `모집완료`였다면 `신청가능`으로 되돌림. 호스팅 12시간 전부터는 취소 불가
@@ -174,10 +178,11 @@
 
 | 트리거 | 발송 시점 | 수신자 | alarm_type |
 |--------|-----------|--------|------------|
-| 매칭 신청 | 봉사자가 호스팅 신청 시 | 보호자 | `match` |
+| 매칭 확정 (스케줄러) | 호스팅 시작 -12시간 시점에 FULL → FIXED 전환 시 | 보호자 + 승인된 봉사자 전원 | `match` |
 | 체크인 | 봉사자가 방문 체크인 시 | 보호자 | `checkin` |
 | 체크아웃 | 봉사자가 방문 체크아웃 시 | 보호자 | `checkout` |
-| 호스팅 삭제 | 호스팅 삭제 시 | 신청한 봉사자 전원 | `update` |
+| 호스팅 취소 (수동) | 보호자가 호스팅 삭제 시 | 승인된 봉사자 전원 | `delete` |
+| 호스팅 FAILED (스케줄러) | 모집 미달로 자동 취소 시 | 보호자 + 승인된 봉사자 전원 | `delete` |
 
 > SMS 서비스: Solapi(CoolSMS) 또는 알리고 사용 예정  
 > 수신자가 여러 명인 경우 수신자별로 `sms_logs` row 생성
@@ -190,5 +195,5 @@
 |--------|------|
 | Solapi / 알리고 | SMS 발송 |
 | Gemini AI | 어르신 소개글 자동 생성 (후기 3건 이상 시) |
-| Cloudflare R2 | 파일 저장. 공개 버킷(`babdongmu-public`) — 후기 이미지. 비공개 버킷(`babdongmu-private`) — 신원 서류 |
+| Cloudflare R2 | 파일 저장. 공개 버킷(`babdongmu-public`) — 후기 이미지. 비공개 버킷(`babdongmu-private`) — 신원 서류 (presigned URL로 5분 임시 접근) |
 | 주소 API | 마이페이지 주소 입력 연동 |

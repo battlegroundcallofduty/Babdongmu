@@ -150,7 +150,6 @@
       color: #8C7E73;
     }
 
-
     .address-search-row {
       display: flex;
       gap: 8px;
@@ -183,10 +182,25 @@
       color: #8C7E73;
     }
 
+    .hosting-entry-card {
+      max-width: none;
+    }
+
+    .hosting-entry-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+
     @media (max-width: 768px) {
       .modal-panel,
       .confirm-modal-panel {
         padding: 20px;
+      }
+
+      .hosting-entry-actions .btn {
+        width: 100%;
       }
     }
 
@@ -341,14 +355,32 @@
     </div>
 
     <div class="section-header slide-up stagger-3">
-      <h2>호스팅 현황</h2>
-      <a href="/pages/hostings.html" class="btn btn-ghost btn-sm">호스팅 페이지에서 등록하기</a>
+      <h2>호스팅 관리</h2>
     </div>
 
-    <div class="card slide-up stagger-4">
+    <div class="card hosting-entry-card slide-up stagger-4">
       <div class="card-body">
+        <div class="font-bold mb-sm">호스팅은 별도 페이지에서 관리해요.</div>
         <div class="text-sm text-muted">
-          호스팅 개별 목록은 호스팅 페이지에서 확인할 수 있어요.
+          어르신 카드에서 바로 호스팅을 등록하거나, 전체 호스팅 목록에서 상태를 확인할 수 있어요.
+        </div>
+
+        <div class="hosting-entry-actions">
+          <a
+            id="go-hostings-page"
+            href="/pages/hostings.html"
+            class="btn btn-ghost btn-sm"
+          >
+            전체 호스팅 보기
+          </a>
+
+          <a
+            id="go-create-hosting-page"
+            href="/pages/hostings.html?open_create=true"
+            class="btn btn-primary btn-sm"
+          >
+            새 호스팅 등록
+          </a>
         </div>
       </div>
     </div>
@@ -499,12 +531,18 @@
   <script src="/js/api.js"></script>
   <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
   <script type="module">
+    import { requireRoles } from '/js/authGuard.js';
     import {
       createEmptyAddressPayload,
       formatAddressPreview,
       mapKakaoAddressToPayload,
       mergeDetailAddress,
     } from '/js/addressMapper.js';
+
+    const currentUser = requireRoles(['guardian', 'admin']);
+    if (!currentUser) {
+      throw new Error('접근 권한이 없습니다.');
+    }
 
     const seniorListElement = document.querySelector('#senior-list');
     const seniorEmptyElement = document.querySelector('#senior-empty');
@@ -606,6 +644,17 @@
       });
     }
 
+    function buildCreateHostingUrl(seniorId = null) {
+      const params = new URLSearchParams();
+      params.set('open_create', 'true');
+
+      if (seniorId) {
+        params.set('senior_id', String(seniorId));
+      }
+
+      return `/pages/hostings.html?${params.toString()}`;
+    }
+
     function updateAddressMeta() {
       const zonecodeText = addressState.zonecode ? `우편번호 ${addressState.zonecode}` : '우편번호 없음';
       const sigunguText = addressState.sigungu || '시군구 없음';
@@ -671,7 +720,6 @@
         },
       }).open();
     }
-
 
     function setCreateMode() {
       formTitleElement.textContent = '어르신 등록';
@@ -825,6 +873,15 @@
                 data-senior-id="${senior.senior_id}"
               >
                 수정
+              </button>
+
+              <button
+                type="button"
+                class="btn btn-primary btn-sm"
+                data-action="create-hosting"
+                data-senior-id="${senior.senior_id}"
+              >
+                호스팅 등록
               </button>
 
               <button
@@ -1047,6 +1104,11 @@
           const senior = await fetchSeniorDetail(seniorId);
           fillForm(senior);
           openForm();
+          return;
+        }
+
+        if (action === 'create-hosting') {
+          window.location.href = buildCreateHostingUrl(seniorId);
           return;
         }
 

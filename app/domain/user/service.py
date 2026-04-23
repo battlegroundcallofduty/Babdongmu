@@ -1,23 +1,33 @@
 """유저 비즈니스 로직."""
 
-from datetime import datetime, timezone
+import random
+import string
+from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import select
+from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import hash_password, verify_password
-from app.domain.user.models import Document, DocumentType, User, UserRole
+from app.domain.user.models import (
+    CertFlag,
+    Document,
+    DocumentType,
+    PhoneVerification,
+    User,
+    UserRole,
+)
 
-ALLOWED_UPDATE_FIELDS = {"name", "phone_number", "address"}  # update_user 허용 리스트
+# update_user 허용 리스트
+ALLOWED_UPDATE_FIELDS = {"name", "email", "address"}
 
 
 # —— 유저 ─────────
 async def get_user_by_id(user_id: int, db: AsyncSession) -> User | None:
     """ID로 유저 조회"""
-    # 유저 가져올때 서류 정보 가져와야 하면 추후 selectinload 추가될듯
+    # 유저 가져올때 서류 정보 가져와야 하면 추후 selectinload 추가 예정
     statement = select(User).where(User.user_id == user_id)
     result = await db.execute(statement)
-    # scalar_one_or_none: 결과가 하나면 그거 내놔, 없으면 none, 2개 이상은 에러
+    # scalar_one_or_none: 결과가 하나면 그거, 없으면 none, 2개 이상은 에러
     return result.scalar_one_or_none()
 
 
@@ -57,7 +67,9 @@ async def authenticate_user(email: str, password: str, db: AsyncSession) -> User
     user = await get_user_by_email(email, db)
     if user is None:
         return None
-    # 카카오 함수 만들면 비밀번호 관련 방어 추가해야함
+    # 카카오 전용 계정은 비밀번호 로그인 불가
+    if user.password is None:
+        return None
     if not verify_password(password, user.password):
         return None
     return user
@@ -85,7 +97,7 @@ async def change_password(
     """마이페이지: 비밀번호 변경 (불일치 에러는 router.py에서)"""
     user = await get_user_by_id(user_id, db)
     if user is None:
-        return False  # 원래는 404 에러 직접 던지는게 맞지만 service는 순수 파이썬 영역으로 두기 위해 ^^
+        return False  # 404 던지는게 맞지만 service 순수 파이썬 영역 유지
     if user.password is None:
         return False
     if not verify_password(current_password, user.password):
@@ -118,19 +130,25 @@ async def get_documents_by_user_id(user_id: int, db: AsyncSession) -> list[Docum
     """마이페이지: 유저의 서류 목록 조회"""
     statement = select(Document).where(Document.user_id == user_id)
     result = await db.execute(statement)
-    return list(result.scalars().all())  # 유저당 서류는 여러개니깐/ 결과 없으면 빈 리스트 반환
+    return list(result.scalars().all())  # 유저당 서류는 복수/ 결과 없으면 빈 리스트 반환
 
 
 async def create_document(
     user_id: int, document_type: DocumentType, document_url: str, db: AsyncSession
 ) -> Document:
-    """서류 업로드"""
+    """서류 업로드 (cert_flag를 PENDING으로 리셋해 관리자가 재검토하도록 함)"""
     document = Document(
         user_id=user_id,
         document_type=document_type,
         document_url=document_url,
     )
     db.add(document)
+
+    user = await get_user_by_id(user_id, db)
+    if user is not None:
+        user.cert_flag = CertFlag.PENDING
+        user.cert_reject_reason = None
+
     await db.commit()
     await db.refresh(document)
     return document
@@ -148,16 +166,79 @@ async def delete_document(document_id: int, db: AsyncSession) -> None:
 # ── 카카오 ─────────
 async def get_or_create_kakao_user(kakao_id: str, email: str, name: str, db: AsyncSession) -> User:
     """카카오 로그인/회원가입 통합: kakao_id로 유저를 조회하고, 없으면 생성"""
-    # email.lower() 잊지말고 넣어라
+    # email.lower() 추가 예정
     pass
 
 
 # ── SMS 인증 ────────
-async def send_phone_verification(phone_number: str, db: AsyncSession) -> None:
-    """SMS 인증 코드 생성하고 발송"""
-    pass
+async def send_phone_verification(phone_number: str, db: AsyncSession) -> bool:
+    """SMS 인증 코드 생성하고 발송. 발송 성공 시 True 반환."""
+    # sms.py에서 service.py를 참조하고있어서 순환오류 빠지지않도록 함수안에서 import
+    from app.services.sms import send_auth_sms
+    # 코드 랜덤생성 6자리 / 만료시간 3분
+    code = "".join(random.choices(string.digits, k=6))
+    now = datetime.now(timezone.utc)
+    expires_at = now + timedelta(minutes=3)
+
+    # 기존 미만료·미인증 코드 만료처리 (동일한 번호로 여러번 재발송한 경우)
+    await db.execute(
+        update(PhoneVerification)
+        .where(
+            PhoneVerification.phone_number == phone_number,
+            PhoneVerification.is_verified == False,
+            PhoneVerification.expires_at > now,
+        )
+        .values(expires_at=now)
+    )
+
+    # SMS 먼저 발송 (실패하면 DB 저장 X)
+    success = await send_auth_sms(phone_number, code)
+    if not success:
+        return False
+
+    verification = PhoneVerification(
+        phone_number=phone_number,
+        code=code,
+        expires_at=expires_at,
+    )
+    db.add(verification)
+    await db.commit()
+
+    return True
 
 
-async def verify_phone_code(phone_number: str, code: str, db: AsyncSession) -> bool:
-    """SMS 인증 코드 확인. 성공 시 True 반환."""
-    pass
+async def verify_phone_code(phone_number: str, code: str, db: AsyncSession) -> bool | None:
+    """SMS 인증 코드 확인. True: 성공 / False: 코드 불일치 / None: 만료 또는 없음."""
+    statement = (
+        select(PhoneVerification)
+        .where(PhoneVerification.phone_number == phone_number)
+        .order_by(PhoneVerification.created_at.desc())
+        .limit(1)
+    )
+    result = await db.execute(statement)
+    verification = result.scalar_one_or_none()
+
+    if verification is None:
+        return None
+    # 이미 인증에 사용된 코드, 시간 만료된 코드 -> None 반환
+    expires_at = verification.expires_at
+    if expires_at.tzinfo is None: # 타임존 없으면 utc 붙여주기
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    if verification.is_verified or expires_at < datetime.now(timezone.utc):
+        return None
+    if verification.code != code:
+        return False
+
+    verification.is_verified = True
+    await db.commit()
+    return True
+
+
+async def delete_phone_verifications(phone_number: str, db: AsyncSession) -> None:
+    """가입 완료 후, 해당 번호의 인증 기록 전체 삭제."""
+    await db.execute(
+        delete(PhoneVerification).where(PhoneVerification.phone_number == phone_number)
+    )
+    await db.commit()
+# TODO: 스케줄러 추가예정
+# (R2 고아 서류파일,리뷰사진 + phone_verifications 만료된행 하루에 한번 정리)
