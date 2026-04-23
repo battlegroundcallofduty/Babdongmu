@@ -324,6 +324,109 @@ document.querySelector('#password-form')?.addEventListener('submit', async (e) =
   }  // 실패하면 빨간알림창
 });
 
+// 내 정보 수정 모드 진입
+function enterEditMode() {
+  document.getElementById('input-name').value = document.getElementById('user-name').textContent;
+  document.getElementById('input-email').value = document.getElementById('user-email').textContent;
+  document.getElementById('input-district').value = document.getElementById('user-district').textContent;
+
+  // span 숨김
+  document.getElementById('user-name').classList.add('hidden');
+  document.getElementById('user-email').classList.add('hidden');
+  document.getElementById('user-district').classList.add('hidden');
+
+  // input 보임
+  document.getElementById('input-name').classList.remove('hidden');
+  document.getElementById('input-email').classList.remove('hidden');
+  document.getElementById('district-edit').style.display = 'flex';
+
+  document.getElementById('btn-edit-info').classList.add('hidden'); // 수정버튼 숨김
+  document.getElementById('edit-buttons').style.display = 'flex';   // 저장/취소 버튼 등장
+  document.getElementById('btn-save-info').disabled = false;        // 저장 버튼 활성화
+
+  const infoMsg = document.getElementById('info-msg');
+  infoMsg.textContent = '';
+  infoMsg.className = 'hidden';  // 이전에 남아있던 성공/에러 메시지 초기화
+}
+
+// 내 정보 수정 모드 종료(enterEditMode의 반대)
+function exitEditMode() {
+  document.getElementById('user-name').classList.remove('hidden');
+  document.getElementById('user-email').classList.remove('hidden');
+  document.getElementById('user-district').classList.remove('hidden');
+
+  document.getElementById('input-name').classList.add('hidden');
+  document.getElementById('input-email').classList.add('hidden');
+  document.getElementById('district-edit').style.display = 'none';
+
+  document.getElementById('btn-edit-info').classList.remove('hidden');
+  document.getElementById('edit-buttons').style.display = 'none';
+}
+
+document.querySelector('#btn-edit-info')?.addEventListener('click', enterEditMode);
+
+document.querySelector('#btn-cancel-info')?.addEventListener('click', () => {
+  exitEditMode();  // 취소 버튼
+  document.getElementById('info-msg').classList.add('hidden');  // 메시지 같이 숨김
+});
+
+document.querySelector('#btn-save-info')?.addEventListener('click', async () => {
+  const name = document.getElementById('input-name').value.trim();
+  const email = document.getElementById('input-email').value.trim();
+  const address = document.getElementById('input-district').value.trim();
+  const infoMsg = document.getElementById('info-msg');
+  const saveBtn = document.getElementById('btn-save-info');
+
+  if (!name || !email || !address) {
+    infoMsg.textContent = '이름, 이메일, 활동 동네를 모두 입력해주세요.';
+    infoMsg.className = 'alert alert-error';
+    return;
+  }
+
+  saveBtn.disabled = true;  // api 호출 중 중복 클릭 방지
+  try {
+    const updated = await api('/users/me', {
+      method: 'PATCH',
+      body: JSON.stringify({ name, email, address }),
+    });
+
+    // 내 정보 텍스트 갱신
+    document.getElementById('user-name').textContent = updated.name;
+    document.getElementById('user-email').textContent = updated.email;
+    document.getElementById('user-district').textContent = updated.address;
+
+    // 프로필 카드 갱신
+    const roleLabel = { volunteer: '봉사자', guardian: '보호자', admin: '관리자' }[updated.user_role] ?? updated.user_role;
+    document.getElementById('profile-avatar').textContent = updated.name[0];
+    document.getElementById('profile-name').textContent = updated.name;
+    document.getElementById('profile-role-district').textContent = `${roleLabel} · ${updated.address}`;
+    document.getElementById('profile-contact').textContent = `${updated.email} · ${updated.phone_number}`;
+
+    exitEditMode();
+    infoMsg.textContent = '정보가 수정됐습니다.';
+    infoMsg.className = 'alert alert-success';
+    setTimeout(() => { infoMsg.classList.add('hidden'); }, 3000);  // 성공 메시지 시간제한
+  } catch (err) {
+    infoMsg.textContent = err.message || '수정에 실패했습니다. 다시 시도해주세요.';
+    infoMsg.className = 'alert alert-error';
+    saveBtn.disabled = false;  // 다시 저장 시도 가능
+  }
+});
+
+// 활동 동네 주소 검색 (register.js와 동일)
+document.querySelector('#btn-search-address-mypage')?.addEventListener('click', () => {
+  if (!window.daum?.Postcode) {
+    alert('주소 검색을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
+    return;
+  }
+  new window.daum.Postcode({
+    oncomplete(data) {
+      const parts = [data.sido, data.sigungu, data.bname].filter(Boolean);
+      document.getElementById('input-district').value = parts.join(' ');
+    },
+  }).open();
+});
+
 // 로그아웃 버튼 클릭
 document.querySelector('#logout-btn')?.addEventListener('click', () => {
   logout();  // api.js 함수(토큰 삭제후 로그인 이동)
