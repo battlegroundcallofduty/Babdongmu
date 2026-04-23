@@ -23,24 +23,32 @@ jobs:
           script: |
             set -euo pipefail
             cd ~/babdongmu
+            echo "::STAGE:: git pull"
             git fetch origin && git reset --hard origin/main
 
-            # Amazon Linux 2023 엔 cronie 가 기본 설치 안 돼 있음 → crontab 명령 없으면 설치
+            echo "::STAGE:: cronie install"
             if ! command -v crontab >/dev/null 2>&1; then
               sudo dnf install -y cronie
-              sudo systemctl enable --now crond
             fi
+            echo "::STAGE:: crond enable"
+            sudo systemctl enable crond
+            echo "::STAGE:: crond start"
+            sudo systemctl start crond
 
-            # Duck DNS 설정 (멱등). 토큰/서브도메인은 GitHub Secrets → 원격 env 로 주입.
+            echo "::STAGE:: duckdns dir"
             mkdir -p ~/duckdns
             chmod 700 ~/duckdns
             ( umask 177 && printf '%s' "$DUCKDNS_TOKEN" > ~/duckdns/token )
             ( umask 177 && printf '%s' "$DUCKDNS_SUBDOMAIN" > ~/duckdns/subdomain )
             install -m 700 scripts/duckdns-update.sh ~/duckdns/duck.sh
+
+            echo "::STAGE:: crontab register"
             ( crontab -l 2>/dev/null | grep -vF 'duckdns/duck.sh' ; echo '*/5 * * * * /home/ec2-user/duckdns/duck.sh' ) | crontab -
+
+            echo "::STAGE:: duckdns first run"
             ~/duckdns/duck.sh
 
-            # Caddy 인증서 발급 도메인 + QR URL base. docker-compose 가 이 값으로 치환.
+            echo "::STAGE:: docker build/up"
             export PUBLIC_DOMAIN="${DUCKDNS_SUBDOMAIN}.duckdns.org"
             export FRONTEND_BASE_URL="https://${PUBLIC_DOMAIN}"
             docker-compose build
@@ -48,3 +56,4 @@ jobs:
             docker-compose run --rm app alembic upgrade head
             docker-compose up -d --wait
             docker image prune -f
+            echo "::STAGE:: done"
