@@ -146,20 +146,6 @@
     .badge-progress { background: #EEF3FF; color: #4269B4; }
     .badge-closed { background: #F0EBE6; color: #6B5E53; }
 
-    .message-box {
-      display: none;
-      border-radius: 12px;
-      padding: 14px 16px;
-      margin-bottom: 16px;
-      border: 1px solid #E8E0D8;
-      background: #fff;
-    }
-
-    .message-box.show { display: block; }
-    .message-box.success { background: #F6FBF6; color: #2E5D2E; border-color: #D8EAD8; }
-    .message-box.error { background: #FFF6F6; color: #9A3838; border-color: #F1D0D0; }
-    .message-box.info { background: #F8F5F1; color: #6B5E53; }
-
     .empty-state {
       padding: 56px 24px;
       text-align: center;
@@ -191,28 +177,38 @@
       margin: 0;
       line-height: 1.6;
     }
-
     .modal-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.4);
+      background: rgba(0, 0, 0, 0.45);
       display: none;
       align-items: center;
       justify-content: center;
       padding: 24px;
-      z-index: 30;
+      z-index: 60;
+      box-sizing: border-box;
+      overflow: hidden;
     }
 
-    .modal-overlay.open { display: flex; }
+    .modal-overlay.open {
+      display: flex;
+    }
 
-    .modal {
+    .modal-panel {
       width: min(100%, 640px);
       max-height: calc(100vh - 48px);
-      overflow-y: auto;
       background: #fff;
       border-radius: 16px;
-      padding: 24px;
-      box-shadow: 0 18px 50px rgba(44, 36, 32, 0.14);
+      box-shadow: 0 20px 48px rgba(44, 36, 32, 0.18);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-sizing: border-box;
+    }
+
+    .modal-panel.confirm-panel,
+    .modal-panel.result-panel {
+      width: min(100%, 420px);
     }
 
     .modal-header {
@@ -220,15 +216,26 @@
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      margin-bottom: 16px;
+      padding: 20px 24px 14px;
+      border-bottom: 1px solid #F2ECE6;
+      flex-shrink: 0;
+      margin-bottom: 0;
     }
 
-    .modal-close {
+    .modal-close-button {
       border: 0;
       background: transparent;
-      font-size: 22px;
+      font-size: 24px;
       cursor: pointer;
       color: #8C7E73;
+      line-height: 1;
+      padding: 0;
+    }
+
+    .modal-body {
+      padding: 18px 24px 24px;
+      overflow-y: auto;
+      scrollbar-gutter: stable;
     }
 
     .detail-box {
@@ -283,6 +290,30 @@
       flex: 1;
     }
 
+    .modal-message {
+      font-size: 15px;
+      line-height: 1.6;
+      color: #6B5E53;
+      white-space: pre-wrap;
+      word-break: keep-all;
+    }
+
+    .result-panel.success .modal-header h3 {
+      color: #2E5D2E;
+    }
+
+    .result-panel.error .modal-header h3 {
+      color: #9A3838;
+    }
+
+    .result-panel.info .modal-header h3 {
+      color: #6B5E53;
+    }
+
+    body.modal-open {
+      overflow: hidden;
+    }
+
     @media (max-width: 768px) {
       .filter-bar {
         grid-template-columns: 1fr;
@@ -296,6 +327,22 @@
       .hosting-card-actions .btn,
       .modal-actions .btn {
         width: 100%;
+      }
+
+      .modal-overlay {
+        padding: 16px;
+      }
+
+      .modal-panel {
+        max-height: calc(100vh - 32px);
+      }
+
+      .modal-header {
+        padding: 18px 20px 12px;
+      }
+
+      .modal-body {
+        padding: 16px 20px 20px;
       }
     }
   </style>
@@ -344,11 +391,10 @@
       </div>
     </div>
 
-    <div id="message-box" class="message-box" role="status" aria-live="polite"></div>
 
     <section class="quick-panel slide-up stagger-1">
       <h3>어떻게 고르면 좋을까요?</h3>
-      <p>가까운 지역, 부담 없는 시간대, 함께 먹고 싶은 메뉴를 기준으로 찾아보세요. 상세 보기에서 시간과 주소를 확인한 뒤 바로 신청할 수 있게 구성했어요.</p>
+      <p>가까운 지역, 부담 없는 시간대, 함께 먹고 싶은 메뉴를 기준으로 찾아보세요. 상세 보기에서 시간과 주소를 확인한 뒤 신청해보세요.</p>
     </section>
 
     <div class="filter-bar slide-up stagger-2">
@@ -394,42 +440,75 @@
   </main>
 
   <div class="modal-overlay" id="hosting-preview-modal" role="dialog" aria-modal="true" aria-labelledby="hosting-preview-title">
-    <div class="modal">
+    <div class="modal-panel">
       <div class="modal-header">
         <h3 id="hosting-preview-title">호스팅 상세 미리보기</h3>
-        <button class="modal-close" id="hosting-preview-close" type="button" aria-label="닫기">✕</button>
+        <button class="modal-close-button" id="hosting-preview-close" type="button" aria-label="닫기">×</button>
       </div>
 
-      <div class="detail-box">
-        <p id="preview-summary">선택한 호스팅의 내용을 불러오고 있어요.</p>
-      </div>
+      <div class="modal-body">
+        <div class="detail-box">
+          <p id="preview-summary">선택한 호스팅의 내용을 불러오고 있어요.</p>
+        </div>
 
-      <div class="detail-grid">
-        <div class="detail-row">
-          <span class="detail-label">메뉴</span>
-          <span id="preview-menu" class="detail-value">-</span>
+        <div class="detail-grid">
+          <div class="detail-row">
+            <span class="detail-label">메뉴</span>
+            <span id="preview-menu" class="detail-value">-</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">일시</span>
+            <span id="preview-datetime" class="detail-value">-</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">상태</span>
+            <span id="preview-status" class="detail-value">-</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">주소</span>
+            <span id="preview-address" class="detail-value">-</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">모집 인원</span>
+            <span id="preview-max-people" class="detail-value">-</span>
+          </div>
         </div>
-        <div class="detail-row">
-          <span class="detail-label">일시</span>
-          <span id="preview-datetime" class="detail-value">-</span>
-        </div>
-        <div class="detail-row">
-          <span class="detail-label">상태</span>
-          <span id="preview-status" class="detail-value">-</span>
-        </div>
-        <div class="detail-row">
-          <span class="detail-label">주소</span>
-          <span id="preview-address" class="detail-value">-</span>
-        </div>
-        <div class="detail-row">
-          <span class="detail-label">모집 인원</span>
-          <span id="preview-max-people" class="detail-value">-</span>
+
+        <div class="modal-actions">
+          <a id="preview-detail-link" href="#" class="btn btn-secondary">상세 페이지로 보기</a>
+          <button id="preview-apply-button" type="button" class="btn btn-primary">이 호스팅 신청하기</button>
         </div>
       </div>
+    </div>
+  </div>
 
-      <div class="modal-actions">
-        <a id="preview-detail-link" href="#" class="btn btn-secondary">상세 페이지로 보기</a>
-        <button id="preview-apply-button" type="button" class="btn btn-primary">이 호스팅 신청하기</button>
+  <div class="modal-overlay" id="result-modal" role="dialog" aria-modal="true" aria-labelledby="result-modal-title">
+    <div id="result-modal-panel" class="modal-panel result-panel info">
+      <div class="modal-header">
+        <h3 id="result-modal-title">안내</h3>
+        <button id="close-result-modal-button" type="button" class="modal-close-button" aria-label="닫기">×</button>
+      </div>
+      <div class="modal-body">
+        <div id="result-modal-message" class="modal-message"></div>
+        <div class="modal-actions">
+          <button id="result-modal-confirm-button" type="button" class="btn btn-primary btn-sm">확인</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-modal-title">
+    <div class="modal-panel confirm-panel">
+      <div class="modal-header">
+        <h3 id="confirm-modal-title">안내</h3>
+        <button id="close-confirm-modal-button" type="button" class="modal-close-button" aria-label="닫기">×</button>
+      </div>
+      <div class="modal-body">
+        <div id="confirm-modal-message" class="modal-message"></div>
+        <div class="modal-actions">
+          <button id="confirm-modal-cancel-button" type="button" class="btn btn-ghost btn-sm">취소</button>
+          <button id="confirm-modal-confirm-button" type="button" class="btn btn-primary btn-sm">확인</button>
+        </div>
       </div>
     </div>
   </div>
@@ -443,22 +522,17 @@
   </footer>
 
   <script src="/js/api.js"></script>
-    <script type="module">
+  <script type="module">
     import { requireRoles } from '/js/authGuard.js';
 
-    const currentUser = requireRoles(['volunteer', 'admin']);
-    if (!currentUser) {
-        throw new Error('접근 권한이 없습니다.');
-    }
-    
     const KST_TIME_ZONE = 'Asia/Seoul';
-
-    // 봉사자용 공개 API가 생기면 이 경로만 맞추면 됩니다.
     const VOLUNTEER_HOSTINGS_API = '/hostings/public';
     const VOLUNTEER_MATCHES_API = '/matches/';
 
     let hostingItems = [];
     let selectedHosting = null;
+    let resultModalResolver = null;
+    let confirmModalHandler = null;
 
     function toggleNav() {
       const toggleElement = document.querySelector('.nav-toggle');
@@ -474,16 +548,99 @@
       }
     }
 
-    function showMessage(message, type = 'info') {
-      const messageBoxElement = document.querySelector('#message-box');
-      messageBoxElement.textContent = message;
-      messageBoxElement.className = `message-box show ${type}`;
+    window.toggleNav = toggleNav;
+    window.closeNav = closeNav;
+
+    function isAnyModalOpen() {
+      return document.querySelector('#hosting-preview-modal').classList.contains('open')
+        || document.querySelector('#result-modal').classList.contains('open')
+        || document.querySelector('#confirm-modal').classList.contains('open');
     }
 
-    function hideMessage() {
-      const messageBoxElement = document.querySelector('#message-box');
-      messageBoxElement.textContent = '';
-      messageBoxElement.className = 'message-box';
+    function syncBodyScrollLock() {
+      if (isAnyModalOpen()) {
+        document.body.classList.add('modal-open');
+      } else {
+        document.body.classList.remove('modal-open');
+      }
+    }
+
+    function getResultModalTitle(type) {
+      if (type === 'success') {
+        return '완료';
+      }
+      if (type === 'error') {
+        return '오류';
+      }
+      return '안내';
+    }
+
+    function showResultModal(message, type = 'info') {
+      return new Promise((resolve) => {
+        const resultModalElement = document.querySelector('#result-modal');
+        const resultModalPanelElement = document.querySelector('#result-modal-panel');
+        const resultModalTitleElement = document.querySelector('#result-modal-title');
+        const resultModalMessageElement = document.querySelector('#result-modal-message');
+
+        resultModalPanelElement.className = `modal-panel result-panel ${type}`;
+        resultModalTitleElement.textContent = getResultModalTitle(type);
+        resultModalMessageElement.textContent = message;
+
+        resultModalElement.classList.add('open');
+        resultModalResolver = resolve;
+        syncBodyScrollLock();
+      });
+    }
+
+    function closeResultModal() {
+      const resultModalElement = document.querySelector('#result-modal');
+      resultModalElement.classList.remove('open');
+
+      if (resultModalResolver) {
+        const resolve = resultModalResolver;
+        resultModalResolver = null;
+        resolve();
+      }
+
+      syncBodyScrollLock();
+    }
+
+    function openConfirmModal({
+      title,
+      message,
+      confirmText = '확인',
+      cancelText = '취소',
+      onConfirm = null,
+    }) {
+      const confirmModalElement = document.querySelector('#confirm-modal');
+      document.querySelector('#confirm-modal-title').textContent = title;
+      document.querySelector('#confirm-modal-message').textContent = message;
+      document.querySelector('#confirm-modal-confirm-button').textContent = confirmText;
+      document.querySelector('#confirm-modal-cancel-button').textContent = cancelText;
+      confirmModalHandler = onConfirm;
+
+      confirmModalElement.classList.add('open');
+      syncBodyScrollLock();
+    }
+
+    function closeConfirmModal() {
+      const confirmModalElement = document.querySelector('#confirm-modal');
+      confirmModalElement.classList.remove('open');
+      confirmModalHandler = null;
+      syncBodyScrollLock();
+    }
+
+    async function handleConfirmModalAction() {
+      if (!confirmModalHandler) {
+        closeConfirmModal();
+        return;
+      }
+
+      try {
+        await confirmModalHandler();
+      } finally {
+        closeConfirmModal();
+      }
     }
 
     function escapeHtml(value) {
@@ -652,7 +809,6 @@
 
     function sortHostings(items) {
       const selectedSort = document.querySelector('#filter-sort').value;
-
       const clonedItems = [...items];
 
       if (selectedSort === 'latest') {
@@ -723,12 +879,12 @@
 
     function openPreviewModal() {
       document.querySelector('#hosting-preview-modal').classList.add('open');
-      document.body.style.overflow = 'hidden';
+      syncBodyScrollLock();
     }
 
     function closePreviewModal() {
       document.querySelector('#hosting-preview-modal').classList.remove('open');
-      document.body.style.overflow = '';
+      syncBodyScrollLock();
     }
 
     function fillPreviewModal(hosting) {
@@ -746,7 +902,8 @@
       document.querySelector('#preview-address').textContent = fullAddress || '-';
       document.querySelector('#preview-max-people').textContent = `${hosting.max_people}명`;
 
-      document.querySelector('#preview-detail-link').href = `/pages/hosting-detail.html?id=${hosting.hosting_id}`;
+      document.querySelector('#preview-detail-link').href =
+        `/pages/hosting-detail.html?id=${hosting.hosting_id}&view=volunteer`;
 
       const applyButtonElement = document.querySelector('#preview-apply-button');
       applyButtonElement.disabled = !isApplyEnabled(hosting.hosting_status);
@@ -772,14 +929,11 @@
 
     async function initializePage() {
       try {
-        hideMessage();
         await loadHostings();
       } catch (error) {
         console.error(error);
-
-        // 공개용 봉사자 API가 아직 없는 경우를 위한 안내
-        showMessage(
-          error?.message || '봉사자용 호스팅 목록을 불러오지 못했어요. 공개 호스팅 API가 연결되었는지 확인해주세요.',
+        await showResultModal(
+          error?.message || '호스팅 목록을 불러오지 못했어요.',
           'error'
         );
       }
@@ -815,35 +969,93 @@
       }
     });
 
+    document.querySelector('#result-modal-confirm-button')?.addEventListener('click', () => {
+      closeResultModal();
+    });
+
+    document.querySelector('#close-result-modal-button')?.addEventListener('click', () => {
+      closeResultModal();
+    });
+
+    document.querySelector('#result-modal')?.addEventListener('click', (event) => {
+      if (event.target === event.currentTarget) {
+        closeResultModal();
+      }
+    });
+
+    document.querySelector('#close-confirm-modal-button')?.addEventListener('click', () => {
+      closeConfirmModal();
+    });
+
+    document.querySelector('#confirm-modal-cancel-button')?.addEventListener('click', () => {
+      closeConfirmModal();
+    });
+
+    document.querySelector('#confirm-modal-confirm-button')?.addEventListener('click', async () => {
+      await handleConfirmModalAction();
+    });
+
+    document.querySelector('#confirm-modal')?.addEventListener('click', (event) => {
+      if (event.target === event.currentTarget) {
+        closeConfirmModal();
+      }
+    });
+
     document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape' && document.querySelector('#hosting-preview-modal').classList.contains('open')) {
+      if (event.key !== 'Escape') {
+        return;
+      }
+
+      if (document.querySelector('#result-modal').classList.contains('open')) {
+        closeResultModal();
+        return;
+      }
+
+      if (document.querySelector('#confirm-modal').classList.contains('open')) {
+        closeConfirmModal();
+        return;
+      }
+
+      if (document.querySelector('#hosting-preview-modal').classList.contains('open')) {
         closePreviewModal();
       }
     });
 
     document.querySelector('#preview-apply-button')?.addEventListener('click', async () => {
       if (!selectedHosting || !isApplyEnabled(selectedHosting.hosting_status)) {
+        await showResultModal('현재 신청할 수 없는 호스팅이에요.', 'info');
         return;
       }
 
-      const isConfirmed = window.confirm('이 호스팅에 신청할까요?');
-      if (!isConfirmed) {
-        return;
-      }
-
-      try {
-        hideMessage();
-        await applyToHosting(selectedHosting.hosting_id);
-        closePreviewModal();
-        showMessage('호스팅 신청이 완료되었어요.', 'success');
-        await loadHostings();
-      } catch (error) {
-        console.error(error);
-        showMessage(error?.message || '호스팅 신청에 실패했어요.', 'error');
-      }
+      openConfirmModal({
+        title: '호스팅 신청',
+        message: '이 호스팅에 신청할까요?',
+        confirmText: '신청하기',
+        cancelText: '취소',
+        onConfirm: async () => {
+          try {
+            await applyToHosting(selectedHosting.hosting_id);
+            closePreviewModal();
+            await loadHostings();
+            await showResultModal('호스팅 신청이 완료되었어요.', 'success');
+          } catch (error) {
+            console.error(error);
+            await showResultModal(error?.message || '호스팅 신청에 실패했어요.', 'error');
+          }
+        },
+      });
     });
 
-    initializePage();
+    async function bootstrap() {
+      const currentUser = await requireRoles(['volunteer', 'admin']);
+      if (!currentUser) {
+        return;
+      }
+
+      await initializePage();
+    }
+
+    bootstrap();
   </script>
 </body>
 </html>

@@ -78,3 +78,17 @@ async def require_volunteer(current_user: User = Depends(get_current_user)) -> U
             detail="봉사자만 접근할 수 있습니다.",
         )
     return current_user
+
+
+async def require_approved_volunteer(
+    current_volunteer=Depends(require_volunteer),
+):
+    """승인된 봉사자만 통과시킵니다."""
+
+    if getattr(current_volunteer, "cert_flag", None) != "approved":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="승인된 봉사자만 호스팅을 탐색할 수 있습니다.",
+        )
+
+    return current_volunteer

@@ -14,6 +14,13 @@ from app.domain.senior.schemas import (
     SeniorUpdateRequest,
 )
 
+BLOCKING_HOSTING_STATUSES_FOR_DEACTIVATION = (
+    HostingStatus.OPEN,
+    HostingStatus.FULL,
+    HostingStatus.FIXED,
+    HostingStatus.IN_PROGRESS,
+)
+
 
 def build_senior_response(
     senior: Senior,
@@ -72,6 +79,27 @@ async def get_hosting_counts_by_senior(
     full_hosting_count = row.full_hosting_count or 0
 
     return total_hosting_count, full_hosting_count
+
+
+async def ensure_senior_can_be_deactivated(
+    session: AsyncSession,
+    senior_id: int,
+) -> None:
+    """완료되지 않은 호스팅이 있으면 어르신 비활성화를 막습니다."""
+
+    stmt = select(Hosting.hosting_id).where(
+        Hosting.senior_id == senior_id,
+        Hosting.hosting_status.in_(BLOCKING_HOSTING_STATUSES_FOR_DEACTIVATION),
+    )
+
+    result = await session.execute(stmt)
+    hosting_id = result.scalar_one_or_none()
+
+    if hosting_id is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="완료되지 않은 호스팅이 있는 어르신은 비활성화할 수 없습니다.",
+        )
 
 
 async def create_senior(
@@ -228,6 +256,12 @@ async def update_senior(
         exclude_unset=True,
     )
 
+    if update_data.get("active_flag") is False:
+        await ensure_senior_can_be_deactivated(
+            session=session,
+            senior_id=senior.senior_id,
+        )
+
     for field_name, field_value in update_data.items():
         setattr(senior, field_name, field_value)
 
@@ -257,6 +291,11 @@ async def deactivate_senior(
         session=session,
         guardian_id=guardian_id,
         senior_id=senior_id,
+    )
+
+    await ensure_senior_can_be_deactivated(
+        session=session,
+        senior_id=senior.senior_id,
     )
 
     senior.active_flag = False

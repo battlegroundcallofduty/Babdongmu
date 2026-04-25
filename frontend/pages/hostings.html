@@ -36,6 +36,7 @@
       text-decoration: none;
       color: inherit;
       height: 100%;
+      cursor: pointer;
     }
 
     .hosting-header {
@@ -418,7 +419,6 @@
       </div>
     </div>
 
-    <div id="message-box" class="message-box" role="status" aria-live="polite"></div>
 
     <div class="filter-bar slide-up stagger-1">
       <select id="filter-senior" class="form-input">
@@ -484,7 +484,7 @@
           <div class="form-group">
             <label class="form-label" for="hosting-date">날짜</label>
             <input class="form-input" type="date" id="hosting-date" required>
-            <p class="form-hint">현재 기준 24시간 이후부터 14일 이내로 등록할 수 있어요.</p>
+            <p class="form-hint">현재 기준 24시간 이후부터 한 달 이내로 등록할 수 있어요.</p>
           </div>
 
           <div class="form-group">
@@ -552,17 +552,14 @@
   <script type="module">
     import { requireRoles } from '/js/authGuard.js';
 
-    const currentUser = requireRoles(['guardian', 'admin']);
-    if (!currentUser) {
-      throw new Error('접근 권한이 없습니다.');
-    }
-
     const KST_TIME_ZONE = 'Asia/Seoul';
 
     let seniorsCache = [];
     let hostingItems = [];
     let selectedSeniorIdFromQuery = '';
+    let shouldOpenCreateModalFromQuery = false;
     let alertModalResolve = null;
+    let seniorHostingRuleMap = new Map();
 
     function toggleNav() {
       const toggleElement = document.querySelector('.nav-toggle');
@@ -585,16 +582,10 @@
       return document.querySelector('#hosting-modal').classList.contains('open');
     }
 
-    function showPageMessage(message, type = 'info') {
-      const messageBoxElement = document.querySelector('#message-box');
-      messageBoxElement.textContent = message;
-      messageBoxElement.className = `message-box show ${type}`;
-    }
-
     function hideMessage() {
-      const messageBoxElement = document.querySelector('#message-box');
-      messageBoxElement.textContent = '';
-      messageBoxElement.className = 'message-box';
+      if (document.querySelector('#alert-modal').classList.contains('open')) {
+        closeAlertModal();
+      }
     }
 
     function getAlertModalTitle(type) {
@@ -634,12 +625,7 @@
     }
 
     function showMessage(message, type = 'info') {
-      if (isHostingModalOpen()) {
-        return showAlertModal(message, type);
-      }
-
-      showPageMessage(message, type);
-      return Promise.resolve();
+      return showAlertModal(message, type);
     }
 
     function getStatusMeta(status) {
@@ -668,9 +654,35 @@
         .replaceAll("'", '&#39;');
     }
 
+    function parseApiDateTime(value) {
+      if (!value) {
+        return null;
+      }
+
+      if (value instanceof Date) {
+        return value;
+      }
+
+      if (typeof value === 'string') {
+        const normalizedValue = value.includes('T')
+          && !value.endsWith('Z')
+          && !/[+-]\d{2}:\d{2}$/.test(value)
+          ? `${value}Z`
+          : value;
+
+        return new Date(normalizedValue);
+      }
+
+      return new Date(value);
+    }
+
     function formatDateTimeRange(hostingAt, hostingEnd) {
-      const startDate = new Date(hostingAt);
-      const endDate = new Date(hostingEnd);
+      const startDate = parseApiDateTime(hostingAt);
+      const endDate = parseApiDateTime(hostingEnd);
+
+      if (!startDate || Number.isNaN(startDate.getTime()) || !endDate || Number.isNaN(endDate.getTime())) {
+        return '-';
+      }
 
       const dateText = new Intl.DateTimeFormat('ko-KR', {
         timeZone: KST_TIME_ZONE,
@@ -739,6 +751,21 @@
         .filter(Boolean)
         .join(' ')
         .toLowerCase();
+      cardElement.tabIndex = 0;
+      cardElement.setAttribute('role', 'link');
+      cardElement.setAttribute('aria-label', `${seniorName} 호스팅 상세 보기`);
+      cardElement.addEventListener('click', (event) => {
+        if (event.target.closest('.hosting-card-actions a, .hosting-card-actions button')) {
+          return;
+        }
+        window.location.href = `/pages/hosting-detail.html?id=${hosting.hosting_id}&view=guardian`;
+      });
+      cardElement.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          window.location.href = `/pages/hosting-detail.html?id=${hosting.hosting_id}&view=guardian`;
+        }
+      });
 
       cardElement.innerHTML = `
         <div class="card-body">
@@ -761,10 +788,7 @@
 
           <div class="hosting-card-actions">
             <a class="btn btn-primary" href="/pages/hosting-detail.html?id=${hosting.hosting_id}&view=guardian">
-              상세
-            </a>
-            <a class="btn btn-secondary" href="/pages/guardian.html?senior_id=${hosting.senior_id}">
-              어르신
+              상세 보기
             </a>
           </div>
         </div>
@@ -869,6 +893,190 @@
       });
     }
 
+
+    function getNormalizedHostingStartDate(hosting) {
+      const hostingAt = parseApiDateTime(hosting?.hosting_at);
+
+      if (!hostingAt || Number.isNaN(hostingAt.getTime())) {
+        return null;
+      }
+
+      return hostingAt;
+    }
+
+    function addDays(date, days) {
+      return new Date(date.getTime() + (days * 24 * 60 * 60 * 1000));
+    }
+
+    function getDateInputValueInKst(date) {
+      if (!date || Number.isNaN(date.getTime())) {
+        return '';
+      }
+
+      const formatter = new Intl.DateTimeFormat('en-CA', {
+        timeZone: KST_TIME_ZONE,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      });
+
+      return formatter.format(date);
+    }
+
+    function formatDateTimeForNotice(date) {
+      if (!date || Number.isNaN(date.getTime())) {
+        return '-';
+      }
+
+      return new Intl.DateTimeFormat('ko-KR', {
+        timeZone: KST_TIME_ZONE,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      }).format(date);
+    }
+
+    function getBaseMinHostingDate() {
+      return new Date(Date.now() + (24 * 60 * 60 * 1000));
+    }
+
+    function getBaseMaxHostingDate() {
+      const maxDate = new Date();
+      maxDate.setMonth(maxDate.getMonth() + 1);
+      return maxDate;
+    }
+
+    function buildSeniorHostingRuleMap() {
+      const ruleMap = new Map();
+
+      hostingItems.forEach((hosting) => {
+        if (hosting?.hosting_status === 'FAILED') {
+          return;
+        }
+
+        const seniorId = String(hosting?.senior_id ?? '');
+        const hostingAt = getNormalizedHostingStartDate(hosting);
+
+        if (!seniorId || !hostingAt) {
+          return;
+        }
+
+        const existingRules = ruleMap.get(seniorId) ?? [];
+        existingRules.push({
+          hostingId: hosting.hosting_id,
+          hostingAt,
+          blockedStartAt: addDays(hostingAt, -7),
+          blockedEndAt: addDays(hostingAt, 7),
+        });
+        ruleMap.set(seniorId, existingRules);
+      });
+
+      seniorHostingRuleMap = ruleMap;
+    }
+
+    function getSeniorHostingRules(seniorId) {
+      if (!seniorId) {
+        return [];
+      }
+
+      return seniorHostingRuleMap.get(String(seniorId)) ?? [];
+    }
+
+    function getSelectedSeniorRules() {
+      const seniorId = document.querySelector('#hosting-senior')?.value;
+      return getSeniorHostingRules(seniorId);
+    }
+
+    function findConflictingHostingRule(seniorId, candidateStartDate) {
+      if (!candidateStartDate || Number.isNaN(candidateStartDate.getTime())) {
+        return null;
+      }
+
+      return getSeniorHostingRules(seniorId).find((rule) => {
+        const timeGap = Math.abs(candidateStartDate.getTime() - rule.hostingAt.getTime());
+        return timeGap < (7 * 24 * 60 * 60 * 1000);
+      }) ?? null;
+    }
+
+    function updateHostingAvailabilityNotice() {
+      const addressPreviewElement = document.querySelector('#hosting-address-preview');
+      const selectedSeniorId = document.querySelector('#hosting-senior')?.value;
+      const senior = seniorsCache.find((item) => String(item.senior_id) === selectedSeniorId);
+      const rules = getSelectedSeniorRules();
+      const addressText = senior
+        ? (buildSeniorAddressText(senior) || '등록된 주소 정보가 없어요.')
+        : '어르신을 선택하면 주소가 표시돼요.';
+
+      if (!rules.length) {
+        addressPreviewElement.textContent = addressText;
+        return;
+      }
+
+      const hostingTimesText = rules
+        .sort((left, right) => left.hostingAt - right.hostingAt)
+        .map((rule) => formatDateTimeForNotice(rule.hostingAt))
+        .join(', ');
+
+      addressPreviewElement.textContent = `${addressText}
+등록된 호스팅 시작 시각 전후 7일은 선택할 수 없어요.
+기준 호스팅: ${hostingTimesText}`;
+    }
+
+    function updateDateConstraintsForSenior() {
+      const dateInputElement = document.querySelector('#hosting-date');
+      const baseMinDate = getBaseMinHostingDate();
+      const baseMaxDate = getBaseMaxHostingDate();
+
+      dateInputElement.min = getDateInputValueInKst(baseMinDate);
+      dateInputElement.max = getDateInputValueInKst(baseMaxDate);
+
+      if (dateInputElement.min > dateInputElement.max) {
+        dateInputElement.value = '';
+        dateInputElement.disabled = true;
+        return {
+          isAvailable: false,
+          baseMinDate,
+          baseMaxDate,
+        };
+      }
+
+      dateInputElement.disabled = false;
+
+      if (!dateInputElement.value || dateInputElement.value < dateInputElement.min || dateInputElement.value > dateInputElement.max) {
+        dateInputElement.value = dateInputElement.min;
+      }
+
+      return {
+        isAvailable: true,
+        baseMinDate,
+        baseMaxDate,
+      };
+    }
+
+    function updateHostingFormAvailability() {
+      const submitButtonElement = document.querySelector('#hosting-submit-button');
+      const startTimeElement = document.querySelector('#hosting-start-time');
+      const durationElement = document.querySelector('#hosting-duration');
+      const dateAvailability = updateDateConstraintsForSenior();
+
+      if (!dateAvailability.isAvailable) {
+        submitButtonElement.disabled = true;
+        startTimeElement.disabled = true;
+        durationElement.disabled = true;
+        resetDurationOptions();
+        updateTimeSummaryPreview();
+        return false;
+      }
+
+      submitButtonElement.disabled = false;
+      startTimeElement.disabled = false;
+        
+      return true;
+    }
+
     function buildStartTimeOptions(selectElement) {
       selectElement.innerHTML = '';
       selectElement.appendChild(new Option('시작 시간 선택', ''));
@@ -906,9 +1114,24 @@
     function buildDurationOptions(startTimeValue) {
       const durationSelectElement = document.querySelector('#hosting-duration');
       const timeSummaryPreviewElement = document.querySelector('#hosting-time-summary-preview');
+      const selectedDateValue = document.querySelector('#hosting-date').value;
+      const selectedSeniorId = document.querySelector('#hosting-senior').value;
 
       if (!startTimeValue) {
         resetDurationOptions();
+        return;
+      }
+
+      const candidateStartDate = parseApiDateTime(`${selectedDateValue}T${startTimeValue}:00+09:00`);
+      const conflictingRule = findConflictingHostingRule(selectedSeniorId, candidateStartDate);
+
+      if (conflictingRule) {
+        durationSelectElement.innerHTML = '';
+        durationSelectElement.appendChild(new Option('선택 가능한 시작 시간이 아니에요', ''));
+        durationSelectElement.value = '';
+        durationSelectElement.disabled = true;
+        timeSummaryPreviewElement.textContent = `기존 호스팅(${formatDateTimeForNotice(conflictingRule.hostingAt)}) 전후 7일은 선택할 수 없어요.`;
+        timeSummaryPreviewElement.classList.add('placeholder');
         return;
       }
 
@@ -981,25 +1204,6 @@
       return convertMinutesToTime(endMinutes);
     }
 
-    function getDefaultDateValue() {
-      const now = new Date();
-      const minDate = new Date(now.getTime() + (24 * 60 * 60 * 1000));
-      return minDate.toISOString().slice(0, 10);
-    }
-
-    function updateDateConstraints() {
-      const dateInputElement = document.querySelector('#hosting-date');
-      const now = new Date();
-      const minDate = new Date(now.getTime() + (24 * 60 * 60 * 1000));
-      const maxDate = new Date(now.getTime() + (14 * 24 * 60 * 60 * 1000));
-
-      dateInputElement.min = minDate.toISOString().slice(0, 10);
-      dateInputElement.max = maxDate.toISOString().slice(0, 10);
-
-      if (!dateInputElement.value) {
-        dateInputElement.value = dateInputElement.min;
-      }
-    }
 
     function buildSeniorAddressText(senior) {
       const baseAddress = [senior?.road_address, senior?.detail_address]
@@ -1019,15 +1223,15 @@
     }
 
     function fillAddressFieldsFromSenior(senior) {
-      const addressPreviewElement = document.querySelector('#hosting-address-preview');
-
       if (!senior) {
-        addressPreviewElement.textContent = '어르신을 선택하면 주소가 표시돼요.';
+        document.querySelector('#hosting-address-preview').textContent = '어르신을 선택하면 주소가 표시돼요.';
+        updateHostingFormAvailability();
         return;
       }
 
       document.querySelector('#hosting-guests').value = String(senior.max_people ?? 2);
-      addressPreviewElement.textContent = buildSeniorAddressText(senior) || '등록된 주소 정보가 없어요.';
+      updateHostingAvailabilityNotice();
+      updateHostingFormAvailability();
     }
 
     function renderSeniorOptions() {
@@ -1073,9 +1277,6 @@
 
     function resetHostingForm() {
       document.querySelector('#hosting-form').reset();
-      document.querySelector('#hosting-submit-button').disabled = false;
-      updateDateConstraints();
-
       document.querySelector('#hosting-start-time').value = '';
       resetDurationOptions();
 
@@ -1113,6 +1314,13 @@
         throw new Error('호스팅 시작 시간을 선택해 주세요.');
       }
 
+      const nextHostingStart = parseApiDateTime(`${dateValue}T${startTimeValue}:00+09:00`);
+      const conflictingRule = findConflictingHostingRule(seniorIdValue, nextHostingStart);
+
+      if (conflictingRule) {
+        throw new Error(`이 어르신은 기존 호스팅 시작 시각(${formatDateTimeForNotice(conflictingRule.hostingAt)})의 전후 7일을 피해서 새 호스팅을 등록해야 해요.`);
+      }
+
       return {
         senior_id: Number(seniorIdValue),
         menu: document.querySelector('#hosting-menu').value.trim(),
@@ -1132,9 +1340,19 @@
       document.body.style.overflow = '';
     }
 
+    function clearCreateQueryParams() {
+      const nextUrl = new URL(window.location.href);
+      nextUrl.searchParams.delete('open_create');
+      nextUrl.searchParams.delete('senior_id');
+      window.history.replaceState({}, '', `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`);
+      selectedSeniorIdFromQuery = '';
+      shouldOpenCreateModalFromQuery = false;
+    }
+
     function applyQueryParams() {
       const params = new URLSearchParams(window.location.search);
       selectedSeniorIdFromQuery = params.get('senior_id') ?? '';
+      shouldOpenCreateModalFromQuery = params.get('open_create') === 'true';
     }
 
     async function loadSeniors() {
@@ -1146,6 +1364,7 @@
 
     async function loadHostings() {
       hostingItems = await api('/hostings/');
+      buildSeniorHostingRuleMap();
       renderSigunguOptions();
       renderHostings();
     }
@@ -1154,13 +1373,15 @@
       try {
         hideMessage();
         applyQueryParams();
-        updateDateConstraints();
-
         buildStartTimeOptions(document.querySelector('#hosting-start-time'));
         resetDurationOptions();
-        document.querySelector('#hosting-date').value = getDefaultDateValue();
 
         await Promise.all([loadSeniors(), loadHostings()]);
+
+        if (shouldOpenCreateModalFromQuery && seniorsCache.length > 0) {
+          resetHostingForm();
+          openHostingModal();
+        }
       } catch (error) {
         console.error(error);
         await showMessage(error?.message || '호스팅 정보를 불러오지 못했어요.', 'error');
@@ -1173,15 +1394,25 @@
     document.querySelector('#filter-keyword')?.addEventListener('input', renderHostings);
 
     document.querySelector('#open-hosting-modal')?.addEventListener('click', () => {
+      selectedSeniorIdFromQuery = '';
+      shouldOpenCreateModalFromQuery = false;
       resetHostingForm();
       openHostingModal();
     });
 
-    document.querySelector('#hosting-modal-close')?.addEventListener('click', closeHostingModal);
+    document.querySelector('#hosting-modal-close')?.addEventListener('click', () => {
+      closeHostingModal();
+      if (shouldOpenCreateModalFromQuery) {
+        clearCreateQueryParams();
+      }
+    });
 
     document.querySelector('#hosting-modal')?.addEventListener('click', (event) => {
       if (event.target === event.currentTarget) {
         closeHostingModal();
+        if (shouldOpenCreateModalFromQuery) {
+          clearCreateQueryParams();
+        }
       }
     });
 
@@ -1202,6 +1433,9 @@
 
         if (document.querySelector('#hosting-modal').classList.contains('open')) {
           closeHostingModal();
+          if (shouldOpenCreateModalFromQuery) {
+            clearCreateQueryParams();
+          }
         }
       }
     });
@@ -1210,7 +1444,19 @@
       const selectedSenior = seniorsCache.find(
         (senior) => String(senior.senior_id) === event.target.value
       );
+
+      document.querySelector('#hosting-start-time').value = '';
+      resetDurationOptions();
       fillAddressFieldsFromSenior(selectedSenior);
+    });
+
+    document.querySelector('#hosting-date')?.addEventListener('change', () => {
+      const currentStartTime = document.querySelector('#hosting-start-time').value;
+
+      if (currentStartTime) {
+        buildDurationOptions(currentStartTime);
+        updateTimeSummaryPreview();
+      }
     });
 
     document.querySelector('#hosting-start-time')?.addEventListener('change', (event) => {
@@ -1239,6 +1485,9 @@
         });
 
         closeHostingModal();
+        if (shouldOpenCreateModalFromQuery) {
+          clearCreateQueryParams();
+        }
         resetHostingForm();
         await loadHostings();
         await showMessage('호스팅이 등록되었어요.', 'success');
@@ -1250,7 +1499,16 @@
       }
     });
 
-    initializePage();
+    async function bootstrap() {
+      const currentUser = await requireRoles(['guardian', 'admin']);
+      if (!currentUser) {
+        return;
+      }
+
+      await initializePage();
+    }
+
+    bootstrap();
   </script>
 </body>
 </html>

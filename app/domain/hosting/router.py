@@ -13,7 +13,10 @@ from app.domain.hosting.service import (
     list_hostings_by_guardian,
     list_hostings_for_volunteer,
 )
-from app.domain.user.dependency import require_guardian
+from app.domain.user.dependency import (
+    require_approved_volunteer,
+    require_guardian,
+)
 
 router = APIRouter()
 
@@ -61,8 +64,11 @@ async def list_hostings_endpoint(
 )
 async def list_public_hostings_endpoint(
     session: AsyncSession = Depends(get_db),
+    current_volunteer=Depends(require_approved_volunteer),
 ) -> list[HostingResponse]:
-    """봉사자가 탐색 가능한 공개 호스팅 목록을 조회합니다."""
+    """승인된 봉사자가 탐색 가능한 공개 호스팅 목록을 조회합니다."""
+
+    _ = current_volunteer
 
     return await list_hostings_for_volunteer(session=session)
 
@@ -75,8 +81,11 @@ async def list_public_hostings_endpoint(
 async def get_public_hosting_detail_endpoint(
     hosting_id: int,
     session: AsyncSession = Depends(get_db),
+    current_volunteer=Depends(require_approved_volunteer),
 ) -> HostingResponse:
-    """봉사자가 조회 가능한 공개 호스팅 상세 정보를 조회합니다."""
+    """승인된 봉사자가 조회 가능한 공개 호스팅 상세 정보를 조회합니다."""
+
+    _ = current_volunteer
 
     return await get_public_hosting_detail(
         session=session,

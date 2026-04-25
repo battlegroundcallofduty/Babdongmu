@@ -318,7 +318,6 @@
       <p>어르신을 등록하고 호스팅 현황을 확인하세요</p>
     </div>
 
-    <div id="message-box" class="message-box hidden"></div>
 
     <div class="section-header slide-up stagger-1">
       <h2>내 어르신</h2>
@@ -491,6 +490,29 @@
       </div>
     </div>
 
+    <div id="result-modal" class="modal-overlay hidden">
+      <div class="modal-panel confirm-modal-panel" role="dialog" aria-modal="true" aria-labelledby="result-modal-title">
+        <div class="modal-header">
+          <h3 id="result-modal-title">안내</h3>
+          <button id="close-result-modal-button" type="button" class="modal-close-button" aria-label="닫기">
+            ×
+          </button>
+        </div>
+
+        <div id="result-modal-message" class="confirm-modal-body"></div>
+
+        <div class="confirm-modal-actions">
+          <button
+            id="result-modal-confirm-button"
+            type="button"
+            class="btn btn-primary btn-sm"
+          >
+            확인
+          </button>
+        </div>
+      </div>
+    </div>
+
     <div id="confirm-modal" class="modal-overlay hidden">
       <div class="modal-panel confirm-modal-panel" role="dialog" aria-modal="true" aria-labelledby="confirm-modal-title">
         <div class="modal-header">
@@ -539,11 +561,6 @@
       mergeDetailAddress,
     } from '/js/addressMapper.js';
 
-    const currentUser = requireRoles(['guardian', 'admin']);
-    if (!currentUser) {
-      throw new Error('접근 권한이 없습니다.');
-    }
-
     const seniorListElement = document.querySelector('#senior-list');
     const seniorEmptyElement = document.querySelector('#senior-empty');
     const seniorListActionsElement = document.querySelector('#senior-list-actions');
@@ -555,7 +572,6 @@
     const closeRegisterFormButtonElement = document.querySelector('#close-register-form-button');
 
     const seniorFormElement = document.querySelector('#senior-form');
-    const messageBoxElement = document.querySelector('#message-box');
     const formTitleElement = document.querySelector('#form-title');
     const submitButtonElement = document.querySelector('#submit-button');
     const cancelEditButtonElement = document.querySelector('#cancel-edit-button');
@@ -565,6 +581,12 @@
     const searchAddressButtonElement = document.querySelector('#search-address-button');
     const addressMetaElement = document.querySelector('#address-meta');
     const addressPreviewElement = document.querySelector('#address-preview');
+
+    const resultModalElement = document.querySelector('#result-modal');
+    const resultModalTitleElement = document.querySelector('#result-modal-title');
+    const resultModalMessageElement = document.querySelector('#result-modal-message');
+    const resultModalConfirmButtonElement = document.querySelector('#result-modal-confirm-button');
+    const closeResultModalButtonElement = document.querySelector('#close-result-modal-button');
 
     const confirmModalElement = document.querySelector('#confirm-modal');
     const confirmModalTitleElement = document.querySelector('#confirm-modal-title');
@@ -596,6 +618,9 @@
       }
     }
 
+    window.toggleNav = toggleNav;
+    window.closeNav = closeNav;
+
     function escapeHtml(value) {
       return String(value)
         .replaceAll('&', '&amp;')
@@ -605,19 +630,52 @@
         .replaceAll("'", '&#39;');
     }
 
-    function showMessage(message, isError = false) {
-      messageBoxElement.className = 'card message-box';
-      messageBoxElement.innerHTML = `
-        <div class="card-body">
-          <div class="${isError ? 'text-danger' : 'text-sm'}">${escapeHtml(message)}</div>
-        </div>
-      `;
-      messageBoxElement.classList.remove('hidden');
+    function isAnyModalOpen() {
+      return !registerFormModalElement.classList.contains('hidden')
+        || !resultModalElement.classList.contains('hidden')
+        || !confirmModalElement.classList.contains('hidden');
+    }
+
+    function syncBodyScrollLock() {
+      if (isAnyModalOpen()) {
+        document.body.classList.add('modal-open');
+      } else {
+        document.body.classList.remove('modal-open');
+      }
+    }
+
+    function getResultModalTitle(isError = false) {
+      return isError ? '오류' : '안내';
+    }
+
+    function showResultModal(message, isError = false) {
+      return new Promise((resolve) => {
+        resultModalTitleElement.textContent = getResultModalTitle(isError);
+        resultModalMessageElement.textContent = message;
+        resultModalElement.classList.remove('hidden');
+        resultModalElement.dataset.resolvePending = 'true';
+        resultModalElement._resolver = resolve;
+        syncBodyScrollLock();
+      });
+    }
+
+    function closeResultModal() {
+      resultModalElement.classList.add('hidden');
+
+      if (resultModalElement.dataset.resolvePending === 'true' && resultModalElement._resolver) {
+        const resolve = resultModalElement._resolver;
+        resultModalElement._resolver = null;
+        resultModalElement.dataset.resolvePending = 'false';
+        resolve();
+      }
+
+      syncBodyScrollLock();
     }
 
     function hideMessage() {
-      messageBoxElement.classList.add('hidden');
-      messageBoxElement.innerHTML = '';
+      if (!resultModalElement.classList.contains('hidden')) {
+        closeResultModal();
+      }
     }
 
     function getStatusBadge(activeFlag) {
@@ -690,7 +748,7 @@
 
     function openAddressSearch() {
       if (!window.daum?.Postcode) {
-        showMessage('주소 검색 스크립트를 불러오지 못했습니다.', true);
+        void showResultModal('주소 검색 스크립트를 불러오지 못했습니다.', true);
         return;
       }
 
@@ -772,13 +830,13 @@
 
     function openForm() {
       registerFormModalElement.classList.remove('hidden');
-      document.body.classList.add('modal-open');
+      syncBodyScrollLock();
     }
 
     function closeForm() {
       registerFormModalElement.classList.add('hidden');
-      document.body.classList.remove('modal-open');
       resetForm();
+      syncBodyScrollLock();
     }
 
     function openConfirmModal({
@@ -802,16 +860,13 @@
       }
 
       confirmModalElement.classList.remove('hidden');
-      document.body.classList.add('modal-open');
+      syncBodyScrollLock();
     }
 
     function closeConfirmModal() {
       confirmModalElement.classList.add('hidden');
       confirmModalHandler = null;
-
-      if (registerFormModalElement.classList.contains('hidden')) {
-        document.body.classList.remove('modal-open');
-      }
+      syncBodyScrollLock();
     }
 
     async function handleConfirmModalAction() {
@@ -938,7 +993,7 @@
         seniorListElement.innerHTML = '';
         seniorEmptyElement.classList.add('hidden');
         seniorListActionsElement.classList.add('hidden');
-        showMessage(error.message || '어르신 목록을 불러오지 못했습니다.', true);
+        await showResultModal(error.message || '어르신 목록을 불러오지 못했습니다.', true);
       }
     }
 
@@ -1003,6 +1058,20 @@
       }
     });
 
+    closeResultModalButtonElement?.addEventListener('click', () => {
+      closeResultModal();
+    });
+
+    resultModalConfirmButtonElement?.addEventListener('click', () => {
+      closeResultModal();
+    });
+
+    resultModalElement?.addEventListener('click', (event) => {
+      if (event.target === resultModalElement) {
+        closeResultModal();
+      }
+    });
+
     closeConfirmModalButtonElement?.addEventListener('click', () => {
       closeConfirmModal();
     });
@@ -1023,6 +1092,11 @@
 
     document.addEventListener('keydown', (event) => {
       if (event.key === 'Escape') {
+        if (!resultModalElement.classList.contains('hidden')) {
+          closeResultModal();
+          return;
+        }
+
         if (!confirmModalElement.classList.contains('hidden')) {
           closeConfirmModal();
           return;
@@ -1062,28 +1136,28 @@
       const payload = getFormPayload();
 
       if (!payload.road_address) {
-        showMessage('주소 검색으로 도로명 주소를 먼저 선택해 주세요.', true);
+        await showResultModal('주소 검색으로 도로명 주소를 먼저 선택해 주세요.', true);
         return;
       }
 
       if (!payload.detail_address) {
-        showMessage('상세주소를 입력해 주세요.', true);
+        await showResultModal('상세주소를 입력해 주세요.', true);
         return;
       }
 
       try {
         if (seniorId) {
           await updateSenior(seniorId, payload);
-          showMessage('어르신 정보가 수정되었어요.');
+          await showResultModal('어르신 정보가 수정되었어요.');
         } else {
           await createSenior(payload);
-          showMessage('어르신이 등록되었어요.');
+          await showResultModal('어르신이 등록되었어요.');
         }
 
         closeForm();
         await loadSeniors();
       } catch (error) {
-        showMessage(error.message || '요청 처리 중 오류가 발생했습니다.', true);
+        await showResultModal(error.message || '요청 처리 중 오류가 발생했습니다.', true);
       }
     });
 
@@ -1131,18 +1205,27 @@
             showConfirmButton: true,
             onConfirm: async () => {
               await deleteSenior(seniorId);
-              showMessage('어르신이 삭제되었어요.');
+              await showResultModal('어르신이 삭제되었어요.');
               await loadSeniors();
             },
           });
         }
       } catch (error) {
-        showMessage(error.message || '요청 처리 중 오류가 발생했습니다.', true);
+        await showResultModal(error.message || '요청 처리 중 오류가 발생했습니다.', true);
       }
     });
 
-    resetForm();
-    loadSeniors();
+    async function bootstrap() {
+      const currentUser = await requireRoles(['guardian', 'admin']);
+      if (!currentUser) {
+        return;
+      }
+
+      resetForm();
+      await loadSeniors();
+    }
+
+    bootstrap();
   </script>
 </body>
 </html>
