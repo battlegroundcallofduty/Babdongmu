@@ -28,13 +28,13 @@ from app.domain.user.service import (
     create_document,
     create_user,
     delete_document,
+    delete_phone_verifications,
     delete_user,
     get_document_by_id,
     get_documents_by_user_id,
     get_user_by_email,
-    update_user,
-    delete_phone_verifications,
     send_phone_verification,
+    update_user,
     verify_phone_code,
 )
 from app.services.r2 import (
@@ -107,17 +107,10 @@ async def update_me(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """마이페이지: 회원정보 수정 (이름, 이메일, 활동 동네)"""
+    """마이페이지: 회원정보 수정 (주소)"""
     update_data = body.model_dump(exclude_none=True)
-    if "email" in update_data:
-        update_data["email"] = update_data["email"].lower()
-        if update_data["email"] != current_user.email:
-            existing = await get_user_by_email(update_data["email"], db)
-            if existing:
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail="이미 사용 중인 이메일입니다.",
-                )
+    if not update_data:
+        return current_user
     updated = await update_user(
         current_user.user_id,
         db,

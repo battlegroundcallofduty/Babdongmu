@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr, field_validator, model_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 
 from app.domain.user.models import CertFlag, DocumentType, UserRole
 
@@ -16,10 +16,10 @@ class UserRegisterRequest(BaseModel):
     email: EmailStr
     password: str
     password_confirm: str  # 비밀번호 확인(라우터에서 안넘김)
-    name: str
-    phone_number: str
+    name: str = Field(min_length=1)
+    phone_number: str = Field(min_length=1)
     user_role: UserRole  # volunteer | guardian
-    address: str
+    address: str = Field(min_length=1, max_length=255)
 
     @field_validator("password")  # 특정 필드(비번) 하나
     # userregisterrequest 객체가 없는 상태라서 클래스(cls) 받음
@@ -47,9 +47,7 @@ class UserLoginRequest(BaseModel):
 class UserUpdateRequest(BaseModel):
     """회원정보 수정 요청 (마이페이지)"""
 
-    name: str | None = None
-    email: EmailStr | None = None
-    address: str | None = None
+    address: str | None = Field(None, min_length=1, max_length=255)
 
 
 class PasswordChangeRequest(BaseModel):
@@ -70,6 +68,8 @@ class PasswordChangeRequest(BaseModel):
     def passwords_match(self):
         if self.new_password != self.new_password_confirm:
             raise ValueError("새 비밀번호가 일치하지 않습니다.")
+        if self.current_password == self.new_password:
+            raise ValueError("새 비밀번호가 현재 비밀번호와 같습니다.")
         return self
 
 

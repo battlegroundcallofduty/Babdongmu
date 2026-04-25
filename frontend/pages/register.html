@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
+  <link rel="icon" href="/assets/icons/favicon.ico" type="image/x-icon">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>회원가입 - 밥동무</title>
   <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" rel="stylesheet">
@@ -59,7 +60,7 @@
         <div class="form-group">
           <label class="form-label" for="phone">전화번호</label>
           <div style="display:flex; gap:8px;">
-            <input class="form-input" type="tel" id="phone" placeholder="010-1234-5678" required style="flex:1;">
+            <input class="form-input" type="tel" id="phone" placeholder="01012345678" required style="flex:1;">
             <button type="button" id="btn-send-code" class="btn btn-secondary" style="white-space:nowrap;">인증하기</button>
           </div>
         </div>
@@ -72,7 +73,7 @@
           <p id="verify-msg" class="doc-hint"></p>
         </div>
         <div class="form-group">
-          <label class="form-label" for="district">활동 동네</label>
+          <label class="form-label" for="district">주소</label>
           <div style="display:flex; gap:8px;">
             <input class="form-input" type="text" id="district" placeholder="주소 검색 버튼을 눌러주세요" readonly required style="flex:1;">
             <button type="button" id="btn-search-address" class="btn btn-secondary" style="white-space:nowrap;">주소 검색</button>
