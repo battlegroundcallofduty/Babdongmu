@@ -96,9 +96,9 @@ class UserResponse(BaseModel):
     """유저 정보 반환 (비밀번호 제외)"""
 
     user_id: int
-    email: str
+    email: str | None
     name: str
-    phone_number: str
+    phone_number: str | None
     user_role: UserRole
     address: str
     cert_flag: CertFlag
