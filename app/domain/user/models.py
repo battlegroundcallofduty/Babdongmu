@@ -25,12 +25,13 @@ class User(Base):
     __tablename__ = "users"
 
     user_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    kakao_id: Mapped[str | None] = mapped_column(String(50), unique=True, nullable=True, index=True)
     name: Mapped[str] = mapped_column(String(100))
-    email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    email: Mapped[str | None] = mapped_column(String(255), unique=True, nullable=True, index=True)
     password: Mapped[str | None] = mapped_column(
         String(255), nullable=True
     )  # 카카오 로그인 시 None
-    phone_number: Mapped[str] = mapped_column(String(20))
+    phone_number: Mapped[str | None] = mapped_column(String(20), nullable=True)
     address_id: Mapped[int] = mapped_column(
         ForeignKey("addresses.address_id"), unique=True, nullable=False
     )
