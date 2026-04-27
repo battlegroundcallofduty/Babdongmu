@@ -420,7 +420,6 @@ async def get_public_hosting_detail(
 
     stmt = select(Hosting).where(
         Hosting.hosting_id == hosting_id,
-        Hosting.hosting_status == HostingStatus.OPEN,
     )
 
     result = await session.execute(stmt)
