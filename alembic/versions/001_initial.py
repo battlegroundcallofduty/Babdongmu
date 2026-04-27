@@ -43,10 +43,11 @@ def upgrade() -> None:
     op.create_table(
         "users",
         sa.Column("user_id", sa.Integer(), autoincrement=True, nullable=False),
+        sa.Column("kakao_id", sa.String(length=50), nullable=True),
         sa.Column("name", sa.String(length=100), nullable=False),
-        sa.Column("email", sa.String(length=255), nullable=False),
+        sa.Column("email", sa.String(length=255), nullable=True),
         sa.Column("password", sa.String(length=255), nullable=True),
-        sa.Column("phone_number", sa.String(length=20), nullable=False),
+        sa.Column("phone_number", sa.String(length=20), nullable=True),
         sa.Column("address_id", sa.Integer(), nullable=False),
         sa.Column(
             "user_role",
@@ -65,8 +66,10 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(["address_id"], ["addresses.address_id"]),
         sa.PrimaryKeyConstraint("user_id"),
         sa.UniqueConstraint("address_id"),
+        sa.UniqueConstraint("kakao_id"),
     )
     with op.batch_alter_table("users", schema=None) as batch_op:
+        batch_op.create_index(batch_op.f("ix_users_kakao_id"), ["kakao_id"], unique=True)
         batch_op.create_index(batch_op.f("ix_users_email"), ["email"], unique=True)
 
     # 3. phone_verifications
@@ -306,6 +309,7 @@ def downgrade() -> None:
 
     with op.batch_alter_table("users", schema=None) as batch_op:
         batch_op.drop_index(batch_op.f("ix_users_email"))
+        batch_op.drop_index(batch_op.f("ix_users_kakao_id"))
     op.drop_table("users")
 
     op.drop_table("addresses")
