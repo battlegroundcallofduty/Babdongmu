@@ -129,8 +129,9 @@ frontend/                        # 프론트엔드 (HTML/CSS/JS)
 └── pages/
     ├── login.html               # 로그인
     ├── register.html            # 회원가입
-    ├── hostings.html            # 호스팅 목록 (봉사자)
-    ├── hosting-detail.html      # 호스팅 상세
+    ├── hostings.html            # 호스팅 목록 (보호자)
+    ├── hosting-match.html       # 호스팅 목록 (봉사자)
+    ├── hosting-detail.html      # 호스팅 상세 (봉사자/보호자)
     ├── my-matches.html          # 내 매칭
     ├── mypage.html              # 마이페이지
     ├── guardian.html            # 보호자 관리

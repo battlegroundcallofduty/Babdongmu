@@ -79,6 +79,7 @@ class HostingResponse(BaseModel):
     hosting_at: datetime
     hosting_end: datetime
     max_people: int
+    current_people: int = Field(default=0, ge=0, description="현재 승인된 매칭 인원")
 
     road_address: str
     jibun_address: str | None

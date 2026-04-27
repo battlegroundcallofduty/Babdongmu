@@ -5,7 +5,7 @@ import logging
 from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.hosting.models import AlarmType, Hosting, HostingStatus
@@ -91,6 +91,60 @@ def ensure_utc_aware(dt: datetime) -> datetime:
     return dt.astimezone(timezone.utc)
 
 
+async def get_current_people_count(
+    session: AsyncSession,
+    hosting_id: int,
+) -> int:
+    """호스팅에 승인된 현재 매칭 인원을 조회합니다."""
+
+    result = await session.execute(
+        select(func.count(MatchingInfo.matching_id)).where(
+            MatchingInfo.hosting_id == hosting_id,
+            MatchingInfo.match_status == MatchStatus.APPROVED,
+        )
+    )
+
+    return result.scalar_one() or 0
+
+
+async def get_current_people_count_map(
+    session: AsyncSession,
+    hosting_ids: list[int],
+) -> dict[int, int]:
+    """호스팅 ID별 승인된 현재 매칭 인원 맵을 조회합니다."""
+
+    if not hosting_ids:
+        return {}
+
+    result = await session.execute(
+        select(
+            MatchingInfo.hosting_id,
+            func.count(MatchingInfo.matching_id).label("current_people"),
+        )
+        .where(
+            MatchingInfo.hosting_id.in_(hosting_ids),
+            MatchingInfo.match_status == MatchStatus.APPROVED,
+        )
+        .group_by(MatchingInfo.hosting_id)
+    )
+
+    return {
+        hosting_id: current_people
+        for hosting_id, current_people in result.all()
+    }
+
+
+def build_hosting_response(
+    hosting: Hosting,
+    current_people: int = 0,
+) -> HostingResponse:
+    """현재 모집 인원을 포함한 호스팅 응답을 생성합니다."""
+
+    response = HostingResponse.model_validate(hosting)
+    response.current_people = current_people
+    return response
+
+
 async def validate_hosting_interval(
     session: AsyncSession,
     senior_id: int,
@@ -168,6 +222,7 @@ async def get_approved_volunteer_ids(
     hosting_id: int,
 ) -> list[int]:
     """호스팅에 APPROVED 상태인 봉사자 ID 목록을 반환합니다."""
+
     result = await session.execute(
         select(MatchingInfo.vt_id).where(
             MatchingInfo.hosting_id == hosting_id,
@@ -233,7 +288,9 @@ async def run_hosting_status_scheduler(
             changed_count += 1
             logger.info(
                 "호스팅 ID=%d 상태 전환: %s → %s",
-                hosting.hosting_id, prev_status, new_status,
+                hosting.hosting_id,
+                prev_status,
+                new_status,
             )
 
         if new_status in {HostingStatus.FAILED, HostingStatus.FIXED}:
@@ -342,7 +399,7 @@ async def create_hosting(
     await session.commit()
     await session.refresh(hosting)
 
-    return HostingResponse.model_validate(hosting)
+    return build_hosting_response(hosting=hosting, current_people=0)
 
 
 async def list_hostings_by_guardian(
@@ -360,8 +417,19 @@ async def list_hostings_by_guardian(
 
     result = await session.execute(stmt)
     hostings = result.scalars().all()
+    hosting_ids = [hosting.hosting_id for hosting in hostings]
+    current_people_map = await get_current_people_count_map(
+        session=session,
+        hosting_ids=hosting_ids,
+    )
 
-    return [HostingResponse.model_validate(hosting) for hosting in hostings]
+    return [
+        build_hosting_response(
+            hosting=hosting,
+            current_people=current_people_map.get(hosting.hosting_id, 0),
+        )
+        for hosting in hostings
+    ]
 
 
 async def get_hosting_detail(
@@ -376,8 +444,15 @@ async def get_hosting_detail(
         guardian_id=guardian_id,
         hosting_id=hosting_id,
     )
+    current_people = await get_current_people_count(
+        session=session,
+        hosting_id=hosting.hosting_id,
+    )
 
-    return HostingResponse.model_validate(hosting)
+    return build_hosting_response(
+        hosting=hosting,
+        current_people=current_people,
+    )
 
 
 async def cancel_hosting(
@@ -428,7 +503,15 @@ async def cancel_hosting(
     if sms_tasks:
         await session.commit()
 
-    return HostingResponse.model_validate(hosting)
+    current_people = await get_current_people_count(
+        session=session,
+        hosting_id=hosting.hosting_id,
+    )
+
+    return build_hosting_response(
+        hosting=hosting,
+        current_people=current_people,
+    )
 
 
 async def list_hostings_for_volunteer(
@@ -444,8 +527,19 @@ async def list_hostings_for_volunteer(
 
     result = await session.execute(stmt)
     hostings = result.scalars().all()
+    hosting_ids = [hosting.hosting_id for hosting in hostings]
+    current_people_map = await get_current_people_count_map(
+        session=session,
+        hosting_ids=hosting_ids,
+    )
 
-    return [HostingResponse.model_validate(hosting) for hosting in hostings]
+    return [
+        build_hosting_response(
+            hosting=hosting,
+            current_people=current_people_map.get(hosting.hosting_id, 0),
+        )
+        for hosting in hostings
+    ]
 
 
 async def get_public_hosting_detail(
@@ -468,4 +562,12 @@ async def get_public_hosting_detail(
             detail="조회 가능한 호스팅 정보를 찾을 수 없습니다.",
         )
 
-    return HostingResponse.model_validate(hosting)
+    current_people = await get_current_people_count(
+        session=session,
+        hosting_id=hosting.hosting_id,
+    )
+
+    return build_hosting_response(
+        hosting=hosting,
+        current_people=current_people,
+    )
