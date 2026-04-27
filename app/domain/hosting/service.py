@@ -5,9 +5,11 @@ import logging
 from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
+from app.domain.common.models import Address
 from app.domain.hosting.models import AlarmType, Hosting, HostingStatus
 from app.domain.hosting.schemas import HostingCreateRequest, HostingResponse
 from app.domain.match.models import MatchingInfo, MatchStatus
@@ -15,6 +17,14 @@ from app.domain.senior.models import Senior
 from app.services.sms import send_sms
 
 logger = logging.getLogger(__name__)
+MIN_HOSTING_INTERVAL = timedelta(days=7)
+NON_FAILED_HOSTING_STATUSES = (
+    HostingStatus.OPEN,
+    HostingStatus.FULL,
+    HostingStatus.FIXED,
+    HostingStatus.IN_PROGRESS,
+    HostingStatus.CLOSED,
+)
 
 
 async def get_guardian_senior_by_id(
@@ -55,6 +65,7 @@ async def get_guardian_hosting_by_id(
             Hosting.hosting_id == hosting_id,
             Senior.guardian_id == guardian_id,
         )
+        .options(selectinload(Hosting.address))
     )
 
     result = await session.execute(stmt)
@@ -75,7 +86,6 @@ def get_now_utc() -> datetime:
     return datetime.now(timezone.utc)
 
 
-
 def ensure_utc_aware(dt: datetime) -> datetime:
     """datetime을 UTC aware 형태로 맞춥니다."""
 
@@ -83,6 +93,97 @@ def ensure_utc_aware(dt: datetime) -> datetime:
         return dt.replace(tzinfo=timezone.utc)
     return dt.astimezone(timezone.utc)
 
+
+async def get_current_people_count(
+    session: AsyncSession,
+    hosting_id: int,
+) -> int:
+    """호스팅에 승인된 현재 매칭 인원을 조회합니다."""
+
+    result = await session.execute(
+        select(func.count(MatchingInfo.matching_id)).where(
+            MatchingInfo.hosting_id == hosting_id,
+            MatchingInfo.match_status == MatchStatus.APPROVED,
+        )
+    )
+
+    return result.scalar_one() or 0
+
+
+async def get_current_people_count_map(
+    session: AsyncSession,
+    hosting_ids: list[int],
+) -> dict[int, int]:
+    """호스팅 ID별 승인된 현재 매칭 인원 맵을 조회합니다."""
+
+    if not hosting_ids:
+        return {}
+
+    result = await session.execute(
+        select(
+            MatchingInfo.hosting_id,
+            func.count(MatchingInfo.matching_id).label("current_people"),
+        )
+        .where(
+            MatchingInfo.hosting_id.in_(hosting_ids),
+            MatchingInfo.match_status == MatchStatus.APPROVED,
+        )
+        .group_by(MatchingInfo.hosting_id)
+    )
+
+    return {
+        hosting_id: current_people
+        for hosting_id, current_people in result.all()
+    }
+
+
+def build_hosting_response(
+    hosting: Hosting,
+    current_people: int = 0,
+) -> HostingResponse:
+    """현재 모집 인원을 포함한 호스팅 응답을 생성합니다."""
+
+    response = HostingResponse.model_validate(hosting)
+    response.current_people = current_people
+    return response
+
+
+async def validate_hosting_interval(
+    session: AsyncSession,
+    senior_id: int,
+    next_hosting_at: datetime,
+) -> None:
+    """어르신의 기존 호스팅과 새 호스팅 사이 간격을 검증합니다."""
+
+    stmt = (
+        select(Hosting)
+        .where(
+            Hosting.senior_id == senior_id,
+            Hosting.hosting_status.in_(NON_FAILED_HOSTING_STATUSES),
+        )
+        .order_by(Hosting.hosting_at.asc())
+    )
+
+    result = await session.execute(stmt)
+    existing_hostings = result.scalars().all()
+
+    for existing_hosting in existing_hostings:
+        existing_hosting_at = ensure_utc_aware(existing_hosting.hosting_at)
+        time_gap = abs(next_hosting_at - existing_hosting_at)
+
+        if time_gap < MIN_HOSTING_INTERVAL:
+            blocked_start_at = existing_hosting_at - MIN_HOSTING_INTERVAL
+            blocked_end_at = existing_hosting_at + MIN_HOSTING_INTERVAL
+
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    "이 어르신의 새 호스팅은 기존 호스팅 시작 시각의 전후 7일을 "
+                    "피해서 등록해야 합니다. "
+                    f"(기존 호스팅 시작: {existing_hosting_at.isoformat()}, "
+                    f"차단 구간: {blocked_start_at.isoformat()} ~ {blocked_end_at.isoformat()})"
+                ),
+            )
 
 
 def process_hosting_status_by_time(
@@ -96,19 +197,15 @@ def process_hosting_status_by_time(
     deadline_at = hosting_at - timedelta(hours=12)
     current_status = hosting.hosting_status
 
-    # 1. 시작 12시간 전까지 모집 미달이면 실패
     if now >= deadline_at and current_status == HostingStatus.OPEN:
         return HostingStatus.FAILED
 
-    # 2. 시작 12시간 전이고 모집완료 상태면 확정
     if now >= deadline_at and current_status == HostingStatus.FULL:
         return HostingStatus.FIXED
 
-    # 3. 시작 시각이 되었고 확정 상태면 진행중으로 변경
     if now >= hosting_at and current_status == HostingStatus.FIXED:
         return HostingStatus.IN_PROGRESS
 
-    # 4. 종료 시점 처리
     if now >= hosting_end:
         if current_status == HostingStatus.IN_PROGRESS:
             return HostingStatus.CLOSED
@@ -128,6 +225,7 @@ async def get_approved_volunteer_ids(
     hosting_id: int,
 ) -> list[int]:
     """호스팅에 APPROVED 상태인 봉사자 ID 목록을 반환합니다."""
+
     result = await session.execute(
         select(MatchingInfo.vt_id).where(
             MatchingInfo.hosting_id == hosting_id,
@@ -153,9 +251,6 @@ async def mark_matches_not_visited(
     changed_count = 0
 
     for match in matches:
-        # 체크아웃이 없으면 미방문 처리
-        # - 체크인 없음
-        # - 체크인만 있고 체크아웃 없음
         if match.check_out_time is None:
             match.match_status = MatchStatus.NOT_VISITED
             changed_count += 1
@@ -182,10 +277,7 @@ async def run_hosting_status_scheduler(
     result = await session.execute(stmt)
     hostings = result.scalars().all()
 
-    changed_count = 0      # 호스팅 상태 변경 건수 (반환값 + 로그용)
-    match_changed_count = 0  # 매칭 NOT_VISITED 처리 건수 (커밋 트리거용)
-    # SMS 발송 대상 수집 (commit 전 APPROVED 상태일 때 조회)
-    # hosting_id → (alarm_type, guardian_id, [vt_ids])
+    changed_count = 0
     notification_map: dict[int, tuple[AlarmType, int, list[int]]] = {}
 
     for hosting in hostings:
@@ -199,7 +291,9 @@ async def run_hosting_status_scheduler(
             changed_count += 1
             logger.info(
                 "호스팅 ID=%d 상태 전환: %s → %s",
-                hosting.hosting_id, prev_status, new_status,
+                hosting.hosting_id,
+                prev_status,
+                new_status,
             )
 
         if new_status in {HostingStatus.FAILED, HostingStatus.FIXED}:
@@ -209,7 +303,7 @@ async def run_hosting_status_scheduler(
             notification_map[hosting.hosting_id] = (alarm_type, senior.guardian_id, vt_ids)
 
         if new_status in {HostingStatus.FAILED, HostingStatus.CLOSED}:
-            match_changed_count += await mark_matches_not_visited(
+            await mark_matches_not_visited(
                 session=session,
                 hosting_id=hosting.hosting_id,
             )
@@ -217,9 +311,8 @@ async def run_hosting_status_scheduler(
     if changed_count > 0:
         await session.commit()
         logger.info("스케줄러 커밋 완료: 호스팅 %d건 상태 변경", changed_count)
-    sms_tasks = []
 
-    # 보호자 + 봉사자 전원에게 알림 (FAILED: 취소, FIXED: 매칭 확정)
+    sms_tasks = []
     for hid, (alarm_type, guardian_id, vt_ids) in notification_map.items():
         sms_tasks.append(
             send_sms(
@@ -271,39 +364,60 @@ async def create_hosting(
             detail="비활성화된 어르신으로는 호스팅을 등록할 수 없습니다.",
         )
 
+    hosting_at = ensure_utc_aware(request.hosting_at)
+    hosting_end = ensure_utc_aware(request.hosting_end)
+
+    await validate_hosting_interval(
+        session=session,
+        senior_id=senior.senior_id,
+        next_hosting_at=hosting_at,
+    )
+
     hosting_max_people = request.max_people
     if hosting_max_people is None:
         hosting_max_people = senior.max_people
 
-    hosting_at = ensure_utc_aware(request.hosting_at)
-    hosting_end = ensure_utc_aware(request.hosting_end)
+    # 어르신 주소를 호스팅 시점 스냅샷으로 복사 (이후 senior 주소 변경과 무관)
+    senior_address = await session.get(Address, senior.address_id)
+    address_snapshot = Address(
+        road_address=senior_address.road_address,
+        jibun_address=senior_address.jibun_address,
+        zonecode=senior_address.zonecode,
+        sigungu=senior_address.sigungu,
+        bname=senior_address.bname,
+        detail_address=senior_address.detail_address,
+        sido=senior_address.sido,
+        building_name=senior_address.building_name,
+        is_apartment=senior_address.is_apartment,
+        lat=senior_address.lat,
+        lng=senior_address.lng,
+        sigungu_code=senior_address.sigungu_code,
+    )
+    session.add(address_snapshot)
+    await session.flush()  # address_id 확보
 
     hosting = Hosting(
         senior_id=senior.senior_id,
+        address_id=address_snapshot.address_id,
         menu=request.menu,
         hosting_at=hosting_at,
         hosting_end=hosting_end,
         max_people=hosting_max_people,
-        road_address=senior.road_address,
-        jibun_address=senior.jibun_address,
-        zonecode=senior.zonecode,
-        sigungu=senior.sigungu,
-        bname=senior.bname,
-        detail_address=senior.detail_address,
-        sido=senior.sido,
-        building_name=senior.building_name,
-        is_apartment=senior.is_apartment,
-        lat=senior.lat,
-        lng=senior.lng,
-        sigungu_code=senior.sigungu_code,
         hosting_status=HostingStatus.OPEN,
     )
 
     session.add(hosting)
     await session.commit()
-    await session.refresh(hosting)
 
-    return HostingResponse.model_validate(hosting)
+    # commit 후 address relationship 포함해 재조회
+    result = await session.execute(
+        select(Hosting)
+        .where(Hosting.hosting_id == hosting.hosting_id)
+        .options(selectinload(Hosting.address))
+    )
+    hosting = result.scalar_one()
+
+    return build_hosting_response(hosting=hosting, current_people=0)
 
 
 async def list_hostings_by_guardian(
@@ -316,13 +430,25 @@ async def list_hostings_by_guardian(
         select(Hosting)
         .join(Senior, Senior.senior_id == Hosting.senior_id)
         .where(Senior.guardian_id == guardian_id)
+        .options(selectinload(Hosting.address))
         .order_by(Hosting.created_at.desc())
     )
 
     result = await session.execute(stmt)
     hostings = result.scalars().all()
+    hosting_ids = [hosting.hosting_id for hosting in hostings]
+    current_people_map = await get_current_people_count_map(
+        session=session,
+        hosting_ids=hosting_ids,
+    )
 
-    return [HostingResponse.model_validate(hosting) for hosting in hostings]
+    return [
+        build_hosting_response(
+            hosting=hosting,
+            current_people=current_people_map.get(hosting.hosting_id, 0),
+        )
+        for hosting in hostings
+    ]
 
 
 async def get_hosting_detail(
@@ -337,8 +463,15 @@ async def get_hosting_detail(
         guardian_id=guardian_id,
         hosting_id=hosting_id,
     )
+    current_people = await get_current_people_count(
+        session=session,
+        hosting_id=hosting.hosting_id,
+    )
 
-    return HostingResponse.model_validate(hosting)
+    return build_hosting_response(
+        hosting=hosting,
+        current_people=current_people,
+    )
 
 
 async def cancel_hosting(
@@ -365,14 +498,11 @@ async def cancel_hosting(
         )
 
     hosting.hosting_status = HostingStatus.FAILED
-
-    # commit 전 APPROVED 봉사자 목록 수집
     vt_ids = await get_approved_volunteer_ids(session, hosting_id)
 
     await session.commit()
     await session.refresh(hosting)
 
-    # SMS 발송 — 신청한 봉사자 전원에게 호스팅 취소 알림
     sms_tasks = []
     for vt_id in vt_ids:
         sms_tasks.append(
@@ -392,7 +522,21 @@ async def cancel_hosting(
     if sms_tasks:
         await session.commit()
 
-    return HostingResponse.model_validate(hosting)
+    # commit 후 address relationship 포함해 재조회
+    hosting = await get_guardian_hosting_by_id(
+        session=session,
+        guardian_id=guardian_id,
+        hosting_id=hosting_id,
+    )
+    current_people = await get_current_people_count(
+        session=session,
+        hosting_id=hosting.hosting_id,
+    )
+
+    return build_hosting_response(
+        hosting=hosting,
+        current_people=current_people,
+    )
 
 
 async def list_hostings_for_volunteer(
@@ -403,13 +547,25 @@ async def list_hostings_for_volunteer(
     stmt = (
         select(Hosting)
         .where(Hosting.hosting_status == HostingStatus.OPEN)
+        .options(selectinload(Hosting.address))
         .order_by(Hosting.hosting_at.asc(), Hosting.created_at.desc())
     )
 
     result = await session.execute(stmt)
     hostings = result.scalars().all()
+    hosting_ids = [hosting.hosting_id for hosting in hostings]
+    current_people_map = await get_current_people_count_map(
+        session=session,
+        hosting_ids=hosting_ids,
+    )
 
-    return [HostingResponse.model_validate(hosting) for hosting in hostings]
+    return [
+        build_hosting_response(
+            hosting=hosting,
+            current_people=current_people_map.get(hosting.hosting_id, 0),
+        )
+        for hosting in hostings
+    ]
 
 
 async def get_public_hosting_detail(
@@ -418,9 +574,10 @@ async def get_public_hosting_detail(
 ) -> HostingResponse:
     """봉사자가 조회 가능한 공개 호스팅 상세 정보를 반환합니다."""
 
-    stmt = select(Hosting).where(
-        Hosting.hosting_id == hosting_id,
-        Hosting.hosting_status == HostingStatus.OPEN,
+    stmt = (
+        select(Hosting)
+        .where(Hosting.hosting_id == hosting_id)
+        .options(selectinload(Hosting.address))
     )
 
     result = await session.execute(stmt)
@@ -432,4 +589,12 @@ async def get_public_hosting_detail(
             detail="조회 가능한 호스팅 정보를 찾을 수 없습니다.",
         )
 
-    return HostingResponse.model_validate(hosting)
+    current_people = await get_current_people_count(
+        session=session,
+        hosting_id=hosting.hosting_id,
+    )
+
+    return build_hosting_response(
+        hosting=hosting,
+        current_people=current_people,
+    )

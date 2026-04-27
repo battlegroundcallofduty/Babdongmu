@@ -36,6 +36,7 @@
       text-decoration: none;
       color: inherit;
       height: 100%;
+      cursor: pointer;
     }
 
     .hosting-header {
@@ -86,6 +87,20 @@
       word-break: keep-all;
     }
 
+    .hosting-status-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .hosting-status-row-after-menu {
+      margin-bottom: 14px;
+    }
+
+    .hosting-status-badge {
+      width: fit-content;
+    }
+
     .hosting-menu {
       font-size: 22px;
       font-weight: 700;
@@ -96,21 +111,36 @@
     }
 
     .hosting-meta {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      flex-wrap: wrap;
+      display: block;
       margin-bottom: 12px;
       padding-top: 14px;
       border-top: 1px solid #F2ECE6;
     }
 
     .hosting-meta-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
       color: #6B5E53;
       font-size: 15px;
       font-weight: 500;
       line-height: 1.5;
+    }
+
+    .hosting-meta-row + .hosting-meta-row {
+      margin-top: 6px;
+    }
+
+    .hosting-meta-label {
+      min-width: 36px;
+      color: #8C7E73;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .hosting-meta-value {
+      min-width: 0;
+      word-break: keep-all;
     }
 
     .hosting-helper {
@@ -418,7 +448,6 @@
       </div>
     </div>
 
-    <div id="message-box" class="message-box" role="status" aria-live="polite"></div>
 
     <div class="filter-bar slide-up stagger-1">
       <select id="filter-senior" class="form-input">
@@ -484,7 +513,7 @@
           <div class="form-group">
             <label class="form-label" for="hosting-date">날짜</label>
             <input class="form-input" type="date" id="hosting-date" required>
-            <p class="form-hint">현재 기준 24시간 이후부터 14일 이내로 등록할 수 있어요.</p>
+            <p class="form-hint">현재 기준 24시간 이후부터 한 달 이내로 등록할 수 있어요.</p>
           </div>
 
           <div class="form-group">
@@ -546,17 +575,19 @@
   <script type="module">
     import { requireRoles } from '/js/authGuard.js';
 
-    const currentUser = requireRoles(['guardian', 'admin']);
-    if (!currentUser) {
-      throw new Error('접근 권한이 없습니다.');
-    }
-
     const KST_TIME_ZONE = 'Asia/Seoul';
+    const MIN_HOSTING_INTERVAL_DAYS = 7;
+    const MIN_HOSTING_START_HOUR = 7;
+    const MAX_HOSTING_START_HOUR = 20;
+    const MAX_HOSTING_END_HOUR = 22;
+
 
     let seniorsCache = [];
     let hostingItems = [];
     let selectedSeniorIdFromQuery = '';
+    let shouldOpenCreateModalFromQuery = false;
     let alertModalResolve = null;
+    let seniorHostingRuleMap = new Map();
 
     function toggleNav() {
       const toggleElement = document.querySelector('.nav-toggle');
@@ -579,16 +610,10 @@
       return document.querySelector('#hosting-modal').classList.contains('open');
     }
 
-    function showPageMessage(message, type = 'info') {
-      const messageBoxElement = document.querySelector('#message-box');
-      messageBoxElement.textContent = message;
-      messageBoxElement.className = `message-box show ${type}`;
-    }
-
     function hideMessage() {
-      const messageBoxElement = document.querySelector('#message-box');
-      messageBoxElement.textContent = '';
-      messageBoxElement.className = 'message-box';
+      if (document.querySelector('#alert-modal').classList.contains('open')) {
+        closeAlertModal();
+      }
     }
 
     function getAlertModalTitle(type) {
@@ -628,12 +653,7 @@
     }
 
     function showMessage(message, type = 'info') {
-      if (isHostingModalOpen()) {
-        return showAlertModal(message, type);
-      }
-
-      showPageMessage(message, type);
-      return Promise.resolve();
+      return showAlertModal(message, type);
     }
 
     function getStatusMeta(status) {
@@ -641,7 +661,7 @@
         'OPEN': { label: '신청가능', className: 'badge-open' },
         'FULL': { label: '모집완료', className: 'badge-full' },
         'FIXED': { label: '확정', className: 'badge-full' },
-        'FAILED': { label: '취소', className: 'badge-failed' },
+        'FAILED': { label: '취소됨', className: 'badge-failed' },
         'IN_PROGRESS': { label: '진행중', className: 'badge-progress' },
         'CLOSED': { label: '완료', className: 'badge-closed' },
       };
@@ -662,9 +682,35 @@
         .replaceAll("'", '&#39;');
     }
 
+    function parseApiDateTime(value) {
+      if (!value) {
+        return null;
+      }
+
+      if (value instanceof Date) {
+        return value;
+      }
+
+      if (typeof value === 'string') {
+        const normalizedValue = value.includes('T')
+          && !value.endsWith('Z')
+          && !/[+-]\d{2}:\d{2}$/.test(value)
+          ? `${value}Z`
+          : value;
+
+        return new Date(normalizedValue);
+      }
+
+      return new Date(value);
+    }
+
     function formatDateTimeRange(hostingAt, hostingEnd) {
-      const startDate = new Date(hostingAt);
-      const endDate = new Date(hostingEnd);
+      const startDate = parseApiDateTime(hostingAt);
+      const endDate = parseApiDateTime(hostingEnd);
+
+      if (!startDate || Number.isNaN(startDate.getTime()) || !endDate || Number.isNaN(endDate.getTime())) {
+        return '-';
+      }
 
       const dateText = new Intl.DateTimeFormat('ko-KR', {
         timeZone: KST_TIME_ZONE,
@@ -690,21 +736,114 @@
       return `${dateText} · ${startTimeText} ~ ${endTimeText}`;
     }
 
+    function formatHostingDate(hostingAt) {
+      const startDate = parseApiDateTime(hostingAt);
+
+      if (!startDate || Number.isNaN(startDate.getTime())) {
+        return '-';
+      }
+
+      return new Intl.DateTimeFormat('ko-KR', {
+        timeZone: KST_TIME_ZONE,
+        month: 'long',
+        day: 'numeric',
+        weekday: 'short',
+      }).format(startDate);
+    }
+
+    function formatHostingTimeRange(hostingAt, hostingEnd) {
+      const startDate = parseApiDateTime(hostingAt);
+      const endDate = parseApiDateTime(hostingEnd);
+
+      if (!startDate || Number.isNaN(startDate.getTime()) || !endDate || Number.isNaN(endDate.getTime())) {
+        return '-';
+      }
+
+      const startTimeText = new Intl.DateTimeFormat('ko-KR', {
+        timeZone: KST_TIME_ZONE,
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      }).format(startDate);
+
+      const endTimeText = new Intl.DateTimeFormat('ko-KR', {
+        timeZone: KST_TIME_ZONE,
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      }).format(endDate);
+
+      return `${startTimeText} ~ ${endTimeText}`;
+    }
+
+    function getHostingDurationHours(hostingAt, hostingEnd) {
+      const startDate = parseApiDateTime(hostingAt);
+      const endDate = parseApiDateTime(hostingEnd);
+
+      if (!startDate || Number.isNaN(startDate.getTime()) || !endDate || Number.isNaN(endDate.getTime())) {
+        return null;
+      }
+
+      const durationMs = endDate.getTime() - startDate.getTime();
+      const durationHours = durationMs / (60 * 60 * 1000);
+
+      if (!Number.isFinite(durationHours) || durationHours <= 0) {
+        return null;
+      }
+
+      return Number.isInteger(durationHours)
+        ? String(durationHours)
+        : durationHours.toFixed(1);
+    }
+
+    function formatDateTimeRangeWithDuration(hostingAt, hostingEnd) {
+      const dateTimeRangeText = formatDateTimeRange(hostingAt, hostingEnd);
+      const durationHours = getHostingDurationHours(hostingAt, hostingEnd);
+
+      if (dateTimeRangeText === '-' || !durationHours) {
+        return dateTimeRangeText;
+      }
+
+      return `${dateTimeRangeText} (${durationHours}시간 진행)`;
+    }
+
+    function formatHostingTimeRangeWithDuration(hostingAt, hostingEnd) {
+      const timeRangeText = formatHostingTimeRange(hostingAt, hostingEnd);
+      const durationHours = getHostingDurationHours(hostingAt, hostingEnd);
+
+      if (timeRangeText === '-' || !durationHours) {
+        return timeRangeText;
+      }
+
+      return `${timeRangeText} (${durationHours}시간 진행)`;
+    }
+
     function buildHostingAddressText(hosting) {
-      const baseAddress = [hosting?.road_address, hosting?.detail_address]
+      const baseAddress = [hosting?.address.road_address, hosting?.address.detail_address]
         .filter(Boolean)
         .join(' ')
         .trim();
 
       if (!baseAddress) {
-        return hosting?.building_name ?? '';
+        return hosting?.address.building_name ?? '';
       }
 
-      if (!hosting?.building_name) {
+      if (!hosting?.address.building_name) {
         return baseAddress;
       }
 
-      return `${baseAddress} (${hosting.building_name})`;
+      return `${baseAddress} (${hosting.address.building_name})`;
+    }
+
+    function getCurrentPeopleCount(hosting) {
+      return Number(hosting?.current_people ?? 0);
+    }
+
+    function formatHostingPeopleText(hosting) {
+      const currentPeople = getCurrentPeopleCount(hosting);
+      const maxPeople = Number(hosting?.max_people ?? 0);
+
+      return `${currentPeople}/${maxPeople}명`;
     }
 
     function buildHostingCard(hosting) {
@@ -714,25 +853,40 @@
       const avatarText = senior?.name ? senior.name.charAt(0) : '어';
       const statusMeta = getStatusMeta(hosting.hosting_status);
       const addressText = buildHostingAddressText(hosting);
-      const helperText = `${hosting.max_people}명 모집`;
+      const helperText = formatHostingPeopleText(hosting);
 
       const cardElement = document.createElement('article');
       cardElement.className = 'card hosting-card slide-up';
       cardElement.dataset.seniorId = String(hosting.senior_id);
-      cardElement.dataset.sigungu = hosting.sigungu ?? '';
+      cardElement.dataset.sigungu = hosting.address.sigungu ?? '';
       cardElement.dataset.status = hosting.hosting_status ?? '';
       cardElement.dataset.keyword = [
         hosting.menu,
-        hosting.road_address,
-        hosting.detail_address,
-        hosting.sigungu,
-        hosting.bname,
-        hosting.building_name,
+        hosting.address.road_address,
+        hosting.address.detail_address,
+        hosting.address.sigungu,
+        hosting.address.bname,
+        hosting.address.building_name,
         senior?.name,
       ]
         .filter(Boolean)
         .join(' ')
         .toLowerCase();
+      cardElement.tabIndex = 0;
+      cardElement.setAttribute('role', 'link');
+      cardElement.setAttribute('aria-label', `${seniorName} 호스팅 상세 보기`);
+      cardElement.addEventListener('click', (event) => {
+        if (event.target.closest('.hosting-card-actions a, .hosting-card-actions button')) {
+          return;
+        }
+        window.location.href = `/pages/hosting-detail.html?id=${hosting.hosting_id}&view=guardian`;
+      });
+      cardElement.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          window.location.href = `/pages/hosting-detail.html?id=${hosting.hosting_id}&view=guardian`;
+        }
+      });
 
       cardElement.innerHTML = `
         <div class="card-body">
@@ -746,19 +900,28 @@
 
           <div class="hosting-menu">${escapeHtml(hosting.menu || '-')}</div>
 
-          <div class="hosting-meta">
-            <span class="hosting-meta-row">${escapeHtml(formatDateTimeRange(hosting.hosting_at, hosting.hosting_end))}</span>
-            <span class="badge ${statusMeta.className}">${escapeHtml(statusMeta.label)}</span>
+          <div class="hosting-status-row hosting-status-row-after-menu">
+            <span class="badge hosting-status-badge ${statusMeta.className}">
+              ${escapeHtml(statusMeta.label)}
+            </span>
           </div>
 
-          <div class="hosting-helper">${escapeHtml(helperText)}</div>
+          <div class="hosting-meta">
+            <div class="hosting-meta-row">
+              <span class="hosting-meta-label">날짜</span>
+              <span class="hosting-meta-value">${escapeHtml(formatHostingDate(hosting.hosting_at))}</span>
+            </div>
+            <div class="hosting-meta-row">
+              <span class="hosting-meta-label">시간</span>
+              <span class="hosting-meta-value">${escapeHtml(formatHostingTimeRangeWithDuration(hosting.hosting_at, hosting.hosting_end))}</span>
+            </div>
+          </div>
+
+          <div class="hosting-helper">모집 인원 ${escapeHtml(helperText)}</div>
 
           <div class="hosting-card-actions">
             <a class="btn btn-primary" href="/pages/hosting-detail.html?id=${hosting.hosting_id}&view=guardian">
-              상세
-            </a>
-            <a class="btn btn-secondary" href="/pages/guardian.html?senior_id=${hosting.senior_id}">
-              어르신
+              상세 보기
             </a>
           </div>
         </div>
@@ -791,7 +954,7 @@
 
       const sigunguSet = new Set(
         hostingItems
-          .map((hosting) => hosting.sigungu ?? '')
+          .map((hosting) => hosting.address.sigungu ?? '')
           .filter(Boolean)
       );
 
@@ -821,16 +984,16 @@
 
       const filteredItems = hostingItems.filter((hosting) => {
         const matchesSenior = !selectedSeniorId || String(hosting.senior_id) === selectedSeniorId;
-        const matchesSigungu = !selectedSigungu || hosting.sigungu === selectedSigungu;
+        const matchesSigungu = !selectedSigungu || hosting.address.sigungu === selectedSigungu;
         const matchesStatus = !selectedStatus || hosting.hosting_status === selectedStatus;
 
         const keywordTarget = [
           hosting.menu,
-          hosting.road_address,
-          hosting.detail_address,
-          hosting.sigungu,
-          hosting.bname,
-          hosting.building_name,
+          hosting.address.road_address,
+          hosting.address.detail_address,
+          hosting.address.sigungu,
+          hosting.address.bname,
+          hosting.address.building_name,
           seniorsCache.find((senior) => String(senior.senior_id) === String(hosting.senior_id))?.name,
         ]
           .filter(Boolean)
@@ -863,14 +1026,324 @@
       });
     }
 
+
+    function getNormalizedHostingStartDate(hosting) {
+      const hostingAt = parseApiDateTime(hosting?.hosting_at);
+
+      if (!hostingAt || Number.isNaN(hostingAt.getTime())) {
+        return null;
+      }
+
+      return hostingAt;
+    }
+
+    function addDays(date, days) {
+      return new Date(date.getTime() + (days * 24 * 60 * 60 * 1000));
+    }
+
+    function getDateInputValueInKst(date) {
+      if (!date || Number.isNaN(date.getTime())) {
+        return '';
+      }
+
+      const formatter = new Intl.DateTimeFormat('en-CA', {
+        timeZone: KST_TIME_ZONE,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      });
+
+      return formatter.format(date);
+    }
+
+    function formatDateTimeForNotice(date) {
+      if (!date || Number.isNaN(date.getTime())) {
+        return '-';
+      }
+
+      return new Intl.DateTimeFormat('ko-KR', {
+        timeZone: KST_TIME_ZONE,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      }).format(date);
+    }
+
+    function getBaseMinHostingDate() {
+      return new Date(Date.now() + (24 * 60 * 60 * 1000));
+    }
+
+    function getBaseMaxHostingDate() {
+      const maxDate = new Date();
+      maxDate.setMonth(maxDate.getMonth() + 1);
+      return maxDate;
+    }
+
+    function buildSeniorHostingRuleMap() {
+      const ruleMap = new Map();
+
+      hostingItems.forEach((hosting) => {
+        if (hosting?.hosting_status === 'FAILED') {
+          return;
+        }
+
+        const seniorId = String(hosting?.senior_id ?? '');
+        const hostingAt = getNormalizedHostingStartDate(hosting);
+
+        if (!seniorId || !hostingAt) {
+          return;
+        }
+
+        const existingRules = ruleMap.get(seniorId) ?? [];
+        existingRules.push({
+          hostingId: hosting.hosting_id,
+          hostingAt,
+          blockedStartAt: addDays(hostingAt, -MIN_HOSTING_INTERVAL_DAYS),
+          blockedEndAt: addDays(hostingAt, MIN_HOSTING_INTERVAL_DAYS),
+        });
+        ruleMap.set(seniorId, existingRules);
+      });
+
+      seniorHostingRuleMap = ruleMap;
+    }
+
+    function getSeniorHostingRules(seniorId) {
+      if (!seniorId) {
+        return [];
+      }
+
+      return seniorHostingRuleMap.get(String(seniorId)) ?? [];
+    }
+
+    function getSelectedSeniorRules() {
+      const seniorId = document.querySelector('#hosting-senior')?.value;
+      return getSeniorHostingRules(seniorId);
+    }
+
+    function findConflictingHostingRule(seniorId, candidateStartDate) {
+      if (!candidateStartDate || Number.isNaN(candidateStartDate.getTime())) {
+        return null;
+      }
+
+      return getSeniorHostingRules(seniorId).find((rule) => {
+        return candidateStartDate > rule.blockedStartAt && candidateStartDate < rule.blockedEndAt;
+      }) ?? null;
+    }
+
+    function buildKstDateTime(dateValue, timeValue) {
+      if (!dateValue || !timeValue) {
+        return null;
+      }
+
+      return parseApiDateTime(`${dateValue}T${timeValue}:00+09:00`);
+    }
+
+    function buildCandidateStartTimesForDate(dateValue) {
+      const times = [];
+
+      for (let hour = MIN_HOSTING_START_HOUR; hour <= MAX_HOSTING_START_HOUR; hour += 1) {
+        times.push(`${String(hour).padStart(2, '0')}:00`);
+      }
+
+      return times.filter((timeValue) => isStartDateTimeSelectable(dateValue, timeValue));
+    }
+
+    function isStartDateTimeSelectable(dateValue, timeValue) {
+      const seniorId = document.querySelector('#hosting-senior')?.value;
+      const candidateDate = buildKstDateTime(dateValue, timeValue);
+
+      if (!seniorId || !candidateDate || Number.isNaN(candidateDate.getTime())) {
+        return false;
+      }
+
+      const baseMinDate = getBaseMinHostingDate();
+      const baseMaxDate = getBaseMaxHostingDate();
+
+      if (candidateDate < baseMinDate || candidateDate > baseMaxDate) {
+        return false;
+      }
+
+      return !findConflictingHostingRule(seniorId, candidateDate);
+    }
+
+    function findClosestSelectableDateValue(preferredDateValue = '') {
+      const baseMinDate = getBaseMinHostingDate();
+      const baseMaxDate = getBaseMaxHostingDate();
+      const baseMinDateValue = getDateInputValueInKst(baseMinDate);
+      const baseMaxDateValue = getDateInputValueInKst(baseMaxDate);
+      const startDateValue = preferredDateValue
+        && preferredDateValue >= baseMinDateValue
+        && preferredDateValue <= baseMaxDateValue
+        ? preferredDateValue
+        : baseMinDateValue;
+
+      let cursor = buildKstDateTime(startDateValue, '00:00');
+
+      if (!cursor || Number.isNaN(cursor.getTime())) {
+        cursor = buildKstDateTime(baseMinDateValue, '00:00');
+      }
+
+      while (cursor && cursor <= baseMaxDate) {
+        const dateValue = getDateInputValueInKst(cursor);
+        const startTimes = buildCandidateStartTimesForDate(dateValue);
+
+        if (startTimes.length > 0) {
+          return dateValue;
+        }
+
+        cursor = addDays(cursor, 1);
+      }
+
+      return '';
+    }
+
+    function updateHostingAvailabilityNotice() {
+      const addressPreviewElement = document.querySelector('#hosting-address-preview');
+      const selectedSeniorId = document.querySelector('#hosting-senior')?.value;
+      const senior = seniorsCache.find((item) => String(item.senior_id) === selectedSeniorId);
+
+      addressPreviewElement.textContent = senior
+        ? (buildSeniorAddressText(senior) || '등록된 주소 정보가 없어요.')
+        : '어르신을 선택하면 주소가 표시돼요.';
+    }
+
+    function getDateRuleBlockingRules(dateValue) {
+      if (!dateValue) {
+        return [];
+      }
+
+      const selectedSeniorId = document.querySelector('#hosting-senior')?.value;
+      if (!selectedSeniorId) {
+        return [];
+      }
+
+      const candidateTimes = [];
+      for (let hour = MIN_HOSTING_START_HOUR; hour <= MAX_HOSTING_START_HOUR; hour += 1) {
+        candidateTimes.push(`${String(hour).padStart(2, '0')}:00`);
+      }
+
+      const blockingRules = new Map();
+
+      candidateTimes.forEach((timeValue) => {
+        const candidateDate = buildKstDateTime(dateValue, timeValue);
+        const conflictingRule = findConflictingHostingRule(selectedSeniorId, candidateDate);
+
+        if (conflictingRule) {
+          blockingRules.set(String(conflictingRule.hostingId), conflictingRule);
+        }
+      });
+
+      return [...blockingRules.values()].sort((left, right) => left.hostingAt - right.hostingAt);
+    }
+
+    function buildHostingIntervalRuleMessage(rules) {
+      const hostingTimesText = rules
+        .map((rule) => formatDateTimeForNotice(rule.hostingAt))
+        .join(', ');
+
+      return `등록된 각 호스팅 시작 시각의 전후 ${MIN_HOSTING_INTERVAL_DAYS}일은 새 호스팅 시작 시각으로 선택할 수 없어요.
+기준 호스팅: ${hostingTimesText}`;
+    }
+
+    function updateDateConstraintsForSenior(preferredDateValue = '') {
+      const dateInputElement = document.querySelector('#hosting-date');
+      const baseMinDate = getBaseMinHostingDate();
+      const baseMaxDate = getBaseMaxHostingDate();
+
+      dateInputElement.min = getDateInputValueInKst(baseMinDate);
+      dateInputElement.max = getDateInputValueInKst(baseMaxDate);
+
+      if (!document.querySelector('#hosting-senior')?.value || dateInputElement.min > dateInputElement.max) {
+        dateInputElement.value = '';
+        dateInputElement.disabled = true;
+        return {
+          isAvailable: false,
+          baseMinDate,
+          baseMaxDate,
+        };
+      }
+
+      const closestSelectableDateValue = findClosestSelectableDateValue(preferredDateValue || dateInputElement.value);
+
+      if (!closestSelectableDateValue) {
+        dateInputElement.value = '';
+        dateInputElement.disabled = true;
+        return {
+          isAvailable: false,
+          baseMinDate,
+          baseMaxDate,
+        };
+      }
+
+      dateInputElement.disabled = false;
+      dateInputElement.value = closestSelectableDateValue;
+
+      return {
+        isAvailable: true,
+        baseMinDate,
+        baseMaxDate,
+      };
+    }
+
+    function updateStartTimeOptionsForSelectedDate() {
+      const startTimeElement = document.querySelector('#hosting-start-time');
+      const selectedDateValue = document.querySelector('#hosting-date').value;
+      const previousValue = startTimeElement.value;
+      const selectableStartTimes = buildCandidateStartTimesForDate(selectedDateValue);
+
+      startTimeElement.innerHTML = '';
+
+      if (!selectableStartTimes.length) {
+        startTimeElement.appendChild(new Option('선택 가능한 시작 시간이 없어요', ''));
+        startTimeElement.value = '';
+        startTimeElement.disabled = true;
+        resetDurationOptions();
+        return false;
+      }
+
+      startTimeElement.appendChild(new Option('시작 시간 선택', ''));
+      selectableStartTimes.forEach((timeValue) => {
+        startTimeElement.appendChild(new Option(timeValue, timeValue));
+      });
+
+      startTimeElement.disabled = false;
+      startTimeElement.value = selectableStartTimes.includes(previousValue) ? previousValue : '';
+      return true;
+    }
+
+    function updateHostingFormAvailability(preferredDateValue = '') {
+      const submitButtonElement = document.querySelector('#hosting-submit-button');
+      const durationElement = document.querySelector('#hosting-duration');
+      const dateAvailability = updateDateConstraintsForSenior(preferredDateValue);
+
+      if (!dateAvailability.isAvailable) {
+        submitButtonElement.disabled = true;
+        durationElement.disabled = true;
+        resetDurationOptions();
+        updateTimeSummaryPreview();
+        return false;
+      }
+
+      const hasSelectableStartTime = updateStartTimeOptionsForSelectedDate();
+      submitButtonElement.disabled = !hasSelectableStartTime;
+
+      if (!hasSelectableStartTime) {
+        durationElement.disabled = true;
+        resetDurationOptions();
+        updateTimeSummaryPreview();
+        return false;
+      }
+
+      return true;
+    }
+
     function buildStartTimeOptions(selectElement) {
       selectElement.innerHTML = '';
-      selectElement.appendChild(new Option('시작 시간 선택', ''));
-
-      for (let hour = 7; hour <= 20; hour += 1) {
-        const value = `${String(hour).padStart(2, '0')}:00`;
-        selectElement.appendChild(new Option(value, value));
-      }
+      selectElement.appendChild(new Option('날짜를 먼저 선택해 주세요', ''));
+      selectElement.disabled = true;
     }
 
     function resetDurationOptions() {
@@ -900,16 +1373,42 @@
     function buildDurationOptions(startTimeValue) {
       const durationSelectElement = document.querySelector('#hosting-duration');
       const timeSummaryPreviewElement = document.querySelector('#hosting-time-summary-preview');
+      const selectedDateValue = document.querySelector('#hosting-date').value;
+      const selectedSeniorId = document.querySelector('#hosting-senior').value;
 
       if (!startTimeValue) {
         resetDurationOptions();
         return;
       }
 
+      const candidateStartDate = buildKstDateTime(selectedDateValue, startTimeValue);
+      const conflictingRule = findConflictingHostingRule(selectedSeniorId, candidateStartDate);
+
+      if (conflictingRule) {
+        durationSelectElement.innerHTML = '';
+        durationSelectElement.appendChild(new Option('선택 가능한 시작 시간이 아니에요', ''));
+        durationSelectElement.value = '';
+        durationSelectElement.disabled = true;
+        timeSummaryPreviewElement.textContent = '선택 가능한 시작 시간을 다시 골라주세요.';
+        timeSummaryPreviewElement.classList.add('placeholder');
+        void showMessage(buildHostingIntervalRuleMessage([conflictingRule]), 'info');
+        return;
+      }
+
+      if (!isStartDateTimeSelectable(selectedDateValue, startTimeValue)) {
+        durationSelectElement.innerHTML = '';
+        durationSelectElement.appendChild(new Option('선택 가능한 시작 시간이 아니에요', ''));
+        durationSelectElement.value = '';
+        durationSelectElement.disabled = true;
+        timeSummaryPreviewElement.textContent = '현재 기준 24시간 이후부터 한 달 이내의 시간만 선택할 수 있어요.';
+        timeSummaryPreviewElement.classList.add('placeholder');
+        return;
+      }
+
       const startMinutes = convertTimeToMinutes(startTimeValue);
       const durationOptions = [2, 3, 4].filter((durationHour) => {
         const endMinutes = startMinutes + (durationHour * 60);
-        return endMinutes <= (22 * 60);
+        return endMinutes <= (MAX_HOSTING_END_HOUR * 60);
       });
 
       durationSelectElement.innerHTML = '';
@@ -968,60 +1467,41 @@
       const startMinutes = convertTimeToMinutes(startTimeValue);
       const endMinutes = startMinutes + (Number(durationValue) * 60);
 
-      if (endMinutes > (22 * 60)) {
+      if (endMinutes > (MAX_HOSTING_END_HOUR * 60)) {
         throw new Error('종료 시간은 22:00를 넘을 수 없습니다.');
       }
 
       return convertMinutesToTime(endMinutes);
     }
 
-    function getDefaultDateValue() {
-      const now = new Date();
-      const minDate = new Date(now.getTime() + (24 * 60 * 60 * 1000));
-      return minDate.toISOString().slice(0, 10);
-    }
-
-    function updateDateConstraints() {
-      const dateInputElement = document.querySelector('#hosting-date');
-      const now = new Date();
-      const minDate = new Date(now.getTime() + (24 * 60 * 60 * 1000));
-      const maxDate = new Date(now.getTime() + (14 * 24 * 60 * 60 * 1000));
-
-      dateInputElement.min = minDate.toISOString().slice(0, 10);
-      dateInputElement.max = maxDate.toISOString().slice(0, 10);
-
-      if (!dateInputElement.value) {
-        dateInputElement.value = dateInputElement.min;
-      }
-    }
 
     function buildSeniorAddressText(senior) {
-      const baseAddress = [senior?.road_address, senior?.detail_address]
+      const baseAddress = [senior?.address.road_address, senior?.address.detail_address]
         .filter(Boolean)
         .join(' ')
         .trim();
 
       if (!baseAddress) {
-        return senior?.building_name ?? '';
+        return senior?.address.building_name ?? '';
       }
 
-      if (!senior?.building_name) {
+      if (!senior?.address.building_name) {
         return baseAddress;
       }
 
-      return `${baseAddress} (${senior.building_name})`;
+      return `${baseAddress} (${senior.address.building_name})`;
     }
 
     function fillAddressFieldsFromSenior(senior) {
-      const addressPreviewElement = document.querySelector('#hosting-address-preview');
-
       if (!senior) {
-        addressPreviewElement.textContent = '어르신을 선택하면 주소가 표시돼요.';
+        document.querySelector('#hosting-address-preview').textContent = '어르신을 선택하면 주소가 표시돼요.';
+        updateHostingFormAvailability();
         return;
       }
 
       document.querySelector('#hosting-guests').value = String(senior.max_people ?? 2);
-      addressPreviewElement.textContent = buildSeniorAddressText(senior) || '등록된 주소 정보가 없어요.';
+      updateHostingAvailabilityNotice();
+      updateHostingFormAvailability();
     }
 
     function renderSeniorOptions() {
@@ -1067,9 +1547,6 @@
 
     function resetHostingForm() {
       document.querySelector('#hosting-form').reset();
-      document.querySelector('#hosting-submit-button').disabled = false;
-      updateDateConstraints();
-
       document.querySelector('#hosting-start-time').value = '';
       resetDurationOptions();
 
@@ -1103,8 +1580,23 @@
         throw new Error('어르신을 먼저 선택해 주세요.');
       }
 
+      if (!dateValue) {
+        throw new Error('호스팅 날짜를 선택해 주세요.');
+      }
+
       if (!startTimeValue) {
         throw new Error('호스팅 시작 시간을 선택해 주세요.');
+      }
+
+      const nextHostingStart = buildKstDateTime(dateValue, startTimeValue);
+      const conflictingRule = findConflictingHostingRule(seniorIdValue, nextHostingStart);
+
+      if (conflictingRule) {
+        throw new Error(`이 어르신은 기존 호스팅 시작 시각(${formatDateTimeForNotice(conflictingRule.hostingAt)})의 전후 ${MIN_HOSTING_INTERVAL_DAYS}일을 피해서 새 호스팅을 등록해야 해요.`);
+      }
+
+      if (!isStartDateTimeSelectable(dateValue, startTimeValue)) {
+        throw new Error('선택할 수 없는 날짜 또는 시작 시간이에요. 다시 선택해 주세요.');
       }
 
       return {
@@ -1126,9 +1618,19 @@
       document.body.style.overflow = '';
     }
 
+    function clearCreateQueryParams() {
+      const nextUrl = new URL(window.location.href);
+      nextUrl.searchParams.delete('open_create');
+      nextUrl.searchParams.delete('senior_id');
+      window.history.replaceState({}, '', `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`);
+      selectedSeniorIdFromQuery = '';
+      shouldOpenCreateModalFromQuery = false;
+    }
+
     function applyQueryParams() {
       const params = new URLSearchParams(window.location.search);
       selectedSeniorIdFromQuery = params.get('senior_id') ?? '';
+      shouldOpenCreateModalFromQuery = params.get('open_create') === 'true';
     }
 
     async function loadSeniors() {
@@ -1140,6 +1642,7 @@
 
     async function loadHostings() {
       hostingItems = await api('/hostings/');
+      buildSeniorHostingRuleMap();
       renderSigunguOptions();
       renderHostings();
     }
@@ -1148,13 +1651,15 @@
       try {
         hideMessage();
         applyQueryParams();
-        updateDateConstraints();
-
         buildStartTimeOptions(document.querySelector('#hosting-start-time'));
         resetDurationOptions();
-        document.querySelector('#hosting-date').value = getDefaultDateValue();
 
         await Promise.all([loadSeniors(), loadHostings()]);
+
+        if (shouldOpenCreateModalFromQuery && seniorsCache.length > 0) {
+          resetHostingForm();
+          openHostingModal();
+        }
       } catch (error) {
         console.error(error);
         await showMessage(error?.message || '호스팅 정보를 불러오지 못했어요.', 'error');
@@ -1167,17 +1672,21 @@
     document.querySelector('#filter-keyword')?.addEventListener('input', renderHostings);
 
     document.querySelector('#open-hosting-modal')?.addEventListener('click', () => {
+      selectedSeniorIdFromQuery = '';
+      shouldOpenCreateModalFromQuery = false;
       resetHostingForm();
       openHostingModal();
     });
 
-    document.querySelector('#hosting-modal-close')?.addEventListener('click', closeHostingModal);
-
-    document.querySelector('#hosting-modal')?.addEventListener('click', (event) => {
-      if (event.target === event.currentTarget) {
-        closeHostingModal();
+    document.querySelector('#hosting-modal-close')?.addEventListener('click', () => {
+      closeHostingModal();
+      if (shouldOpenCreateModalFromQuery) {
+        clearCreateQueryParams();
       }
     });
+
+    // 새 호스팅 등록 모달은 바깥 영역을 클릭해도 닫히지 않게 둡니다.
+    // 사용자가 입력 중인 내용을 실수로 잃지 않도록 닫기 버튼 또는 ESC로만 닫습니다.
 
     document.querySelector('#alert-modal-confirm')?.addEventListener('click', closeAlertModal);
 
@@ -1196,6 +1705,9 @@
 
         if (document.querySelector('#hosting-modal').classList.contains('open')) {
           closeHostingModal();
+          if (shouldOpenCreateModalFromQuery) {
+            clearCreateQueryParams();
+          }
         }
       }
     });
@@ -1204,7 +1716,31 @@
       const selectedSenior = seniorsCache.find(
         (senior) => String(senior.senior_id) === event.target.value
       );
+
+      document.querySelector('#hosting-start-time').value = '';
+      resetDurationOptions();
       fillAddressFieldsFromSenior(selectedSenior);
+    });
+
+    document.querySelector('#hosting-date')?.addEventListener('change', (event) => {
+      const requestedDateValue = event.target.value;
+      const previousStartTime = document.querySelector('#hosting-start-time').value;
+      const blockingRules = getDateRuleBlockingRules(requestedDateValue);
+      const hasSelectableStartTime = buildCandidateStartTimesForDate(requestedDateValue).length > 0;
+
+      updateHostingFormAvailability(requestedDateValue);
+
+      if (blockingRules.length > 0 && !hasSelectableStartTime) {
+        void showMessage(buildHostingIntervalRuleMessage(blockingRules), 'info');
+      }
+
+      if (previousStartTime && document.querySelector('#hosting-start-time').value === previousStartTime) {
+        buildDurationOptions(previousStartTime);
+      } else {
+        resetDurationOptions();
+      }
+
+      updateTimeSummaryPreview();
     });
 
     document.querySelector('#hosting-start-time')?.addEventListener('change', (event) => {
@@ -1233,6 +1769,9 @@
         });
 
         closeHostingModal();
+        if (shouldOpenCreateModalFromQuery) {
+          clearCreateQueryParams();
+        }
         resetHostingForm();
         await loadHostings();
         await showMessage('호스팅이 등록되었어요.', 'success');
@@ -1240,11 +1779,20 @@
         console.error(error);
         await showMessage(error?.message || '호스팅 등록에 실패했어요.', 'error');
       } finally {
-        submitButtonElement.disabled = false;
+        updateHostingFormAvailability(document.querySelector('#hosting-date').value);
       }
     });
 
-    initializePage();
+    async function bootstrap() {
+      const currentUser = await requireRoles(['guardian', 'admin']);
+      if (!currentUser) {
+        return;
+      }
+
+      await initializePage();
+    }
+
+    bootstrap();
   </script>
   <script src="/js/base.js"></script>
 </body>

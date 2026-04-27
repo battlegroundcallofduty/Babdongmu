@@ -5,7 +5,9 @@ import uuid
 from fastapi import HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
+from app.domain.common.models import Address
 from app.domain.hosting.models import Hosting, HostingStatus
 from app.domain.senior.models import Senior
 from app.domain.senior.schemas import (
@@ -14,64 +16,109 @@ from app.domain.senior.schemas import (
     SeniorUpdateRequest,
 )
 
+HostingCountMap = dict[str, int]
+
+BLOCKING_HOSTING_STATUSES_FOR_DEACTIVATION = (
+    HostingStatus.OPEN,
+    HostingStatus.FULL,
+    HostingStatus.FIXED,
+    HostingStatus.IN_PROGRESS,
+)
+
 
 def build_senior_response(
     senior: Senior,
-    total_hosting_count: int = 0,
-    full_hosting_count: int = 0,
+    hosting_counts: HostingCountMap | None = None,
 ) -> SeniorResponse:
     """어르신 응답 데이터를 생성합니다."""
 
-    return SeniorResponse(
-        senior_id=senior.senior_id,
-        guardian_id=senior.guardian_id,
-        name=senior.name,
-        gender=senior.gender,
-        age=senior.age,
-        road_address=senior.road_address,
-        jibun_address=senior.jibun_address,
-        zonecode=senior.zonecode,
-        sigungu=senior.sigungu,
-        bname=senior.bname,
-        detail_address=senior.detail_address,
-        sido=senior.sido,
-        building_name=senior.building_name,
-        is_apartment=senior.is_apartment,
-        lat=senior.lat,
-        lng=senior.lng,
-        sigungu_code=senior.sigungu_code,
-        special_note=senior.special_note,
-        active_flag=senior.active_flag,
-        ai_summary=senior.ai_summary,
-        max_people=senior.max_people,
-        qr_code=senior.qr_code,
-        full_hosting_count=full_hosting_count,
-        total_hosting_count=total_hosting_count,
-        created_at=senior.created_at,
-        updated_at=senior.updated_at,
-    )
+    counts = hosting_counts or {}
+    response = SeniorResponse.model_validate(senior)
+    response.total_hosting_count = counts.get("total", 0)
+    response.open_hosting_count = counts.get("open", 0)
+    response.full_hosting_count = counts.get("full", 0)
+    response.fixed_hosting_count = counts.get("fixed", 0)
+    response.in_progress_hosting_count = counts.get("in_progress", 0)
+    response.closed_hosting_count = counts.get("closed", 0)
+    response.failed_hosting_count = counts.get("failed", 0)
+    return response
 
 
 async def get_hosting_counts_by_senior(
     session: AsyncSession,
     senior_id: int,
-) -> tuple[int, int]:
-    """어르신 1명의 호스팅 집계값을 조회합니다."""
+) -> HostingCountMap:
+    """어르신 1명의 호스팅 상태별 집계값을 조회합니다."""
 
     stmt = select(
         func.count(Hosting.hosting_id).label("total_hosting_count"),
         func.count(Hosting.hosting_id)
-        .filter(Hosting.hosting_status.in_([HostingStatus.FULL, HostingStatus.FIXED]))
+        .filter(Hosting.hosting_status == HostingStatus.OPEN)
+        .label("open_hosting_count"),
+        func.count(Hosting.hosting_id)
+        .filter(Hosting.hosting_status == HostingStatus.FULL)
         .label("full_hosting_count"),
+        func.count(Hosting.hosting_id)
+        .filter(Hosting.hosting_status == HostingStatus.FIXED)
+        .label("fixed_hosting_count"),
+        func.count(Hosting.hosting_id)
+        .filter(Hosting.hosting_status == HostingStatus.IN_PROGRESS)
+        .label("in_progress_hosting_count"),
+        func.count(Hosting.hosting_id)
+        .filter(Hosting.hosting_status == HostingStatus.CLOSED)
+        .label("closed_hosting_count"),
+        func.count(Hosting.hosting_id)
+        .filter(Hosting.hosting_status == HostingStatus.FAILED)
+        .label("failed_hosting_count"),
     ).where(Hosting.senior_id == senior_id)
 
     result = await session.execute(stmt)
     row = result.one()
 
-    total_hosting_count = row.total_hosting_count or 0
-    full_hosting_count = row.full_hosting_count or 0
+    return {
+        "total": row.total_hosting_count or 0,
+        "open": row.open_hosting_count or 0,
+        "full": row.full_hosting_count or 0,
+        "fixed": row.fixed_hosting_count or 0,
+        "in_progress": row.in_progress_hosting_count or 0,
+        "closed": row.closed_hosting_count or 0,
+        "failed": row.failed_hosting_count or 0,
+    }
 
-    return total_hosting_count, full_hosting_count
+
+async def ensure_senior_can_be_deactivated(
+    session: AsyncSession,
+    senior_id: int,
+) -> None:
+    """완료되지 않은 호스팅이 있으면 어르신 비활성화를 막습니다."""
+
+    stmt = select(Hosting.hosting_id).where(
+        Hosting.senior_id == senior_id,
+        Hosting.hosting_status.in_(BLOCKING_HOSTING_STATUSES_FOR_DEACTIVATION),
+    )
+
+    result = await session.execute(stmt)
+    hosting_id = result.scalar_one_or_none()
+
+    if hosting_id is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="완료되지 않은 호스팅이 있는 어르신은 비활성화할 수 없습니다.",
+        )
+
+
+async def _fetch_senior_with_address(
+    session: AsyncSession,
+    senior_id: int,
+) -> Senior:
+    """address relationship을 포함해 어르신을 조회하는 내부 헬퍼입니다."""
+
+    result = await session.execute(
+        select(Senior)
+        .where(Senior.senior_id == senior_id)
+        .options(selectinload(Senior.address))
+    )
+    return result.scalar_one()
 
 
 async def create_senior(
@@ -81,23 +128,16 @@ async def create_senior(
 ) -> SeniorResponse:
     """어르신을 등록합니다."""
 
+    address = Address(**request.address.model_dump())
+    session.add(address)
+    await session.flush()  # address_id 확보
+
     senior = Senior(
         guardian_id=guardian_id,
+        address_id=address.address_id,
         name=request.name,
         gender=request.gender,
-        age=request.age,
-        road_address=request.road_address,
-        jibun_address=request.jibun_address,
-        zonecode=request.zonecode,
-        sigungu=request.sigungu,
-        bname=request.bname,
-        detail_address=request.detail_address,
-        sido=request.sido,
-        building_name=request.building_name,
-        is_apartment=request.is_apartment,
-        lat=float(request.lat) if request.lat is not None else None,
-        lng=float(request.lng) if request.lng is not None else None,
-        sigungu_code=request.sigungu_code,
+        birth_date=request.birth_date,
         special_note=request.special_note,
         active_flag=request.active_flag,
         max_people=request.max_people,
@@ -106,18 +146,11 @@ async def create_senior(
 
     session.add(senior)
     await session.commit()
-    await session.refresh(senior)
 
-    total_hosting_count, full_hosting_count = await get_hosting_counts_by_senior(
-        session=session,
-        senior_id=senior.senior_id,
-    )
+    senior = await _fetch_senior_with_address(session, senior.senior_id)
+    hosting_counts = await get_hosting_counts_by_senior(session, senior.senior_id)
 
-    return build_senior_response(
-        senior=senior,
-        total_hosting_count=total_hosting_count,
-        full_hosting_count=full_hosting_count,
-    )
+    return build_senior_response(senior=senior, hosting_counts=hosting_counts)
 
 
 async def list_seniors_by_guardian(
@@ -132,11 +165,27 @@ async def list_seniors_by_guardian(
             Senior,
             func.count(Hosting.hosting_id).label("total_hosting_count"),
             func.count(Hosting.hosting_id)
-            .filter(Hosting.hosting_status.in_([HostingStatus.FULL, HostingStatus.FIXED]))
+            .filter(Hosting.hosting_status == HostingStatus.OPEN)
+            .label("open_hosting_count"),
+            func.count(Hosting.hosting_id)
+            .filter(Hosting.hosting_status == HostingStatus.FULL)
             .label("full_hosting_count"),
+            func.count(Hosting.hosting_id)
+            .filter(Hosting.hosting_status == HostingStatus.FIXED)
+            .label("fixed_hosting_count"),
+            func.count(Hosting.hosting_id)
+            .filter(Hosting.hosting_status == HostingStatus.IN_PROGRESS)
+            .label("in_progress_hosting_count"),
+            func.count(Hosting.hosting_id)
+            .filter(Hosting.hosting_status == HostingStatus.CLOSED)
+            .label("closed_hosting_count"),
+            func.count(Hosting.hosting_id)
+            .filter(Hosting.hosting_status == HostingStatus.FAILED)
+            .label("failed_hosting_count"),
         )
         .outerjoin(Hosting, Hosting.senior_id == Senior.senior_id)
         .where(Senior.guardian_id == guardian_id)
+        .options(selectinload(Senior.address))
     )
 
     if active_only:
@@ -150,10 +199,26 @@ async def list_seniors_by_guardian(
     return [
         build_senior_response(
             senior=senior,
-            total_hosting_count=total_hosting_count or 0,
-            full_hosting_count=full_hosting_count or 0,
+            hosting_counts={
+                "total": total_hosting_count or 0,
+                "open": open_hosting_count or 0,
+                "full": full_hosting_count or 0,
+                "fixed": fixed_hosting_count or 0,
+                "in_progress": in_progress_hosting_count or 0,
+                "closed": closed_hosting_count or 0,
+                "failed": failed_hosting_count or 0,
+            },
         )
-        for senior, total_hosting_count, full_hosting_count in rows
+        for (
+            senior,
+            total_hosting_count,
+            open_hosting_count,
+            full_hosting_count,
+            fixed_hosting_count,
+            in_progress_hosting_count,
+            closed_hosting_count,
+            failed_hosting_count,
+        ) in rows
     ]
 
 
@@ -164,7 +229,9 @@ async def get_senior_by_id(
     """ID로 어르신을 조회합니다."""
 
     result = await session.execute(
-        select(Senior).where(Senior.senior_id == senior_id)
+        select(Senior)
+        .where(Senior.senior_id == senior_id)
+        .options(selectinload(Senior.address))
     )
     senior = result.scalar_one_or_none()
 
@@ -174,16 +241,9 @@ async def get_senior_by_id(
             detail="어르신 정보를 찾을 수 없습니다.",
         )
 
-    total_hosting_count, full_hosting_count = await get_hosting_counts_by_senior(
-        session=session,
-        senior_id=senior.senior_id,
-    )
+    hosting_counts = await get_hosting_counts_by_senior(session, senior.senior_id)
 
-    return build_senior_response(
-        senior=senior,
-        total_hosting_count=total_hosting_count,
-        full_hosting_count=full_hosting_count,
-    )
+    return build_senior_response(senior=senior, hosting_counts=hosting_counts)
 
 
 async def get_guardian_senior_by_id(
@@ -224,26 +284,25 @@ async def update_senior(
         senior_id=senior_id,
     )
 
-    update_data = request.model_dump(
-        exclude_unset=True,
-    )
+    update_data = request.model_dump(exclude_unset=True, exclude={"address"})
+
+    if update_data.get("active_flag") is False:
+        await ensure_senior_can_be_deactivated(session=session, senior_id=senior.senior_id)
 
     for field_name, field_value in update_data.items():
         setattr(senior, field_name, field_value)
 
+    if request.address is not None:
+        address = await session.get(Address, senior.address_id)
+        for field_name, field_value in request.address.model_dump().items():
+            setattr(address, field_name, field_value)
+
     await session.commit()
-    await session.refresh(senior)
 
-    total_hosting_count, full_hosting_count = await get_hosting_counts_by_senior(
-        session=session,
-        senior_id=senior.senior_id,
-    )
+    senior = await _fetch_senior_with_address(session, senior_id)
+    hosting_counts = await get_hosting_counts_by_senior(session, senior.senior_id)
 
-    return build_senior_response(
-        senior=senior,
-        total_hosting_count=total_hosting_count,
-        full_hosting_count=full_hosting_count,
-    )
+    return build_senior_response(senior=senior, hosting_counts=hosting_counts)
 
 
 async def deactivate_senior(
@@ -258,6 +317,8 @@ async def deactivate_senior(
         guardian_id=guardian_id,
         senior_id=senior_id,
     )
+
+    await ensure_senior_can_be_deactivated(session=session, senior_id=senior.senior_id)
 
     senior.active_flag = False
     await session.commit()
@@ -293,7 +354,26 @@ async def delete_senior(
         senior_id=senior_id,
     )
 
+    result = await session.execute(
+        select(Hosting.hosting_id).where(
+            Hosting.senior_id == senior_id,
+            Hosting.hosting_status.in_(BLOCKING_HOSTING_STATUSES_FOR_DEACTIVATION),
+        )
+    )
+    if result.scalar_one_or_none() is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="완료되지 않은 호스팅이 있는 어르신은 삭제할 수 없습니다.",
+        )
+
+    address_id = senior.address_id
     await session.delete(senior)
+    await session.flush()  # senior row 먼저 제거 (hosting.senior_id SET NULL 처리됨)
+
+    address = await session.get(Address, address_id)
+    if address:
+        await session.delete(address)
+
     await session.commit()
 
 

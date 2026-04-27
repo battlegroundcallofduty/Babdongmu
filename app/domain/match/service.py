@@ -5,6 +5,7 @@ from datetime import date, datetime, timedelta, timezone
 from fastapi import HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.domain.hosting.models import AlarmType, Hosting, HostingStatus
 from app.domain.match.models import MatchingInfo, MatchStatus
@@ -78,6 +79,7 @@ async def list_matches_by_volunteer(
         select(MatchingInfo, Hosting, Senior)
         .join(Hosting, MatchingInfo.hosting_id == Hosting.hosting_id)
         .join(Senior, MatchingInfo.senior_id == Senior.senior_id)
+        .options(selectinload(Senior.address))
         .where(
             MatchingInfo.vt_id == vt_id,
             MatchingInfo.match_status != MatchStatus.CANCELLED,
@@ -123,7 +125,7 @@ async def list_matches_by_volunteer(
             hosting_at=hosting.hosting_at,
             senior_id=senior.senior_id,
             senior_name=senior.name,
-            senior_address=senior.road_address,
+            senior_address=senior.address.road_address,
             actual_volunteer_time=match.actual_volunteer_time,
             has_review=review_id_map.get(match.matching_id) is not None,
             review_id=review_id_map.get(match.matching_id),
