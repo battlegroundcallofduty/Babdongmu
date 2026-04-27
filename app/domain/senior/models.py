@@ -1,12 +1,13 @@
 """Senior SQLAlchemy ORM 모델."""
 
 import enum
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 from sqlalchemy import (
     TIMESTAMP,
     Boolean,
     CheckConstraint,
+    Date,
     Enum,
     ForeignKey,
     Integer,
@@ -29,7 +30,6 @@ class Senior(Base):
 
     __tablename__ = "seniors"
     __table_args__ = (
-        CheckConstraint("age >= 65", name="ck_senior_age"),
         CheckConstraint("max_people >= 2", name="ck_senior_max_people"),
     )
 
@@ -42,7 +42,7 @@ class Senior(Base):
 
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     gender: Mapped[GenderEnum] = mapped_column(Enum(GenderEnum), nullable=False)
-    age: Mapped[int] = mapped_column(Integer, nullable=False)
+    birth_date: Mapped[date] = mapped_column(Date, nullable=False)
 
     address_id: Mapped[int] = mapped_column(
         ForeignKey("addresses.address_id"), unique=True, nullable=False
