@@ -2,9 +2,15 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.domain.match.models import MatchStatus
+
+
+class MatchCreateRequest(BaseModel):
+    """매칭 신청 요청 스키마."""
+
+    hosting_id: int = Field(..., ge=1, description="신청할 호스팅 ID")
 
 
 class MatchResponse(BaseModel):
@@ -19,7 +25,7 @@ class MatchResponse(BaseModel):
     check_out_time: datetime | None
     created_at: datetime
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class MyMatchResponse(BaseModel):
@@ -47,4 +53,4 @@ class MyMatchResponse(BaseModel):
     has_review: bool
     review_id: int | None
 
-    model_config = {"from_attributes": False}
+    model_config = ConfigDict(from_attributes=False)
