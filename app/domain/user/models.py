@@ -31,7 +31,9 @@ class User(Base):
         String(255), nullable=True
     )  # 카카오 로그인 시 None
     phone_number: Mapped[str] = mapped_column(String(20))
-    address: Mapped[str] = mapped_column(String(255))
+    address_id: Mapped[int] = mapped_column(
+        ForeignKey("addresses.address_id"), unique=True, nullable=False
+    )
     user_role: Mapped[UserRole] = mapped_column(Enum(UserRole))
     cert_flag: Mapped[CertFlag] = mapped_column(Enum(CertFlag), default=CertFlag.PENDING)
     cert_reject_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)

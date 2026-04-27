@@ -8,7 +8,6 @@ from sqlalchemy import (
     Boolean,
     CheckConstraint,
     Enum,
-    Float,
     ForeignKey,
     Integer,
     String,
@@ -66,19 +65,9 @@ class Hosting(Base):
     )
     max_people: Mapped[int] = mapped_column(Integer, nullable=False)
 
-    road_address: Mapped[str] = mapped_column(String(255), nullable=False)
-    jibun_address: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    zonecode: Mapped[str | None] = mapped_column(String(10), nullable=True)
-    sigungu: Mapped[str] = mapped_column(String(100), nullable=False)
-    bname: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    detail_address: Mapped[str] = mapped_column(String(255), nullable=False)
-
-    sido: Mapped[str | None] = mapped_column(String(50), nullable=True)
-    building_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    is_apartment: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
-    lat: Mapped[float | None] = mapped_column(Float, nullable=True)
-    lng: Mapped[float | None] = mapped_column(Float, nullable=True)
-    sigungu_code: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    address_id: Mapped[int] = mapped_column(
+        ForeignKey("addresses.address_id"), unique=True, nullable=False
+    )
 
     hosting_status: Mapped[HostingStatus] = mapped_column(
         Enum(HostingStatus),
