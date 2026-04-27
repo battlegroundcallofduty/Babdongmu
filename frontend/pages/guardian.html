@@ -20,6 +20,21 @@
       margin: 0 auto;
     }
 
+    .senior-clickable {
+      cursor: pointer;
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .senior-clickable:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px rgba(44, 36, 32, 0.12);
+    }
+
+    .senior-clickable:focus-visible {
+      outline: 3px solid rgba(212, 118, 60, 0.35);
+      outline-offset: 3px;
+    }
+
     .ellipsis {
       display: block;
       width: 100%;
@@ -51,9 +66,40 @@
 
     .card-actions {
       display: flex;
+      align-items: center;
+      justify-content: space-between;
       gap: 8px;
       flex-wrap: wrap;
       margin-top: 16px;
+    }
+
+    .card-actions-left,
+    .card-actions-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .card-actions-right {
+      justify-content: flex-end;
+    }
+
+    @media (max-width: 768px) {
+      .card-actions {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .card-actions-left,
+      .card-actions-right {
+        width: 100%;
+      }
+
+      .card-actions-left .btn,
+      .card-actions-right .btn {
+        flex: 1;
+      }
     }
 
     .senior-list-actions {
@@ -113,6 +159,41 @@
       color: #2C2420;
     }
 
+    .senior-detail-form .form-input[readonly],
+    .senior-detail-form .form-input:disabled {
+      background: #F8F5F1;
+      color: #2C2420;
+      cursor: default;
+      opacity: 1;
+    }
+
+    .senior-detail-address {
+      min-height: 44px;
+      height: auto;
+      resize: vertical;
+      line-height: 1.5;
+    }
+
+    .detail-modal-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 24px;
+    }
+
+    @media (max-width: 768px) {
+      .detail-modal-actions {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .detail-modal-actions .btn {
+        width: 100%;
+      }
+    }
+
     .confirm-modal-panel {
       max-width: 420px;
       padding: 24px;
@@ -160,26 +241,11 @@
       flex: 1;
     }
 
-    .address-meta {
+    .age-preview {
       margin-top: 8px;
-      font-size: 14px;
       color: #8C7E73;
-      line-height: 1.5;
-    }
-
-    .address-preview-box {
-      margin-top: 8px;
-      padding: 12px 14px;
-      border: 1px solid #E8E0D8;
-      border-radius: 8px;
-      background: #FBF7F2;
       font-size: 14px;
-      color: #2C2420;
       line-height: 1.5;
-    }
-
-    .address-preview-box.is-empty {
-      color: #8C7E73;
     }
 
     .hosting-entry-card {
@@ -281,6 +347,52 @@
         order: 2;
       }
     }
+
+    .hosting-status-summary {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      min-width: 0;
+    }
+
+    .hosting-status-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #F8F5F1;
+      color: #6B5E53;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .hosting-status-chip.is-open {
+      background: #EDF5ED;
+      color: #3A6B39;
+    }
+
+    .hosting-status-chip.is-full {
+      background: #FDF5E6;
+      color: #8B6914;
+    }
+
+    .hosting-status-chip.is-fixed {
+      background: #EEF3FF;
+      color: #4269B4;
+    }
+
+    .hosting-status-chip.is-progress {
+      background: #F8F5F1;
+      color: #D4763C;
+    }
+
+    .hosting-status-empty {
+      color: #8C7E73;
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
@@ -317,7 +429,6 @@
       <h1>어르신 관리</h1>
       <p>어르신을 등록하고 호스팅 현황을 확인하세요</p>
     </div>
-
 
     <div class="section-header slide-up stagger-1">
       <h2>내 어르신</h2>
@@ -403,8 +514,11 @@
             </div>
 
             <div class="form-group">
-              <label class="form-label" for="senior-age">나이</label>
-              <input class="form-input" type="number" id="senior-age" min="65" placeholder="78" required>
+              <label class="form-label" for="senior-birth-date">생년월일</label>
+              <input class="form-input" type="date" id="senior-birth-date" required>
+              <div id="senior-age-preview" class="age-preview">
+                생년월일을 선택하면 현재 기준 나이가 표시돼요.
+              </div>
             </div>
           </div>
 
@@ -445,12 +559,6 @@
                 주소 검색
               </button>
             </div>
-
-            <div id="address-meta" class="address-meta">우편번호와 시군구 정보가 여기에 표시돼요.</div>
-
-            <div id="address-preview" class="address-preview-box is-empty">
-              아직 선택된 주소가 없어요.
-            </div>
           </div>
 
           <div class="form-group">
@@ -487,6 +595,86 @@
             <button id="cancel-edit-button" type="button" class="btn btn-ghost hidden">취소</button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <div id="senior-detail-modal" class="modal-overlay hidden">
+      <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="senior-detail-title">
+        <div class="modal-header">
+          <h3 id="senior-detail-title">어르신 상세</h3>
+          <button id="close-senior-detail-x-button" type="button" class="modal-close-button" aria-label="닫기">
+            ×
+          </button>
+        </div>
+
+        <div class="senior-detail-form">
+          <input type="hidden" id="detail-senior-id">
+
+          <div class="grid grid-2">
+            <div class="form-group">
+              <label class="form-label" for="detail-senior-name">이름</label>
+              <input class="form-input" type="text" id="detail-senior-name" readonly>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="detail-senior-birth-date">생년월일</label>
+              <input class="form-input" type="text" id="detail-senior-birth-date" readonly>
+            </div>
+          </div>
+
+          <div class="grid grid-2">
+            <div class="form-group">
+              <label class="form-label" for="detail-senior-gender">성별</label>
+              <input class="form-input" type="text" id="detail-senior-gender" readonly>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="detail-senior-max-people">최대 동행 인원</label>
+              <input class="form-input" type="text" id="detail-senior-max-people" readonly>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="detail-senior-road-address">주소</label>
+            <textarea
+              class="form-input senior-detail-address"
+              id="detail-senior-road-address"
+              rows="2"
+              readonly
+            ></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="detail-senior-detail-address">상세주소</label>
+            <input class="form-input" type="text" id="detail-senior-detail-address" readonly>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="detail-senior-note">특이사항</label>
+            <input class="form-input" type="text" id="detail-senior-note" readonly>
+          </div>
+
+          <div class="grid grid-2">
+            <div class="form-group">
+              <label class="form-label" for="detail-senior-active-flag">상태</label>
+              <input class="form-input" type="text" id="detail-senior-active-flag" readonly>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="detail-senior-hosting-status">호스팅 현황</label>
+              <input class="form-input" type="text" id="detail-senior-hosting-status" readonly>
+            </div>
+          </div>
+
+          <div class="detail-modal-actions">
+            <button id="go-edit-senior-button" type="button" class="btn btn-primary">
+              수정
+            </button>
+            <button id="close-senior-detail-button" type="button" class="btn btn-ghost">
+              닫기
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -573,11 +761,17 @@
     const submitButtonElement = document.querySelector('#submit-button');
     const cancelEditButtonElement = document.querySelector('#cancel-edit-button');
 
+    const birthDateInputElement = document.querySelector('#senior-birth-date');
+    const agePreviewElement = document.querySelector('#senior-age-preview');
+
     const roadAddressInputElement = document.querySelector('#senior-road-address');
     const detailAddressInputElement = document.querySelector('#senior-detail-address');
     const searchAddressButtonElement = document.querySelector('#search-address-button');
-    const addressMetaElement = document.querySelector('#address-meta');
-    const addressPreviewElement = document.querySelector('#address-preview');
+
+    const seniorDetailModalElement = document.querySelector('#senior-detail-modal');
+    const closeSeniorDetailXButtonElement = document.querySelector('#close-senior-detail-x-button');
+    const closeSeniorDetailButtonElement = document.querySelector('#close-senior-detail-button');
+    const goEditSeniorButtonElement = document.querySelector('#go-edit-senior-button');
 
     const resultModalElement = document.querySelector('#result-modal');
     const resultModalTitleElement = document.querySelector('#result-modal-title');
@@ -599,6 +793,7 @@
     let confirmModalHandler = null;
     let isActiveOnly = activeOnlyToggleElement?.checked ?? false;
     let addressState = createEmptyAddressPayload();
+    let currentDetailSenior = null;
 
     function toggleNav() {
       const toggleButton = document.querySelector('.nav-toggle');
@@ -629,6 +824,7 @@
 
     function isAnyModalOpen() {
       return !registerFormModalElement.classList.contains('hidden')
+        || !seniorDetailModalElement.classList.contains('hidden')
         || !resultModalElement.classList.contains('hidden')
         || !confirmModalElement.classList.contains('hidden');
     }
@@ -692,12 +888,167 @@
       return '기타';
     }
 
+
+    function calculateAgeFromBirthDate(birthDateValue) {
+      if (!birthDateValue) {
+        return null;
+      }
+
+      const [year, month, day] = birthDateValue.split('-').map(Number);
+      if (!year || !month || !day) {
+        return null;
+      }
+
+      const today = new Date();
+      let age = today.getFullYear() - year;
+
+      const hasBirthdayPassed =
+        today.getMonth() + 1 > month
+        || (today.getMonth() + 1 === month && today.getDate() >= day);
+
+      if (!hasBirthdayPassed) {
+        age -= 1;
+      }
+
+      return age;
+    }
+
+    function getSeniorAge(senior) {
+      const calculatedAge = calculateAgeFromBirthDate(senior.birth_date);
+
+      if (calculatedAge !== null) {
+        return calculatedAge;
+      }
+
+      return senior.age ?? null;
+    }
+
+    function formatSeniorAge(senior) {
+      const age = getSeniorAge(senior);
+      return age === null ? '-' : `${age}세`;
+    }
+
+    function formatBirthDate(birthDateValue) {
+      if (!birthDateValue) {
+        return '-';
+      }
+
+      return birthDateValue.replaceAll('-', '. ');
+    }
+
+    function updateAgePreview() {
+      const age = calculateAgeFromBirthDate(birthDateInputElement.value);
+
+      if (age === null) {
+        agePreviewElement.textContent = '생년월일을 선택하면 현재 기준 나이가 표시돼요.';
+        return;
+      }
+
+      agePreviewElement.textContent = `현재 기준 ${age}세`;
+    }
+
+
     function buildSeniorAddressLabel(senior) {
       return formatAddressPreview({
         road_address: senior.road_address,
         detail_address: senior.detail_address,
       });
     }
+
+    function buildHostingStatusSummary(senior) {
+      const statusItems = [
+        {
+          label: '모집중',
+          count: senior.open_hosting_count ?? 0,
+          className: 'is-open',
+        },
+        {
+          label: '모집완료',
+          count: senior.full_hosting_count ?? 0,
+          className: 'is-full',
+        },
+        {
+          label: '확정',
+          count: senior.fixed_hosting_count ?? 0,
+          className: 'is-fixed',
+        },
+        {
+          label: '진행중',
+          count: senior.in_progress_hosting_count ?? 0,
+          className: 'is-progress',
+        },
+      ].filter((item) => item.count > 0);
+
+      if (!statusItems.length) {
+        return '<span class="hosting-status-empty">진행 중인 호스팅 없음</span>';
+      }
+
+      return statusItems
+        .map((item) => `
+          <span class="hosting-status-chip ${item.className}">
+            ${escapeHtml(item.label)} ${escapeHtml(String(item.count))}
+          </span>
+        `)
+        .join('');
+    }
+
+    function buildHostingStatusText(senior) {
+      const statusItems = [
+        ['모집중', senior.open_hosting_count ?? 0],
+        ['모집완료', senior.full_hosting_count ?? 0],
+        ['확정', senior.fixed_hosting_count ?? 0],
+        ['진행중', senior.in_progress_hosting_count ?? 0],
+      ].filter(([, count]) => count > 0);
+
+      if (!statusItems.length) {
+        return '진행 중인 호스팅 없음';
+      }
+
+      return statusItems
+        .map(([label, count]) => `${label} ${count}`)
+        .join(' · ');
+    }
+
+    function fillDetailModal(senior) {
+      currentDetailSenior = senior;
+
+      document.querySelector('#detail-senior-id').value = senior.senior_id;
+      document.querySelector('#detail-senior-name').value = `${senior.name} 어르신`;
+      document.querySelector('#detail-senior-birth-date').value = formatBirthDate(senior.birth_date);
+      document.querySelector('#detail-senior-age').value = formatSeniorAge(senior);
+      document.querySelector('#detail-senior-gender').value = getGenderLabel(senior.gender);
+      document.querySelector('#detail-senior-max-people').value = `${senior.max_people}명`;
+      document.querySelector('#detail-senior-road-address').value = senior.road_address || '-';
+      document.querySelector('#detail-senior-detail-address').value = senior.detail_address || '-';
+      document.querySelector('#detail-senior-note').value = senior.special_note || '등록된 특이사항 없음';
+      document.querySelector('#detail-senior-active-flag').value = senior.active_flag ? '활성' : '비활성';
+      document.querySelector('#detail-senior-hosting-status').value = buildHostingStatusText(senior);
+    }
+
+    function openSeniorDetailModal(senior) {
+      fillDetailModal(senior);
+      seniorDetailModalElement.classList.remove('hidden');
+      syncBodyScrollLock();
+    }
+
+    function closeSeniorDetailModal() {
+      seniorDetailModalElement.classList.add('hidden');
+      currentDetailSenior = null;
+      syncBodyScrollLock();
+    }
+
+    async function openSeniorEditFromDetail() {
+      const seniorId = currentDetailSenior?.senior_id || document.querySelector('#detail-senior-id').value;
+      if (!seniorId) {
+        return;
+      }
+
+      const senior = await fetchSeniorDetail(seniorId);
+      closeSeniorDetailModal();
+      fillForm(senior);
+      openForm();
+    }
+
 
     function buildCreateHostingUrl(seniorId = null) {
       const params = new URLSearchParams();
@@ -710,29 +1061,9 @@
       return `/pages/hostings.html?${params.toString()}`;
     }
 
-    function updateAddressMeta() {
-      const zonecodeText = addressState.zonecode ? `우편번호 ${addressState.zonecode}` : '우편번호 없음';
-      const sigunguText = addressState.sigungu || '시군구 없음';
-      addressMetaElement.textContent = `${zonecodeText} · ${sigunguText}`;
-    }
-
-    function updateAddressPreview() {
-      const previewText = formatAddressPreview(addressState);
-
-      if (previewText) {
-        addressPreviewElement.textContent = previewText;
-        addressPreviewElement.classList.remove('is-empty');
-      } else {
-        addressPreviewElement.textContent = '아직 선택된 주소가 없어요.';
-        addressPreviewElement.classList.add('is-empty');
-      }
-    }
-
     function syncAddressInputs() {
       roadAddressInputElement.value = addressState.road_address ?? '';
       detailAddressInputElement.value = addressState.detail_address ?? '';
-      updateAddressMeta();
-      updateAddressPreview();
     }
 
     function setAddressState(nextAddressState) {
@@ -794,6 +1125,7 @@
       document.querySelector('#senior-id').value = '';
       document.querySelector('#senior-active-flag').value = 'true';
       document.querySelector('#senior-max-people').value = '2';
+      updateAgePreview();
       setAddressState(createEmptyAddressPayload());
       setCreateMode();
     }
@@ -801,7 +1133,8 @@
     function fillForm(senior) {
       document.querySelector('#senior-id').value = senior.senior_id;
       document.querySelector('#senior-name').value = senior.name;
-      document.querySelector('#senior-age').value = senior.age;
+      document.querySelector('#senior-birth-date').value = senior.birth_date || '';
+      updateAgePreview();
       document.querySelector('#senior-gender').value = senior.gender;
       document.querySelector('#senior-max-people').value = senior.max_people;
       document.querySelector('#senior-note').value = senior.special_note || '';
@@ -886,14 +1219,21 @@
         : 'btn btn-ghost btn-sm';
 
       return `
-        <div class="card">
+        <div
+          class="card senior-clickable"
+          data-senior-card="true"
+          data-senior-id="${senior.senior_id}"
+          role="button"
+          tabindex="0"
+          aria-label="${escapeHtml(senior.name)} 어르신 상세 보기"
+        >
           <div class="card-body">
             <div class="hosting-header mb-md">
               <div class="hosting-avatar">${escapeHtml(senior.name.charAt(0))}</div>
               <div style="min-width: 0; flex: 1;">
                 <div class="hosting-name ellipsis">${escapeHtml(senior.name)} 어르신</div>
                 <div class="hosting-district ellipsis">
-                  ${escapeHtml(String(senior.age))}세 · ${escapeHtml(getGenderLabel(senior.gender))}
+                  ${escapeHtml(formatSeniorAge(senior))} · ${escapeHtml(getGenderLabel(senior.gender))}
                 </div>
               </div>
             </div>
@@ -907,8 +1247,8 @@
 
             <div class="detail-row">
               <span class="detail-label">호스팅 현황</span>
-              <span class="detail-value ellipsis">
-                모집 완료 ${escapeHtml(String(senior.full_hosting_count))}건 / 전체 ${escapeHtml(String(senior.total_hosting_count))}건
+              <span class="detail-value hosting-status-summary">
+                ${buildHostingStatusSummary(senior)}
               </span>
             </div>
 
@@ -918,35 +1258,39 @@
             </div>
 
             <div class="card-actions">
-              <button
-                type="button"
-                class="btn btn-ghost btn-sm"
-                data-action="edit"
-                data-senior-id="${senior.senior_id}"
-              >
-                수정
-              </button>
+              <div class="card-actions-left">
+                <button
+                  type="button"
+                  class="btn btn-primary btn-sm"
+                  data-action="create-hosting"
+                  data-senior-id="${senior.senior_id}"
+                >
+                  호스팅 등록
+                </button>
+              </div>
 
-              <button
-                type="button"
-                class="btn btn-primary btn-sm"
-                data-action="create-hosting"
-                data-senior-id="${senior.senior_id}"
-              >
-                호스팅 등록
-              </button>
+              <div class="card-actions-right">
+                <button
+                  type="button"
+                  class="btn btn-ghost btn-sm"
+                  data-action="edit"
+                  data-senior-id="${senior.senior_id}"
+                >
+                  수정
+                </button>
 
-              <button
-                type="button"
-                class="${deleteButtonClass}"
-                data-action="delete"
-                data-senior-id="${senior.senior_id}"
-                data-delete-blocked="${isDeleteBlocked ? 'true' : 'false'}"
-                aria-disabled="${isDeleteBlocked ? 'true' : 'false'}"
-                title="${isDeleteBlocked ? '활성 상태의 어르신은 삭제할 수 없어요.' : '어르신 삭제'}"
-              >
-                삭제
-              </button>
+                <button
+                  type="button"
+                  class="${deleteButtonClass}"
+                  data-action="delete"
+                  data-senior-id="${senior.senior_id}"
+                  data-delete-blocked="${isDeleteBlocked ? 'true' : 'false'}"
+                  aria-disabled="${isDeleteBlocked ? 'true' : 'false'}"
+                  title="${isDeleteBlocked ? '활성 상태의 어르신은 삭제할 수 없어요.' : '어르신 삭제'}"
+                >
+                  삭제
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1027,7 +1371,7 @@
       return {
         name: document.querySelector('#senior-name').value.trim(),
         gender: document.querySelector('#senior-gender').value,
-        age: Number(document.querySelector('#senior-age').value),
+        birth_date: document.querySelector('#senior-birth-date').value,
         ...addressState,
         special_note: document.querySelector('#senior-note').value.trim() || null,
         active_flag: document.querySelector('#senior-active-flag').value === 'true',
@@ -1047,6 +1391,28 @@
 
     cancelEditButtonElement?.addEventListener('click', () => {
       closeForm();
+    });
+
+    closeSeniorDetailXButtonElement?.addEventListener('click', () => {
+      closeSeniorDetailModal();
+    });
+
+    closeSeniorDetailButtonElement?.addEventListener('click', () => {
+      closeSeniorDetailModal();
+    });
+
+    goEditSeniorButtonElement?.addEventListener('click', async () => {
+      try {
+        await openSeniorEditFromDetail();
+      } catch (error) {
+        await showResultModal(error.message || '어르신 정보를 불러오지 못했습니다.', true);
+      }
+    });
+
+    seniorDetailModalElement?.addEventListener('click', (event) => {
+      if (event.target === seniorDetailModalElement) {
+        closeSeniorDetailModal();
+      }
     });
 
     registerFormModalElement?.addEventListener('click', (event) => {
@@ -1099,6 +1465,11 @@
           return;
         }
 
+        if (!seniorDetailModalElement.classList.contains('hidden')) {
+          closeSeniorDetailModal();
+          return;
+        }
+
         if (!registerFormModalElement.classList.contains('hidden')) {
           closeForm();
         }
@@ -1112,7 +1483,14 @@
 
     detailAddressInputElement?.addEventListener('input', (event) => {
       addressState = mergeDetailAddress(addressState, event.target.value);
-      updateAddressPreview();
+    });
+
+    birthDateInputElement?.addEventListener('change', () => {
+      updateAgePreview();
+    });
+
+    birthDateInputElement?.addEventListener('input', () => {
+      updateAgePreview();
     });
 
     activeOnlyToggleElement?.addEventListener('change', () => {
@@ -1131,6 +1509,17 @@
 
       const seniorId = document.querySelector('#senior-id').value;
       const payload = getFormPayload();
+
+      if (!payload.birth_date) {
+        await showResultModal('생년월일을 입력해 주세요.', true);
+        return;
+      }
+
+      const calculatedAge = calculateAgeFromBirthDate(payload.birth_date);
+      if (calculatedAge === null || calculatedAge < 65) {
+        await showResultModal('어르신은 현재 기준 만 65세 이상이어야 합니다.', true);
+        return;
+      }
 
       if (!payload.road_address) {
         await showResultModal('주소 검색으로 도로명 주소를 먼저 선택해 주세요.', true);
@@ -1160,17 +1549,25 @@
 
     seniorListElement?.addEventListener('click', async (event) => {
       const actionButton = event.target.closest('[data-action]');
-      if (!actionButton) {
+      const seniorCard = event.target.closest('[data-senior-card]');
+
+      if (!actionButton && !seniorCard) {
         return;
       }
 
-      const action = actionButton.dataset.action;
-      const seniorId = actionButton.dataset.seniorId;
-      const isDeleteBlocked = actionButton.dataset.deleteBlocked === 'true';
+      const seniorId = actionButton?.dataset.seniorId || seniorCard?.dataset.seniorId;
+      const action = actionButton?.dataset.action || 'detail';
+      const isDeleteBlocked = actionButton?.dataset.deleteBlocked === 'true';
 
       hideMessage();
 
       try {
+        if (action === 'detail') {
+          const senior = await fetchSeniorDetail(seniorId);
+          openSeniorDetailModal(senior);
+          return;
+        }
+
         if (action === 'edit') {
           const senior = await fetchSeniorDetail(seniorId);
           fillForm(senior);
@@ -1209,6 +1606,27 @@
         }
       } catch (error) {
         await showResultModal(error.message || '요청 처리 중 오류가 발생했습니다.', true);
+      }
+    });
+
+    seniorListElement?.addEventListener('keydown', async (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') {
+        return;
+      }
+
+      const seniorCard = event.target.closest('[data-senior-card]');
+      if (!seniorCard) {
+        return;
+      }
+
+      event.preventDefault();
+      hideMessage();
+
+      try {
+        const senior = await fetchSeniorDetail(seniorCard.dataset.seniorId);
+        openSeniorDetailModal(senior);
+      } catch (error) {
+        await showResultModal(error.message || '어르신 정보를 불러오지 못했습니다.', true);
       }
     });
 

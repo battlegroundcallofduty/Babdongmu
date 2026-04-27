@@ -12,7 +12,10 @@ from app.domain.senior.schemas import (
     SeniorCreateRequest,
     SeniorResponse,
     SeniorUpdateRequest,
+    calculate_age_from_birth_date,
 )
+
+HostingCountMap = dict[str, int]
 
 BLOCKING_HOSTING_STATUSES_FOR_DEACTIVATION = (
     HostingStatus.OPEN,
@@ -24,17 +27,19 @@ BLOCKING_HOSTING_STATUSES_FOR_DEACTIVATION = (
 
 def build_senior_response(
     senior: Senior,
-    total_hosting_count: int = 0,
-    full_hosting_count: int = 0,
+    hosting_counts: HostingCountMap | None = None,
 ) -> SeniorResponse:
     """어르신 응답 데이터를 생성합니다."""
+
+    counts = hosting_counts or {}
 
     return SeniorResponse(
         senior_id=senior.senior_id,
         guardian_id=senior.guardian_id,
         name=senior.name,
         gender=senior.gender,
-        age=senior.age,
+        birth_date=senior.birth_date,
+        age=calculate_age_from_birth_date(senior.birth_date),
         road_address=senior.road_address,
         jibun_address=senior.jibun_address,
         zonecode=senior.zonecode,
@@ -52,8 +57,13 @@ def build_senior_response(
         ai_summary=senior.ai_summary,
         max_people=senior.max_people,
         qr_code=senior.qr_code,
-        full_hosting_count=full_hosting_count,
-        total_hosting_count=total_hosting_count,
+        total_hosting_count=counts.get("total", 0),
+        open_hosting_count=counts.get("open", 0),
+        full_hosting_count=counts.get("full", 0),
+        fixed_hosting_count=counts.get("fixed", 0),
+        in_progress_hosting_count=counts.get("in_progress", 0),
+        closed_hosting_count=counts.get("closed", 0),
+        failed_hosting_count=counts.get("failed", 0),
         created_at=senior.created_at,
         updated_at=senior.updated_at,
     )
@@ -62,23 +72,43 @@ def build_senior_response(
 async def get_hosting_counts_by_senior(
     session: AsyncSession,
     senior_id: int,
-) -> tuple[int, int]:
-    """어르신 1명의 호스팅 집계값을 조회합니다."""
+) -> HostingCountMap:
+    """어르신 1명의 호스팅 상태별 집계값을 조회합니다."""
 
     stmt = select(
         func.count(Hosting.hosting_id).label("total_hosting_count"),
         func.count(Hosting.hosting_id)
-        .filter(Hosting.hosting_status.in_([HostingStatus.FULL, HostingStatus.FIXED]))
+        .filter(Hosting.hosting_status == HostingStatus.OPEN)
+        .label("open_hosting_count"),
+        func.count(Hosting.hosting_id)
+        .filter(Hosting.hosting_status == HostingStatus.FULL)
         .label("full_hosting_count"),
+        func.count(Hosting.hosting_id)
+        .filter(Hosting.hosting_status == HostingStatus.FIXED)
+        .label("fixed_hosting_count"),
+        func.count(Hosting.hosting_id)
+        .filter(Hosting.hosting_status == HostingStatus.IN_PROGRESS)
+        .label("in_progress_hosting_count"),
+        func.count(Hosting.hosting_id)
+        .filter(Hosting.hosting_status == HostingStatus.CLOSED)
+        .label("closed_hosting_count"),
+        func.count(Hosting.hosting_id)
+        .filter(Hosting.hosting_status == HostingStatus.FAILED)
+        .label("failed_hosting_count"),
     ).where(Hosting.senior_id == senior_id)
 
     result = await session.execute(stmt)
     row = result.one()
 
-    total_hosting_count = row.total_hosting_count or 0
-    full_hosting_count = row.full_hosting_count or 0
-
-    return total_hosting_count, full_hosting_count
+    return {
+        "total": row.total_hosting_count or 0,
+        "open": row.open_hosting_count or 0,
+        "full": row.full_hosting_count or 0,
+        "fixed": row.fixed_hosting_count or 0,
+        "in_progress": row.in_progress_hosting_count or 0,
+        "closed": row.closed_hosting_count or 0,
+        "failed": row.failed_hosting_count or 0,
+    }
 
 
 async def ensure_senior_can_be_deactivated(
@@ -113,7 +143,7 @@ async def create_senior(
         guardian_id=guardian_id,
         name=request.name,
         gender=request.gender,
-        age=request.age,
+        birth_date=request.birth_date,
         road_address=request.road_address,
         jibun_address=request.jibun_address,
         zonecode=request.zonecode,
@@ -136,15 +166,14 @@ async def create_senior(
     await session.commit()
     await session.refresh(senior)
 
-    total_hosting_count, full_hosting_count = await get_hosting_counts_by_senior(
+    hosting_counts = await get_hosting_counts_by_senior(
         session=session,
         senior_id=senior.senior_id,
     )
 
     return build_senior_response(
         senior=senior,
-        total_hosting_count=total_hosting_count,
-        full_hosting_count=full_hosting_count,
+        hosting_counts=hosting_counts,
     )
 
 
@@ -160,8 +189,23 @@ async def list_seniors_by_guardian(
             Senior,
             func.count(Hosting.hosting_id).label("total_hosting_count"),
             func.count(Hosting.hosting_id)
-            .filter(Hosting.hosting_status.in_([HostingStatus.FULL, HostingStatus.FIXED]))
+            .filter(Hosting.hosting_status == HostingStatus.OPEN)
+            .label("open_hosting_count"),
+            func.count(Hosting.hosting_id)
+            .filter(Hosting.hosting_status == HostingStatus.FULL)
             .label("full_hosting_count"),
+            func.count(Hosting.hosting_id)
+            .filter(Hosting.hosting_status == HostingStatus.FIXED)
+            .label("fixed_hosting_count"),
+            func.count(Hosting.hosting_id)
+            .filter(Hosting.hosting_status == HostingStatus.IN_PROGRESS)
+            .label("in_progress_hosting_count"),
+            func.count(Hosting.hosting_id)
+            .filter(Hosting.hosting_status == HostingStatus.CLOSED)
+            .label("closed_hosting_count"),
+            func.count(Hosting.hosting_id)
+            .filter(Hosting.hosting_status == HostingStatus.FAILED)
+            .label("failed_hosting_count"),
         )
         .outerjoin(Hosting, Hosting.senior_id == Senior.senior_id)
         .where(Senior.guardian_id == guardian_id)
@@ -178,10 +222,26 @@ async def list_seniors_by_guardian(
     return [
         build_senior_response(
             senior=senior,
-            total_hosting_count=total_hosting_count or 0,
-            full_hosting_count=full_hosting_count or 0,
+            hosting_counts={
+                "total": total_hosting_count or 0,
+                "open": open_hosting_count or 0,
+                "full": full_hosting_count or 0,
+                "fixed": fixed_hosting_count or 0,
+                "in_progress": in_progress_hosting_count or 0,
+                "closed": closed_hosting_count or 0,
+                "failed": failed_hosting_count or 0,
+            },
         )
-        for senior, total_hosting_count, full_hosting_count in rows
+        for (
+            senior,
+            total_hosting_count,
+            open_hosting_count,
+            full_hosting_count,
+            fixed_hosting_count,
+            in_progress_hosting_count,
+            closed_hosting_count,
+            failed_hosting_count,
+        ) in rows
     ]
 
 
@@ -202,15 +262,14 @@ async def get_senior_by_id(
             detail="어르신 정보를 찾을 수 없습니다.",
         )
 
-    total_hosting_count, full_hosting_count = await get_hosting_counts_by_senior(
+    hosting_counts = await get_hosting_counts_by_senior(
         session=session,
         senior_id=senior.senior_id,
     )
 
     return build_senior_response(
         senior=senior,
-        total_hosting_count=total_hosting_count,
-        full_hosting_count=full_hosting_count,
+        hosting_counts=hosting_counts,
     )
 
 
@@ -268,15 +327,14 @@ async def update_senior(
     await session.commit()
     await session.refresh(senior)
 
-    total_hosting_count, full_hosting_count = await get_hosting_counts_by_senior(
+    hosting_counts = await get_hosting_counts_by_senior(
         session=session,
         senior_id=senior.senior_id,
     )
 
     return build_senior_response(
         senior=senior,
-        total_hosting_count=total_hosting_count,
-        full_hosting_count=full_hosting_count,
+        hosting_counts=hosting_counts,
     )
 
 
