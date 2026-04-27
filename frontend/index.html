@@ -528,7 +528,7 @@
         </svg>
         밥동무
       </a>
-      <ul class="nav-links">
+      <ul class="nav-links" id="desktop-nav-links">
         <li><a href="/pages/hostings.html">호스팅</a></li>
         <li><a href="/pages/login.html">로그인</a></li>
         <li><a href="/pages/register.html" class="btn btn-primary btn-sm">가입하기</a></li>
@@ -540,7 +540,7 @@
   </nav>
 
   <div class="nav-drawer" id="navDrawer" onclick="closeNav(event)">
-    <div class="nav-drawer-content">
+    <div class="nav-drawer-content" id="drawer-nav-links">
       <a href="/pages/hostings.html">호스팅</a>
       <a href="/pages/login.html">로그인</a>
       <a href="/pages/register.html">가입하기</a>
@@ -778,7 +778,21 @@
     </div>
   </footer>
 
+  <script src="/js/api.js"></script>
   <script>
+    if (isLoggedIn()) {
+      document.getElementById('desktop-nav-links').innerHTML = `
+        <li><a href="/pages/hostings.html">호스팅</a></li>
+        <li><a href="/pages/mypage.html">마이페이지</a></li>
+        <li><a onclick="logout()" style="cursor:pointer">로그아웃</a></li>
+      `;
+      document.getElementById('drawer-nav-links').innerHTML = `
+        <a href="/pages/hostings.html">호스팅</a>
+        <a href="/pages/mypage.html">마이페이지</a>
+        <a onclick="logout()" style="cursor:pointer">로그아웃</a>
+      `;
+    }
+
     function toggleNav() {
       const t = document.querySelector('.nav-toggle');
       const d = document.getElementById('navDrawer');

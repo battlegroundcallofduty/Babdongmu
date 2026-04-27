@@ -1,3 +1,5 @@
+import { mapKakaoAddressToPayload } from '/js/addressMapper.js';
+
 // 로그인 안 했으면 로그인 페이지로 이동
 if (!isLoggedIn()) {  // api.js 함수
   window.location.href = '/pages/login.html';
@@ -236,14 +238,14 @@ document.getElementById('docs-list')?.addEventListener('change', async (e) => {
     const roleLabel = { volunteer: '봉사자', guardian: '보호자', admin: '관리자' }[me.user_role] ?? me.user_role;
     document.getElementById('profile-avatar').textContent = me.name[0];
     document.getElementById('profile-name').textContent = me.name;
-    document.getElementById('profile-role-district').textContent = `${roleLabel} · ${me.address}`;
+    document.getElementById('profile-role-district').textContent = `${roleLabel} · ${me.address.road_address ?? ''}`;
     document.getElementById('profile-contact').textContent = `${me.email} · ${me.phone_number}`;
 
     // 내 정보 섹션
     document.getElementById('user-name').textContent = me.name;
     document.getElementById('user-email').textContent = me.email;
     document.getElementById('user-phone').textContent = me.phone_number;
-    document.getElementById('user-district').textContent = me.address;
+    document.getElementById('user-district').textContent = me.address.road_address ?? '';
 
     // 인증 상태 뱃지
     const certBadge = document.getElementById('cert-badge');
@@ -359,13 +361,14 @@ document.querySelector('#btn-cancel-info')?.addEventListener('click', () => {
   document.getElementById('info-msg').classList.add('hidden');  // 메시지 같이 숨김
 });
 
+let mypageAddressData = null;
+
 document.querySelector('#btn-save-info')?.addEventListener('click', async () => {
-  const address = document.getElementById('input-district').value.trim();
   const infoMsg = document.getElementById('info-msg');
   const saveBtn = document.getElementById('btn-save-info');
 
-  if (!address) {
-    infoMsg.textContent = '주소를 입력해주세요.';
+  if (!mypageAddressData) {
+    infoMsg.textContent = '주소 검색 버튼으로 주소를 선택해주세요.';
     infoMsg.className = 'alert alert-error';
     return;
   }
@@ -374,15 +377,15 @@ document.querySelector('#btn-save-info')?.addEventListener('click', async () => 
   try {
     const updated = await api('/users/me', {
       method: 'PATCH',
-      body: JSON.stringify({ address }),
+      body: JSON.stringify({ address: mypageAddressData }),
     });
 
     // 내 정보 텍스트 갱신
-    document.getElementById('user-district').textContent = updated.address;
+    document.getElementById('user-district').textContent = updated.address.road_address ?? '';
 
     // 프로필 카드 갱신
     const roleLabel = { volunteer: '봉사자', guardian: '보호자', admin: '관리자' }[updated.user_role] ?? updated.user_role;
-    document.getElementById('profile-role-district').textContent = `${roleLabel} · ${updated.address}`;
+    document.getElementById('profile-role-district').textContent = `${roleLabel} · ${updated.address.road_address ?? ''}`;
 
     exitEditMode();
     infoMsg.textContent = '정보가 수정됐습니다.';
@@ -405,6 +408,7 @@ document.querySelector('#btn-search-address-mypage')?.addEventListener('click', 
     oncomplete(data) {
       const parts = [data.sido, data.sigungu, data.bname].filter(Boolean);
       document.getElementById('input-district').value = parts.join(' ');
+      mypageAddressData = mapKakaoAddressToPayload(data);
     },
   }).open();
 });

@@ -4,9 +4,10 @@ import enum
 from datetime import datetime, timezone
 
 from sqlalchemy import TIMESTAMP, Boolean, Enum, ForeignKey, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
+from app.domain.common.models import Address
 
 
 class UserRole(enum.Enum):
@@ -35,6 +36,7 @@ class User(Base):
     address_id: Mapped[int] = mapped_column(
         ForeignKey("addresses.address_id"), unique=True, nullable=False
     )
+    address: Mapped[Address] = relationship("Address")
     user_role: Mapped[UserRole] = mapped_column(Enum(UserRole))
     cert_flag: Mapped[CertFlag] = mapped_column(Enum(CertFlag), default=CertFlag.PENDING)
     cert_reject_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)

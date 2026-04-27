@@ -13,9 +13,10 @@ from sqlalchemy import (
     String,
     Text,
 )
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
+from app.domain.common.models import Address
 
 
 class HostingStatus(str, enum.Enum):
@@ -48,9 +49,9 @@ class Hosting(Base):
     )
 
     hosting_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    senior_id: Mapped[int] = mapped_column(
-        ForeignKey("seniors.senior_id", ondelete="RESTRICT"),
-        nullable=False,
+    senior_id: Mapped[int | None] = mapped_column(
+        ForeignKey("seniors.senior_id", ondelete="SET NULL"),
+        nullable=True,
         index=True,
     )
 
@@ -68,6 +69,7 @@ class Hosting(Base):
     address_id: Mapped[int] = mapped_column(
         ForeignKey("addresses.address_id"), unique=True, nullable=False
     )
+    address: Mapped[Address] = relationship("Address")
 
     hosting_status: Mapped[HostingStatus] = mapped_column(
         Enum(HostingStatus),

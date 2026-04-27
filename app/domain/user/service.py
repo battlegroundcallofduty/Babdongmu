@@ -6,8 +6,11 @@ from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.security import hash_password, verify_password
+from app.domain.common.models import Address
+from app.domain.common.schemas import AddressCreate
 from app.domain.user.models import (
     CertFlag,
     Document,
@@ -17,9 +20,6 @@ from app.domain.user.models import (
     UserRole,
 )
 
-# update_user 허용 리스트
-ALLOWED_UPDATE_FIELDS = {"address"}
-
 
 # —— 유저 ─────────
 async def get_user_by_id(user_id: int, db: AsyncSession) -> User | None:
@@ -28,6 +28,17 @@ async def get_user_by_id(user_id: int, db: AsyncSession) -> User | None:
     statement = select(User).where(User.user_id == user_id)
     result = await db.execute(statement)
     # scalar_one_or_none: 결과가 하나면 그거, 없으면 none, 2개 이상은 에러
+    return result.scalar_one_or_none()
+
+
+async def get_user_with_address(user_id: int, db: AsyncSession) -> User | None:
+    """ID로 유저 조회 (address relationship 포함, UserResponse 반환 시 사용)"""
+    statement = (
+        select(User)
+        .where(User.user_id == user_id)
+        .options(selectinload(User.address))
+    )
+    result = await db.execute(statement)
     return result.scalar_one_or_none()
 
 
@@ -44,22 +55,26 @@ async def create_user(
     name: str,
     phone_number: str,
     user_role: UserRole,
-    address: str,
+    address_data: AddressCreate,
     db: AsyncSession,
 ) -> User:
     """회원가입: 유저 생성"""
+    address = Address(**address_data.model_dump())
+    db.add(address)
+    await db.flush()  # address_id 확보
+
     user = User(
         email=email.lower(),
         password=hash_password(password),
         name=name,
         phone_number=phone_number,
         user_role=user_role,
-        address=address,
+        address_id=address.address_id,
     )
     db.add(user)
     await db.commit()
-    await db.refresh(user)
-    return user
+
+    return await get_user_with_address(user.user_id, db)
 
 
 async def authenticate_user(email: str, password: str, db: AsyncSession) -> User | None:
@@ -75,20 +90,22 @@ async def authenticate_user(email: str, password: str, db: AsyncSession) -> User
     return user
 
 
-# **kwargs: 가변적으로 받는 딕셔너리
-async def update_user(user_id: int, db: AsyncSession, **kwargs) -> User | None:
+async def update_user(
+    user_id: int,
+    db: AsyncSession,
+    address_data: AddressCreate | None = None,
+) -> User | None:
     """마이페이지: 회원정보 수정"""
     user = await get_user_by_id(user_id, db)
     if user is None:
         return None
-    for field, value in kwargs.items():
-        if field not in ALLOWED_UPDATE_FIELDS:
-            continue  # setattr 실행 안 하고 다음 필드로
-        setattr(user, field, value)  # 들어온것 업데이트
+    if address_data is not None:
+        address = await db.get(Address, user.address_id)
+        for field, value in address_data.model_dump().items():
+            setattr(address, field, value)
     user.updated_at = datetime.now(timezone.utc)
     await db.commit()
-    await db.refresh(user)
-    return user
+    return await get_user_with_address(user_id, db)
 
 
 async def change_password(
@@ -114,7 +131,12 @@ async def delete_user(user_id: int, db: AsyncSession) -> None:
     user = await get_user_by_id(user_id, db)
     if user is None:
         return  # 여기서 함수 종료하라는 뜻(return None과 같음)
+    address_id = user.address_id
     await db.delete(user)
+    await db.flush()
+    address = await db.get(Address, address_id)
+    if address:
+        await db.delete(address)
     await db.commit()
 
 

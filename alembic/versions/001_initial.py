@@ -149,7 +149,7 @@ def upgrade() -> None:
     op.create_table(
         "hostings",
         sa.Column("hosting_id", sa.Integer(), autoincrement=True, nullable=False),
-        sa.Column("senior_id", sa.Integer(), nullable=False),
+        sa.Column("senior_id", sa.Integer(), nullable=True),
         sa.Column("address_id", sa.Integer(), nullable=False),
         sa.Column("menu", sa.String(length=255), nullable=False),
         sa.Column("hosting_at", sa.TIMESTAMP(timezone=True), nullable=False),
@@ -167,7 +167,7 @@ def upgrade() -> None:
         sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
         sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
         sa.CheckConstraint("max_people >= 2", name="ck_hosting_max_people"),
-        sa.ForeignKeyConstraint(["senior_id"], ["seniors.senior_id"], ondelete="RESTRICT"),
+        sa.ForeignKeyConstraint(["senior_id"], ["seniors.senior_id"], ondelete="SET NULL"),
         sa.ForeignKeyConstraint(["address_id"], ["addresses.address_id"]),
         sa.PrimaryKeyConstraint("hosting_id"),
         sa.UniqueConstraint("address_id"),

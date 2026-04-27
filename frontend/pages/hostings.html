@@ -819,20 +819,20 @@
     }
 
     function buildHostingAddressText(hosting) {
-      const baseAddress = [hosting?.road_address, hosting?.detail_address]
+      const baseAddress = [hosting?.address.road_address, hosting?.address.detail_address]
         .filter(Boolean)
         .join(' ')
         .trim();
 
       if (!baseAddress) {
-        return hosting?.building_name ?? '';
+        return hosting?.address.building_name ?? '';
       }
 
-      if (!hosting?.building_name) {
+      if (!hosting?.address.building_name) {
         return baseAddress;
       }
 
-      return `${baseAddress} (${hosting.building_name})`;
+      return `${baseAddress} (${hosting.address.building_name})`;
     }
 
     function getCurrentPeopleCount(hosting) {
@@ -858,15 +858,15 @@
       const cardElement = document.createElement('article');
       cardElement.className = 'card hosting-card slide-up';
       cardElement.dataset.seniorId = String(hosting.senior_id);
-      cardElement.dataset.sigungu = hosting.sigungu ?? '';
+      cardElement.dataset.sigungu = hosting.address.sigungu ?? '';
       cardElement.dataset.status = hosting.hosting_status ?? '';
       cardElement.dataset.keyword = [
         hosting.menu,
-        hosting.road_address,
-        hosting.detail_address,
-        hosting.sigungu,
-        hosting.bname,
-        hosting.building_name,
+        hosting.address.road_address,
+        hosting.address.detail_address,
+        hosting.address.sigungu,
+        hosting.address.bname,
+        hosting.address.building_name,
         senior?.name,
       ]
         .filter(Boolean)
@@ -954,7 +954,7 @@
 
       const sigunguSet = new Set(
         hostingItems
-          .map((hosting) => hosting.sigungu ?? '')
+          .map((hosting) => hosting.address.sigungu ?? '')
           .filter(Boolean)
       );
 
@@ -984,16 +984,16 @@
 
       const filteredItems = hostingItems.filter((hosting) => {
         const matchesSenior = !selectedSeniorId || String(hosting.senior_id) === selectedSeniorId;
-        const matchesSigungu = !selectedSigungu || hosting.sigungu === selectedSigungu;
+        const matchesSigungu = !selectedSigungu || hosting.address.sigungu === selectedSigungu;
         const matchesStatus = !selectedStatus || hosting.hosting_status === selectedStatus;
 
         const keywordTarget = [
           hosting.menu,
-          hosting.road_address,
-          hosting.detail_address,
-          hosting.sigungu,
-          hosting.bname,
-          hosting.building_name,
+          hosting.address.road_address,
+          hosting.address.detail_address,
+          hosting.address.sigungu,
+          hosting.address.bname,
+          hosting.address.building_name,
           seniorsCache.find((senior) => String(senior.senior_id) === String(hosting.senior_id))?.name,
         ]
           .filter(Boolean)
@@ -1476,20 +1476,20 @@
 
 
     function buildSeniorAddressText(senior) {
-      const baseAddress = [senior?.road_address, senior?.detail_address]
+      const baseAddress = [senior?.address.road_address, senior?.address.detail_address]
         .filter(Boolean)
         .join(' ')
         .trim();
 
       if (!baseAddress) {
-        return senior?.building_name ?? '';
+        return senior?.address.building_name ?? '';
       }
 
-      if (!senior?.building_name) {
+      if (!senior?.address.building_name) {
         return baseAddress;
       }
 
-      return `${baseAddress} (${senior.building_name})`;
+      return `${baseAddress} (${senior.address.building_name})`;
     }
 
     function fillAddressFieldsFromSenior(senior) {

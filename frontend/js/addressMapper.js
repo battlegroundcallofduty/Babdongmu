@@ -72,22 +72,6 @@ export function mapKakaoAddressToPayload(kakaoData, coords = null, detailAddress
   };
 }
 
-export function mapSeniorAddressToHostingPayload(senior) {
-  return {
-    road_address: senior.road_address ?? '',
-    jibun_address: senior.jibun_address ?? null,
-    zonecode: senior.zonecode ?? null,
-    sigungu: senior.sigungu ?? '',
-    bname: senior.bname ?? null,
-    detail_address: senior.detail_address ?? '',
-    sido: senior.sido ?? null,
-    building_name: senior.building_name ?? null,
-    is_apartment: senior.is_apartment ?? null,
-    lat: senior.lat ?? null,
-    lng: senior.lng ?? null,
-    sigungu_code: senior.sigungu_code ?? null,
-  };
-}
 
 export function mergeDetailAddress(addressPayload, detailAddress = '') {
   return {

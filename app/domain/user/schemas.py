@@ -2,8 +2,9 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
+from app.domain.common.schemas import AddressCreate, AddressResponse
 from app.domain.user.models import CertFlag, DocumentType, UserRole
 
 # (요청: 클라이언트 -body(데이터)-> 서버)
@@ -19,7 +20,7 @@ class UserRegisterRequest(BaseModel):
     name: str = Field(min_length=1)
     phone_number: str = Field(min_length=1)
     user_role: UserRole  # volunteer | guardian
-    address: str = Field(min_length=1, max_length=255)
+    address: AddressCreate
 
     @field_validator("password")  # 특정 필드(비번) 하나
     # userregisterrequest 객체가 없는 상태라서 클래스(cls) 받음
@@ -47,7 +48,7 @@ class UserLoginRequest(BaseModel):
 class UserUpdateRequest(BaseModel):
     """회원정보 수정 요청 (마이페이지)"""
 
-    address: str | None = Field(None, min_length=1, max_length=255)
+    address: AddressCreate | None = None
 
 
 class PasswordChangeRequest(BaseModel):
@@ -100,14 +101,13 @@ class UserResponse(BaseModel):
     name: str
     phone_number: str | None
     user_role: UserRole
-    address: str
+    address: AddressResponse
     cert_flag: CertFlag
     cert_reject_reason: str | None
     created_at: datetime
     is_social_login: bool
 
-    # ORM 객체같은 .속성도 읽기가능(@property도 읽음)
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class TokenResponse(BaseModel):

@@ -145,7 +145,7 @@ alembic upgrade head  # 로컬 반영 (DEBUG=False인 경우)
 | 컬럼 | 타입 | 설명 |
 |------|------|------|
 | hosting_id | PK | 호스팅 ID |
-| senior_id | FK → seniors | 어르신 |
+| senior_id | FK → seniors nullable (SET NULL) | 어르신. senior 삭제 시 NULL로 유지 (이력 보존) |
 | address_id | FK → addresses (unique) | 주소 (생성 시점 senior 주소의 스냅샷) |
 | menu | VARCHAR | 메뉴 |
 | hosting_at | TIMESTAMP | 호스팅 시작 일시 |

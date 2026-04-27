@@ -138,7 +138,7 @@ const { svg } = await mermaid.render('erd-svg', `erDiagram
   addresses ||--|| hostings : "주소"
   users ||--o{ documents : "업로드"
   users ||--o{ seniors : "보호자"
-  seniors ||--o{ hostings : "개설"
+  seniors |o--o{ hostings : "개설"
   hostings ||--o{ matching_info : "신청"
   users ||--o{ matching_info : "봉사자"
   matching_info ||--o{ reviews : "작성"

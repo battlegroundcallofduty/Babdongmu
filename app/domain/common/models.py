@@ -19,12 +19,12 @@ class Address(Base):
     zonecode: Mapped[str | None] = mapped_column(String(10), nullable=True)
     sigungu: Mapped[str] = mapped_column(String(100), nullable=False)
     bname: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    detail_address: Mapped[str] = mapped_column(String(255), nullable=False)
+    detail_address: Mapped[str] = mapped_column(String(255), nullable=False, default="")
     sido: Mapped[str | None] = mapped_column(String(50), nullable=True)
     building_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
     is_apartment: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
-    lat: Mapped[float | None] = mapped_column(Float, nullable=True)
-    lng: Mapped[float | None] = mapped_column(Float, nullable=True)
+    lat: Mapped[float | None] = mapped_column(Float, nullable=True)   # 현재 미지원 — 지도 기반 기능 확장 시 사용 예정
+    lng: Mapped[float | None] = mapped_column(Float, nullable=True)   # 현재 미지원 — 지도 기반 기능 확장 시 사용 예정
     sigungu_code: Mapped[str | None] = mapped_column(String(20), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True),

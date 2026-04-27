@@ -7,7 +7,9 @@ from datetime import datetime, timedelta, timezone
 from fastapi import HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
+from app.domain.common.models import Address
 from app.domain.hosting.models import AlarmType, Hosting, HostingStatus
 from app.domain.hosting.schemas import HostingCreateRequest, HostingResponse
 from app.domain.match.models import MatchingInfo, MatchStatus
@@ -63,6 +65,7 @@ async def get_guardian_hosting_by_id(
             Hosting.hosting_id == hosting_id,
             Senior.guardian_id == guardian_id,
         )
+        .options(selectinload(Hosting.address))
     )
 
     result = await session.execute(stmt)
@@ -374,30 +377,45 @@ async def create_hosting(
     if hosting_max_people is None:
         hosting_max_people = senior.max_people
 
+    # 어르신 주소를 호스팅 시점 스냅샷으로 복사 (이후 senior 주소 변경과 무관)
+    senior_address = await session.get(Address, senior.address_id)
+    address_snapshot = Address(
+        road_address=senior_address.road_address,
+        jibun_address=senior_address.jibun_address,
+        zonecode=senior_address.zonecode,
+        sigungu=senior_address.sigungu,
+        bname=senior_address.bname,
+        detail_address=senior_address.detail_address,
+        sido=senior_address.sido,
+        building_name=senior_address.building_name,
+        is_apartment=senior_address.is_apartment,
+        lat=senior_address.lat,
+        lng=senior_address.lng,
+        sigungu_code=senior_address.sigungu_code,
+    )
+    session.add(address_snapshot)
+    await session.flush()  # address_id 확보
+
     hosting = Hosting(
         senior_id=senior.senior_id,
+        address_id=address_snapshot.address_id,
         menu=request.menu,
         hosting_at=hosting_at,
         hosting_end=hosting_end,
         max_people=hosting_max_people,
-        road_address=senior.road_address,
-        jibun_address=senior.jibun_address,
-        zonecode=senior.zonecode,
-        sigungu=senior.sigungu,
-        bname=senior.bname,
-        detail_address=senior.detail_address,
-        sido=senior.sido,
-        building_name=senior.building_name,
-        is_apartment=senior.is_apartment,
-        lat=senior.lat,
-        lng=senior.lng,
-        sigungu_code=senior.sigungu_code,
         hosting_status=HostingStatus.OPEN,
     )
 
     session.add(hosting)
     await session.commit()
-    await session.refresh(hosting)
+
+    # commit 후 address relationship 포함해 재조회
+    result = await session.execute(
+        select(Hosting)
+        .where(Hosting.hosting_id == hosting.hosting_id)
+        .options(selectinload(Hosting.address))
+    )
+    hosting = result.scalar_one()
 
     return build_hosting_response(hosting=hosting, current_people=0)
 
@@ -412,6 +430,7 @@ async def list_hostings_by_guardian(
         select(Hosting)
         .join(Senior, Senior.senior_id == Hosting.senior_id)
         .where(Senior.guardian_id == guardian_id)
+        .options(selectinload(Hosting.address))
         .order_by(Hosting.created_at.desc())
     )
 
@@ -503,6 +522,12 @@ async def cancel_hosting(
     if sms_tasks:
         await session.commit()
 
+    # commit 후 address relationship 포함해 재조회
+    hosting = await get_guardian_hosting_by_id(
+        session=session,
+        guardian_id=guardian_id,
+        hosting_id=hosting_id,
+    )
     current_people = await get_current_people_count(
         session=session,
         hosting_id=hosting.hosting_id,
@@ -522,6 +547,7 @@ async def list_hostings_for_volunteer(
     stmt = (
         select(Hosting)
         .where(Hosting.hosting_status == HostingStatus.OPEN)
+        .options(selectinload(Hosting.address))
         .order_by(Hosting.hosting_at.asc(), Hosting.created_at.desc())
     )
 
@@ -548,8 +574,10 @@ async def get_public_hosting_detail(
 ) -> HostingResponse:
     """봉사자가 조회 가능한 공개 호스팅 상세 정보를 반환합니다."""
 
-    stmt = select(Hosting).where(
-        Hosting.hosting_id == hosting_id,
+    stmt = (
+        select(Hosting)
+        .where(Hosting.hosting_id == hosting_id)
+        .options(selectinload(Hosting.address))
     )
 
     result = await session.execute(stmt)

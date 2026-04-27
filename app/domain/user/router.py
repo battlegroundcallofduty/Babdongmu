@@ -71,7 +71,7 @@ async def register(body: UserRegisterRequest, db: AsyncSession = Depends(get_db)
         name=body.name,
         phone_number=body.phone_number,
         user_role=body.user_role,
-        address=body.address,
+        address_data=body.address,
         db=db,
     )
     await delete_phone_verifications(body.phone_number, db)
@@ -108,13 +108,12 @@ async def update_me(
     db: AsyncSession = Depends(get_db),
 ):
     """마이페이지: 회원정보 수정 (주소)"""
-    update_data = body.model_dump(exclude_none=True)
-    if not update_data:
+    if body.address is None:
         return current_user
     updated = await update_user(
         current_user.user_id,
         db,
-        **update_data,
+        address_data=body.address,
     )
     if updated is None:
         raise HTTPException(

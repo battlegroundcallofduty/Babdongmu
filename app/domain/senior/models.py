@@ -14,9 +14,10 @@ from sqlalchemy import (
     String,
     Text,
 )
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
+from app.domain.common.models import Address
 
 
 class GenderEnum(str, enum.Enum):
@@ -47,6 +48,7 @@ class Senior(Base):
     address_id: Mapped[int] = mapped_column(
         ForeignKey("addresses.address_id"), unique=True, nullable=False
     )
+    address: Mapped[Address] = relationship("Address")
 
     special_note: Mapped[str | None] = mapped_column(Text, nullable=True)
     active_flag: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
