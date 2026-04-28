@@ -65,24 +65,6 @@
     }
     .btn-checkout:hover { background: var(--secondary-hover); }
     .btn-checkout:disabled { opacity: 0.5; cursor: not-allowed; }
-    .toast {
-      position: fixed;
-      bottom: var(--space-2xl);
-      left: 50%;
-      transform: translateX(-50%);
-      background: var(--text);
-      color: #fff;
-      padding: var(--space-md) var(--space-xl);
-      border-radius: var(--radius-full);
-      font-size: 0.95rem;
-      opacity: 0;
-      transition: opacity 0.3s;
-      pointer-events: none;
-      white-space: nowrap;
-    }
-    .toast.show { opacity: 1; }
-    .toast.success { background: var(--success); }
-    .toast.error { background: var(--error); }
   </style>
 </head>
 <body>
@@ -113,7 +95,6 @@
     </div>
   </main>
 
-  <div class="toast" id="toast"></div>
 
   <script src="/js/base.js"></script>
   <script src="/js/api.js"></script>
@@ -143,13 +124,6 @@
         document.querySelector('#checkout-btn').disabled = true;
         showToast('QR 코드를 확인할 수 없습니다.', 'error');
       }
-    }
-
-    function showToast(message, type = '') {
-      const toast = document.querySelector('#toast');
-      toast.textContent = message;
-      toast.className = `toast show ${type}`;
-      setTimeout(() => { toast.className = 'toast'; }, 3000);
     }
 
     function setLoading(btnId, loading) {

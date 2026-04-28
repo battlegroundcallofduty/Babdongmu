@@ -222,7 +222,7 @@ document.getElementById('docs-list')?.addEventListener('click', async (e) => {
       const { url } = await api(`/users/documents/${docId}/presigned-url`);
       window.open(url, '_blank', 'noopener');
     } catch {
-      alert('서류를 불러올 수 없어요. 잠시 후 다시 시도해주세요.');
+      showResultModal('서류를 불러올 수 없어요. 잠시 후 다시 시도해주세요.', 'error');
     }
     return;
   }
@@ -231,13 +231,20 @@ document.getElementById('docs-list')?.addEventListener('click', async (e) => {
   const deleteBtn = e.target.closest('.delete-doc-btn');
   if (!deleteBtn) return;
   const docId = deleteBtn.dataset.docId;
-  if (!confirm('이 서류를 삭제하시겠어요?')) return;
-  try {
-    await api(`/users/me/documents/${docId}`, { method: 'DELETE' });
-    await loadDocuments();
-  } catch (err) {
-    alert(err.message);
-  }
+  openConfirmModal({
+    title: '서류 삭제',
+    message: '이 서류를 삭제하시겠어요?',
+    confirmText: '삭제',
+    cancelText: '취소',
+    onConfirm: async () => {
+      try {
+        await api(`/users/me/documents/${docId}`, { method: 'DELETE' });
+        await loadDocuments();
+      } catch (err) {
+        await showResultModal(err.message, 'error');
+      }
+    },
+  });
 });
 
 // 서류 업로드 (change 이벤트 위임)
@@ -255,7 +262,7 @@ document.getElementById('docs-list')?.addEventListener('change', async (e) => {
     await refreshCertBadge();  // currentCertFlag 먼저 갱신
     await loadDocuments();     // 갱신된 cert 상태로 서류 슬롯 렌더링
   } catch (err) {
-    alert(`업로드 실패: ${err.message}`);
+    await showResultModal(`업로드 실패: ${err.message}`, 'error');
   }
 });
 
@@ -304,7 +311,7 @@ document.getElementById('docs-list')?.addEventListener('change', async (e) => {
     await loadDocuments();
   } catch {
     // 토큰 없거나 만료되면 안내 후 로그인 페이지로
-    alert('로그인이 만료됐어요. 다시 로그인해주세요.');
+    await showResultModal('로그인이 만료됐어요. 다시 로그인해주세요.', 'error');
     window.location.href = '/pages/login.html';
   }
 })();
@@ -433,7 +440,7 @@ document.querySelector('#btn-save-info')?.addEventListener('click', async () => 
 // 주소 검색 (register.js와 동일)
 document.querySelector('#btn-search-address-mypage')?.addEventListener('click', () => {
   if (!window.daum?.Postcode) {
-    alert('주소 검색을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
+    showResultModal('주소 검색을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.', 'error');
     return;
   }
   new window.daum.Postcode({
@@ -451,13 +458,19 @@ document.querySelector('#logout-btn')?.addEventListener('click', () => {
 });
 
 // 회원 탈퇴 버튼
-document.querySelector('#delete-btn')?.addEventListener('click', async () => {
-  if (!confirm('정말 탈퇴하시겠습니까? 모든 정보가 삭제되며 복구할 수 없습니다.')) return;
-  try {
-    await api('/users/me', { method: 'DELETE' });
-    localStorage.removeItem('access_token');
-    window.location.href = '/pages/login.html';
-  } catch (err) {
-    alert(err.message);
-  }
+document.querySelector('#delete-btn')?.addEventListener('click', () => {
+  openConfirmModal({
+    title: '회원 탈퇴',
+    message: '정말 탈퇴하시겠습니까? 모든 정보가 삭제되며 복구할 수 없습니다.',
+    confirmText: '탈퇴',
+    cancelText: '취소',
+    onConfirm: async () => {
+      try {
+        await api('/users/me', { method: 'DELETE' });
+        logout();
+      } catch (err) {
+        await showResultModal(err.message, 'error');
+      }
+    },
+  });
 });

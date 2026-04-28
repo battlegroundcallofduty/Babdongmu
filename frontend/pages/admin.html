@@ -105,24 +105,6 @@
       .doc-item, .time-item { flex-wrap: wrap; }
     }
 
-    .toast {
-      position: fixed;
-      bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%) translateY(80px);
-      background: var(--text);
-      color: #fff;
-      padding: 10px 20px;
-      border-radius: var(--radius-full);
-      font-size: 14px;
-      font-weight: 500;
-      z-index: 9999;
-      transition: transform 0.3s ease;
-      pointer-events: none;
-    }
-    .toast.show { transform: translateX(-50%) translateY(0); }
-    .toast.success { background: var(--secondary); }
-    .toast.error { background: var(--error); }
 
     .access-denied {
       display: none;
@@ -258,7 +240,6 @@
 
   <div id="footer-placeholder"></div>
 
-  <div class="toast" id="toast"></div>
 
   <!-- 반려사유 입력 모달 -->
   <div class="modal-overlay" id="rejectModal">
@@ -280,8 +261,8 @@
   </div>
 
   <script src="/js/api.js"></script>
-  <script src="/js/admin.js"></script>
   <script src="/js/base.js"></script>
+  <script src="/js/admin.js"></script>
   <script src="/js/footer.js"></script>
   <script>
     // ── XSS 방어 헬퍼 ───────────────────────────────────────

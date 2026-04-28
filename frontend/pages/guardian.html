@@ -194,28 +194,6 @@
       }
     }
 
-    .confirm-modal-panel {
-      max-width: 420px;
-      padding: 24px;
-    }
-
-    .confirm-modal-body {
-      color: #2C2420;
-      font-size: 16px;
-      line-height: 1.6;
-      margin-bottom: 24px;
-    }
-
-    .confirm-modal-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    body.modal-open {
-      overflow: hidden;
-    }
 
     .btn-disabled {
       background: #F0EBE6;
@@ -260,8 +238,7 @@
     }
 
     @media (max-width: 768px) {
-      .modal-panel,
-      .confirm-modal-panel {
+      .modal-panel {
         padding: 20px;
       }
 
@@ -680,28 +657,6 @@
       </div>
     </div>
 
-    <div id="result-modal" class="modal-overlay hidden">
-      <div class="modal-panel confirm-modal-panel" role="dialog" aria-modal="true" aria-labelledby="result-modal-title">
-        <div class="modal-header">
-          <h3 id="result-modal-title">안내</h3>
-          <button id="close-result-modal-button" type="button" class="modal-close-button" aria-label="닫기">
-            ×
-          </button>
-        </div>
-
-        <div id="result-modal-message" class="confirm-modal-body"></div>
-
-        <div class="confirm-modal-actions">
-          <button
-            id="result-modal-confirm-button"
-            type="button"
-            class="btn btn-primary btn-sm"
-          >
-            확인
-          </button>
-        </div>
-      </div>
-    </div>
 
     <div id="qr-modal" class="modal-overlay hidden">
       <div class="modal-panel qr-modal-panel" role="dialog" aria-modal="true" aria-labelledby="qr-modal-title">
@@ -715,40 +670,12 @@
       </div>
     </div>
 
-    <div id="confirm-modal" class="modal-overlay hidden">
-      <div class="modal-panel confirm-modal-panel" role="dialog" aria-modal="true" aria-labelledby="confirm-modal-title">
-        <div class="modal-header">
-          <h3 id="confirm-modal-title">안내</h3>
-          <button id="close-confirm-modal-button" type="button" class="modal-close-button" aria-label="닫기">
-            ×
-          </button>
-        </div>
-
-        <div id="confirm-modal-message" class="confirm-modal-body"></div>
-
-        <div class="confirm-modal-actions">
-          <button
-            id="confirm-modal-cancel-button"
-            type="button"
-            class="btn btn-ghost btn-sm"
-          >
-            닫기
-          </button>
-          <button
-            id="confirm-modal-confirm-button"
-            type="button"
-            class="btn btn-primary btn-sm hidden"
-          >
-            확인
-          </button>
-        </div>
-      </div>
-    </div>
   </main>
 
   <div id="footer-placeholder"></div>
 
   <script src="/js/api.js"></script>
+  <script src="/js/modal.js"></script>
   <script src="/js/base.js"></script>
   <script src="/js/footer.js"></script>
   <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
@@ -788,24 +715,11 @@
     const closeSeniorDetailButtonElement = document.querySelector('#close-senior-detail-button');
     const goEditSeniorButtonElement = document.querySelector('#go-edit-senior-button');
 
-    const resultModalElement = document.querySelector('#result-modal');
-    const resultModalTitleElement = document.querySelector('#result-modal-title');
-    const resultModalMessageElement = document.querySelector('#result-modal-message');
-    const resultModalConfirmButtonElement = document.querySelector('#result-modal-confirm-button');
-    const closeResultModalButtonElement = document.querySelector('#close-result-modal-button');
-
-    const confirmModalElement = document.querySelector('#confirm-modal');
-    const confirmModalTitleElement = document.querySelector('#confirm-modal-title');
-    const confirmModalMessageElement = document.querySelector('#confirm-modal-message');
-    const confirmModalConfirmButtonElement = document.querySelector('#confirm-modal-confirm-button');
-    const confirmModalCancelButtonElement = document.querySelector('#confirm-modal-cancel-button');
-    const closeConfirmModalButtonElement = document.querySelector('#close-confirm-modal-button');
 
     const DEFAULT_VISIBLE_SENIOR_COUNT = 4;
 
     let isSeniorListExpanded = false;
     let seniorListState = [];
-    let confirmModalHandler = null;
     let isActiveOnly = activeOnlyToggleElement?.checked ?? false;
     let addressState = createEmptyAddressPayload();
     let currentDetailSenior = null;
@@ -839,7 +753,7 @@
         link.href = qrObjectUrl;
         link.download = `${seniorName}_QR.png`;
       } catch (err) {
-        showMessage(err.message, true);
+        showResultModal(err.message, 'error');
         closeQrModal();
         return;
       } finally {
@@ -857,15 +771,12 @@
       document.querySelector('#qr-download-link').href = '#';
       if (
         registerFormModalElement.classList.contains('hidden') &&
-        confirmModalElement.classList.contains('hidden') &&
+        !document.getElementById('confirm-modal')?.classList.contains('open') &&
         document.querySelector('#senior-detail-modal').classList.contains('hidden')
       ) {
         document.body.classList.remove('modal-open');
       }
     }
-
-    window.toggleNav = toggleNav;
-    window.closeNav = closeNav;
 
     function escapeHtml(value) {
       return String(value)
@@ -878,9 +789,7 @@
 
     function isAnyModalOpen() {
       return !registerFormModalElement.classList.contains('hidden')
-        || !seniorDetailModalElement.classList.contains('hidden')
-        || !resultModalElement.classList.contains('hidden')
-        || !confirmModalElement.classList.contains('hidden');
+        || !seniorDetailModalElement.classList.contains('hidden');
     }
 
     function syncBodyScrollLock() {
@@ -891,36 +800,8 @@
       }
     }
 
-    function getResultModalTitle(isError = false) {
-      return isError ? '오류' : '안내';
-    }
-
-    function showResultModal(message, isError = false) {
-      return new Promise((resolve) => {
-        resultModalTitleElement.textContent = getResultModalTitle(isError);
-        resultModalMessageElement.textContent = message;
-        resultModalElement.classList.remove('hidden');
-        resultModalElement.dataset.resolvePending = 'true';
-        resultModalElement._resolver = resolve;
-        syncBodyScrollLock();
-      });
-    }
-
-    function closeResultModal() {
-      resultModalElement.classList.add('hidden');
-
-      if (resultModalElement.dataset.resolvePending === 'true' && resultModalElement._resolver) {
-        const resolve = resultModalElement._resolver;
-        resultModalElement._resolver = null;
-        resultModalElement.dataset.resolvePending = 'false';
-        resolve();
-      }
-
-      syncBodyScrollLock();
-    }
-
     function hideMessage() {
-      if (!resultModalElement.classList.contains('hidden')) {
+      if (document.getElementById('result-modal')?.classList.contains('open')) {
         closeResultModal();
       }
     }
@@ -1130,7 +1011,7 @@
 
     function openAddressSearch() {
       if (!window.daum?.Postcode) {
-        void showResultModal('주소 검색 스크립트를 불러오지 못했습니다.', true);
+        void showResultModal('주소 검색 스크립트를 불러오지 못했습니다.', 'error');
         return;
       }
 
@@ -1223,48 +1104,6 @@
       syncBodyScrollLock();
     }
 
-    function openConfirmModal({
-      title,
-      message,
-      confirmText = '확인',
-      cancelText = '닫기',
-      onConfirm = null,
-      showConfirmButton = true,
-    }) {
-      confirmModalTitleElement.textContent = title;
-      confirmModalMessageElement.textContent = message;
-      confirmModalCancelButtonElement.textContent = cancelText;
-      confirmModalHandler = onConfirm;
-
-      if (showConfirmButton) {
-        confirmModalConfirmButtonElement.textContent = confirmText;
-        confirmModalConfirmButtonElement.classList.remove('hidden');
-      } else {
-        confirmModalConfirmButtonElement.classList.add('hidden');
-      }
-
-      confirmModalElement.classList.remove('hidden');
-      syncBodyScrollLock();
-    }
-
-    function closeConfirmModal() {
-      confirmModalElement.classList.add('hidden');
-      confirmModalHandler = null;
-      syncBodyScrollLock();
-    }
-
-    async function handleConfirmModalAction() {
-      if (!confirmModalHandler) {
-        closeConfirmModal();
-        return;
-      }
-
-      try {
-        await confirmModalHandler();
-      } finally {
-        closeConfirmModal();
-      }
-    }
 
     function renderSeniorCard(senior) {
       const isDeleteBlocked = senior.active_flag;
@@ -1398,7 +1237,7 @@
         seniorListElement.innerHTML = '';
         seniorEmptyElement.classList.add('hidden');
         seniorListActionsElement.classList.add('hidden');
-        await showResultModal(error.message || '어르신 목록을 불러오지 못했습니다.', true);
+        await showResultModal(error.message || '어르신 목록을 불러오지 못했습니다.', 'error');
       }
     }
 
@@ -1469,7 +1308,7 @@
       try {
         await openSeniorEditFromDetail();
       } catch (error) {
-        await showResultModal(error.message || '어르신 정보를 불러오지 못했습니다.', true);
+        await showResultModal(error.message || '어르신 정보를 불러오지 못했습니다.', 'error');
       }
     });
 
@@ -1485,37 +1324,6 @@
       }
     });
 
-    closeResultModalButtonElement?.addEventListener('click', () => {
-      closeResultModal();
-    });
-
-    resultModalConfirmButtonElement?.addEventListener('click', () => {
-      closeResultModal();
-    });
-
-    resultModalElement?.addEventListener('click', (event) => {
-      if (event.target === resultModalElement) {
-        closeResultModal();
-      }
-    });
-
-    closeConfirmModalButtonElement?.addEventListener('click', () => {
-      closeConfirmModal();
-    });
-
-    confirmModalCancelButtonElement?.addEventListener('click', () => {
-      closeConfirmModal();
-    });
-
-    confirmModalConfirmButtonElement?.addEventListener('click', async () => {
-      await handleConfirmModalAction();
-    });
-
-    confirmModalElement?.addEventListener('click', (event) => {
-      if (event.target === confirmModalElement) {
-        closeConfirmModal();
-      }
-    });
 
     document.querySelector('#close-qr-modal-button')?.addEventListener('click', () => {
       closeQrModal();
@@ -1533,12 +1341,12 @@
           return;
         }
 
-        if (!resultModalElement.classList.contains('hidden')) {
+        if (document.getElementById('result-modal')?.classList.contains('open')) {
           closeResultModal();
           return;
         }
 
-        if (!confirmModalElement.classList.contains('hidden')) {
+        if (document.getElementById('confirm-modal')?.classList.contains('open')) {
           closeConfirmModal();
           return;
         }
@@ -1589,23 +1397,23 @@
       const payload = getFormPayload();
 
       if (!payload.birth_date) {
-        await showResultModal('생년월일을 입력해 주세요.', true);
+        await showResultModal('생년월일을 입력해 주세요.', 'error');
         return;
       }
 
       const calculatedAge = calculateAgeFromBirthDate(payload.birth_date);
       if (calculatedAge === null || calculatedAge < 65) {
-        await showResultModal('어르신은 현재 기준 만 65세 이상이어야 합니다.', true);
+        await showResultModal('어르신은 현재 기준 만 65세 이상이어야 합니다.', 'error');
         return;
       }
 
       if (!payload.address.road_address) {
-        await showResultModal('주소 검색으로 도로명 주소를 먼저 선택해 주세요.', true);
+        await showResultModal('주소 검색으로 도로명 주소를 먼저 선택해 주세요.', 'error');
         return;
       }
 
       if (!payload.address.detail_address) {
-        await showResultModal('상세주소를 입력해 주세요.', true);
+        await showResultModal('상세주소를 입력해 주세요.', 'error');
         return;
       }
 
@@ -1621,7 +1429,7 @@
         closeForm();
         await loadSeniors();
       } catch (error) {
-        await showResultModal(error.message || '요청 처리 중 오류가 발생했습니다.', true);
+        await showResultModal(error.message || '요청 처리 중 오류가 발생했습니다.', 'error');
       }
     });
 
@@ -1665,12 +1473,7 @@
         }
 
         if (action === 'delete' && isDeleteBlocked) {
-          openConfirmModal({
-            title: '삭제할 수 없어요',
-            message: '활성 상태의 어르신은 삭제할 수 없어요. 먼저 비활성 상태로 변경해 주세요.',
-            cancelText: '확인',
-            showConfirmButton: false,
-          });
+          await showResultModal('활성 상태의 어르신은 삭제할 수 없어요. 먼저 비활성 상태로 변경해 주세요.', 'info');
           return;
         }
 
@@ -1680,7 +1483,6 @@
             message: '정말 삭제하시겠어요? 삭제 후 복구할 수 없습니다.',
             confirmText: '삭제하기',
             cancelText: '취소',
-            showConfirmButton: true,
             onConfirm: async () => {
               await deleteSenior(seniorId);
               await showResultModal('어르신이 삭제되었어요.');
@@ -1689,7 +1491,7 @@
           });
         }
       } catch (error) {
-        await showResultModal(error.message || '요청 처리 중 오류가 발생했습니다.', true);
+        await showResultModal(error.message || '요청 처리 중 오류가 발생했습니다.', 'error');
       }
     });
 
@@ -1710,7 +1512,7 @@
         const senior = await fetchSeniorDetail(seniorCard.dataset.seniorId);
         openSeniorDetailModal(senior);
       } catch (error) {
-        await showResultModal(error.message || '어르신 정보를 불러오지 못했습니다.', true);
+        await showResultModal(error.message || '어르신 정보를 불러오지 못했습니다.', 'error');
       }
     });
 

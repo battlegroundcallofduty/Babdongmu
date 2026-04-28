@@ -80,6 +80,7 @@
   <div id="footer-placeholder"></div>
 
   <script src="/js/api.js"></script>
+  <script src="/js/modal.js"></script>
   <script src="/js/base.js"></script>
   <script src="/js/footer.js"></script>
   <script type="module">
@@ -306,7 +307,7 @@
 
       const combined = [...selectedFiles, ...newFiles];
       if (combined.length > 5) {
-        alert('사진은 최대 5장까지 첨부할 수 있어요.');
+        showResultModal('사진은 최대 5장까지 첨부할 수 있어요.', 'error');
         return;
       }
 

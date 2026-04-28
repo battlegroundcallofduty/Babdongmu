@@ -100,4 +100,21 @@ function closeNav(e) {
   if (e.target === e.currentTarget) toggleNav();
 }
 
+// ── 토스트 ────────────────────────────────────────────────
+
+let _toastTimer = null;
+
+function showToast(message, type = '') {
+  let toast = document.getElementById('toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'toast';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = message;
+  toast.className = `toast show ${type}`.trim();
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => { toast.className = 'toast'; }, 3000);
+}
+
 loadNav();
