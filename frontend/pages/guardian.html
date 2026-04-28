@@ -1631,7 +1631,7 @@
     });
 
     async function bootstrap() {
-      const currentUser = await requireRoles(['guardian', 'admin']);
+      const currentUser = await requireRoles(['guardian']);
       if (!currentUser) {
         return;
       }

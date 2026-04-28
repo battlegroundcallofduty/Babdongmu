@@ -120,10 +120,8 @@
 
   <script src="/js/api.js"></script>
   <script src="/js/base.js"></script>
-  <script>
-    if (!localStorage.getItem('access_token')) {
-      window.location.href = '/pages/login.html';
-    }
+  <script type="module">
+    import { requireRoles } from '/js/authGuard.js';
 
     function toggleNav() {
       const toggle = document.querySelector('.nav-toggle');
@@ -140,7 +138,6 @@
     const params = new URLSearchParams(window.location.search);
     const reviewId = params.get('review_id');
 
-    if (!reviewId) window.location.href = '/pages/my-matches.html';
 
     let currentReview = null;
 
@@ -302,7 +299,17 @@
       }
     });
 
-    loadReview();
+    async function bootstrap() {
+      const currentUser = await requireRoles(['volunteer']);
+      if (!currentUser) return;
+      if (!reviewId) {
+        window.location.href = '/pages/my-matches.html';
+        return;
+      }
+      loadReview();
+    }
+
+    bootstrap();
   </script>
 </body>
 </html>

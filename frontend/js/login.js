@@ -40,6 +40,12 @@ document.querySelector('#login-form')?.addEventListener('submit', async (e) => {
       }),
     );
 
+    // cert_flag 미승인(guardian/volunteer)은 마이페이지로 — 서류 제출 필요
+    if (normalizedRole !== 'admin' && user.cert_flag !== 'approved') {
+      window.location.replace('/pages/mypage.html');
+      return;
+    }
+
     // 역할별 페이지 이동
     // 로그인 페이지를 히스토리에 남기지 않아서 뒤로가기 동작이 덜 꼬일 수 있음(replace)
     if (normalizedRole === 'admin') {

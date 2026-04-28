@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.domain.match import service
 from app.domain.match.schemas import MatchCreateRequest, MatchResponse, MyMatchResponse
-from app.domain.user.dependency import require_approved_volunteer
+from app.domain.user.dependency import require_volunteer
 from app.domain.user.models import User
 
 router = APIRouter()
@@ -19,7 +19,7 @@ router = APIRouter()
 )
 async def create_match(
     request: MatchCreateRequest,
-    current_user: User = Depends(require_approved_volunteer),
+    current_user: User = Depends(require_volunteer),
     db: AsyncSession = Depends(get_db),
 ) -> MatchResponse:
     """호스팅에 매칭을 신청합니다."""
@@ -39,7 +39,7 @@ async def create_match(
 async def list_my_matches(
     is_completed: bool,
     page: int = 1,
-    current_user: User = Depends(require_approved_volunteer),
+    current_user: User = Depends(require_volunteer),
     db: AsyncSession = Depends(get_db),
 ) -> list[MyMatchResponse]:
     """내 매칭 목록을 예정/완료 구분하여 조회합니다."""
@@ -59,7 +59,7 @@ async def list_my_matches(
 )
 async def cancel_match(
     matching_id: int,
-    current_user: User = Depends(require_approved_volunteer),
+    current_user: User = Depends(require_volunteer),
     db: AsyncSession = Depends(get_db),
 ) -> MatchResponse:
     """매칭을 취소합니다."""
@@ -78,7 +78,7 @@ async def cancel_match(
 )
 async def check_in(
     senior_id: int,
-    current_user: User = Depends(require_approved_volunteer),
+    current_user: User = Depends(require_volunteer),
     db: AsyncSession = Depends(get_db),
 ) -> MatchResponse:
     """QR 체크인합니다."""
@@ -97,7 +97,7 @@ async def check_in(
 )
 async def check_out(
     senior_id: int,
-    current_user: User = Depends(require_approved_volunteer),
+    current_user: User = Depends(require_volunteer),
     db: AsyncSession = Depends(get_db),
 ) -> MatchResponse:
     """QR 체크아웃합니다."""

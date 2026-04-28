@@ -1071,6 +1071,10 @@
 
       configurePageByViewMode();
       await loadDetail();
+
+      if (currentUser.user_role === 'admin') {
+        document.querySelector('.action-row')?.remove();
+      }
     }
 
     bootstrap();

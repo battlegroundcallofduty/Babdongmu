@@ -144,15 +144,8 @@
   <div class="toast" id="toast"></div>
 
   <script src="/js/api.js"></script>
-  <script>
-    if (!localStorage.getItem('access_token')) {
-      window.location.href = '/pages/login.html';
-    }
-
-    const role = localStorage.getItem('user_role');
-    if (role && role !== 'volunteer') {
-      window.location.href = '/pages/hostings.html';
-    }
+  <script type="module">
+    import { requireRoles } from '/js/authGuard.js';
 
     const params = new URLSearchParams(window.location.search);
     const qrUuid = params.get('qr_uuid');
@@ -218,7 +211,15 @@
       }
     }
 
-    initPage();
+    async function bootstrap() {
+      // authGuard.js - requireRoles 에서 로그인 여부 & 역할 확인까지 수행
+      const currentUser = await requireRoles(['volunteer']);
+      if (!currentUser) return;
+      // 초기 로드
+      await initPage();
+    }
+
+    bootstrap();
 
     function toggleNav() {
       const toggle = document.querySelector('.nav-toggle');
