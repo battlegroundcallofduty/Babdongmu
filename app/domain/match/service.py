@@ -9,10 +9,26 @@ from sqlalchemy.orm import selectinload
 
 from app.domain.hosting.models import AlarmType, Hosting, HostingStatus
 from app.domain.match.models import MatchingInfo, MatchStatus
-from app.domain.match.schemas import MyMatchListResponse, MyMatchResponse
+from app.domain.match.schemas import MyMatchCheckResponse, MyMatchListResponse, MyMatchResponse
 from app.domain.review.models import Review
 from app.domain.senior.models import Senior
 from app.services.sms import send_sms
+
+
+async def check_my_match(db: AsyncSession, hosting_id: int, vt_id: int) -> MyMatchCheckResponse:
+    """봉사자의 호스팅 신청 여부를 조회합니다."""
+    result = await db.execute(
+        select(MatchingInfo).where(
+            MatchingInfo.hosting_id == hosting_id,
+            MatchingInfo.vt_id == vt_id,
+            MatchingInfo.match_status != MatchStatus.CANCELLED,
+        )
+    )
+    match = result.scalar_one_or_none()
+    return MyMatchCheckResponse(
+        is_applied=match is not None,
+        matching_id=match.matching_id if match else None,
+    )
 
 
 async def create_match(db: AsyncSession, hosting_id: int, vt_id: int) -> MatchingInfo:

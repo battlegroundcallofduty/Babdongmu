@@ -7,6 +7,14 @@
   <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" rel="stylesheet">
   <link rel="stylesheet" href="/css/common.css">
   <style>
+    .img-wrap { position: relative; }
+    .img-wrap img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; }
+    .img-delete-btn {
+      position: absolute; top: 4px; right: 4px;
+      background: rgba(0,0,0,0.5); color: #fff;
+      border: none; border-radius: 50%; width: 22px; height: 22px;
+      font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    }
   </style>
 </head>
 <body>
@@ -93,6 +101,7 @@
     const PAGE_SIZE = 10;
     let currentTab = 'scheduled';
     let currentPage = 1;
+    let selectedFiles = [];
 
     function escapeHtml(str) {
       const div = document.createElement('div');
@@ -125,7 +134,6 @@
     // 매칭 카드 HTML 생성
     function createMatchCard(match, isCompleted) {
       const dateStr = formatDate(match.hosting_at);
-      const hasCheckIn = !!match.check_in_time;
 
       if (isCompleted) {
         const timeStr = formatVolunteerTime(match);
@@ -164,8 +172,11 @@
         const meta = address ? `${dateStr} · ${address}` : dateStr;
         const seniorName = escapeHtml(match.senior_name);
         const menu = escapeHtml(match.menu);
+        const isInProgress = new Date(match.hosting_at) <= new Date();
+        const badge = isInProgress
+          ? `<span style="display:inline-block; padding:4px 12px; border-radius:20px; background:#EEF3FF; color:#4269B4; font-size:13px; font-weight:600;">진행중</span>`
+          : `<span style="display:inline-block; padding:4px 12px; border-radius:20px; background:#EDF5ED; color:#3A6B39; font-size:13px; font-weight:600;">예정</span>`;
 
-        // QR 체크인/아웃 방식이므로 버튼 없이 예정 배지만 표시
         return `
           <div class="card match-card mb-md">
             <div class="card-body">
@@ -175,7 +186,7 @@
                 </a>
                 <p class="match-meta">${meta}</p>
               </div>
-              <div class="match-actions"></div>
+              <div class="match-actions">${badge}</div>
             </div>
           </div>`;
       }
@@ -280,7 +291,27 @@
       }
     });
 
-    let selectedFiles = [];
+    function renderImagePreview() {
+      const preview = document.querySelector('#review-img-preview');
+      preview.innerHTML = '';
+      selectedFiles.forEach((file, index) => {
+        const wrap = document.createElement('div');
+        wrap.className = 'img-wrap';
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(file);
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'img-delete-btn';
+        btn.textContent = '✕';
+        btn.addEventListener('click', () => {
+          selectedFiles.splice(index, 1);
+          renderImagePreview();
+        });
+        wrap.appendChild(img);
+        wrap.appendChild(btn);
+        preview.appendChild(wrap);
+      });
+    }
 
     document.querySelector('#review-images')?.addEventListener('change', (e) => {
       const newFiles = [...e.target.files];
@@ -293,14 +324,7 @@
       }
 
       selectedFiles = combined;
-      const preview = document.querySelector('#review-img-preview');
-      preview.innerHTML = '';
-      selectedFiles.forEach(file => {
-        const img = document.createElement('img');
-        img.src = URL.createObjectURL(file);
-        img.style.cssText = 'width:100%; aspect-ratio:1; object-fit:cover; border-radius:8px;';
-        preview.appendChild(img);
-      });
+      renderImagePreview();
     });
 
     document.querySelector('#review-form')?.addEventListener('submit', async (e) => {

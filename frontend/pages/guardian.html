@@ -881,7 +881,8 @@
       document.querySelector('#qr-download-link').href = '#';
       if (
         registerFormModalElement.classList.contains('hidden') &&
-        confirmModalElement.classList.contains('hidden')
+        confirmModalElement.classList.contains('hidden') &&
+        document.querySelector('#senior-detail-modal').classList.contains('hidden')
       ) {
         document.body.classList.remove('modal-open');
       }

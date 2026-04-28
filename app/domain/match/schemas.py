@@ -61,3 +61,10 @@ class MyMatchListResponse(BaseModel):
 
     total: int
     items: list[MyMatchResponse]
+
+
+class MyMatchCheckResponse(BaseModel):
+    """호스팅 신청 여부 조회 응답 스키마."""
+
+    is_applied: bool
+    matching_id: int | None

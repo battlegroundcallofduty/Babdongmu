@@ -5,7 +5,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.domain.match import service
-from app.domain.match.schemas import MatchCreateRequest, MatchResponse, MyMatchListResponse
+from app.domain.match.schemas import (
+    MatchCreateRequest,
+    MatchResponse,
+    MyMatchCheckResponse,
+    MyMatchListResponse,
+)
 from app.domain.user.dependency import require_approved_volunteer
 from app.domain.user.models import User
 
@@ -27,6 +32,25 @@ async def create_match(
     return await service.create_match(
         db=db,
         hosting_id=request.hosting_id,
+        vt_id=current_user.user_id,
+    )
+
+
+@router.get(
+    "/my/check",
+    response_model=MyMatchCheckResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def check_my_match(
+    hosting_id: int,
+    current_user: User = Depends(require_approved_volunteer),
+    db: AsyncSession = Depends(get_db),
+) -> MyMatchCheckResponse:
+    """내가 특정 호스팅에 신청했는지 확인합니다."""
+
+    return await service.check_my_match(
+        db=db,
+        hosting_id=hosting_id,
         vt_id=current_user.user_id,
     )
 
