@@ -1,17 +1,22 @@
 """유저 API 엔드포인트."""
 
 import asyncio
+from datetime import timedelta
 
+import httpx
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import create_access_token
+from app.config import settings
+from app.core.security import create_access_token, decode_access_token
 from app.database import get_db
 from app.domain.senior.service import list_seniors_by_guardian
 from app.domain.user.dependency import get_current_user
 from app.domain.user.models import DocumentType, User, UserRole
 from app.domain.user.schemas import (
     DocumentResponse,
+    KakaoSetupRequest,
     PasswordChangeRequest,
     RegisterResponse,
     SmsSendRequest,
@@ -26,6 +31,7 @@ from app.domain.user.service import (
     authenticate_user,
     change_password,
     create_document,
+    create_kakao_user,
     create_user,
     delete_document,
     delete_phone_verifications,
@@ -33,6 +39,7 @@ from app.domain.user.service import (
     get_document_by_id,
     get_documents_by_user_id,
     get_user_by_email,
+    get_user_by_kakao_id,
     send_phone_verification,
     update_user,
     verify_phone_code,
@@ -236,6 +243,111 @@ async def get_document_url(
             status_code=status.HTTP_403_FORBIDDEN, detail="접근 권한이 없습니다."
         )
     return {"url": get_presigned_url(document.document_url)}
+
+
+# ── 카카오 OAuth(카카오 계정으로 가입/로그인) ───────────────────
+@router.get("/kakao/login")
+async def kakao_login():
+    """카카오 로그인 페이지로 redirect"""
+    kakao_auth_url = (
+        f"https://kauth.kakao.com/oauth/authorize"
+        f"?client_id={settings.KAKAO_CLIENT_ID}"
+        f"&redirect_uri={settings.KAKAO_REDIRECT_URI}"
+        f"&response_type=code"
+    )
+    return RedirectResponse(url=kakao_auth_url)
+
+
+@router.get("/kakao/callback")
+async def kakao_callback(
+    code: str | None = None,
+    error: str | None = None,
+    db: AsyncSession = Depends(get_db),
+):
+    """카카오 콜백: code → kakao_id 조회 → 신규유저 / 기존유저"""
+    frontend_base = settings.FRONTEND_BASE_URL
+
+    # 유저가 카카오 로그인을 취소한 경우(또는 에러)
+    if error or code is None:
+        return RedirectResponse(url=f"{frontend_base}/pages/login.html?kakao_error=1")
+
+    try:
+        async with httpx.AsyncClient() as client:
+            # 1) token_resp: 카카오 인증 서버에 code 보내고, 카카오가 access_token으로 응답
+            token_resp = await client.post(
+                "https://kauth.kakao.com/oauth/token",
+                data={
+                    "grant_type": "authorization_code",
+                    "client_id": settings.KAKAO_CLIENT_ID,
+                    "redirect_uri": settings.KAKAO_REDIRECT_URI,
+                    "code": code,
+                    "client_secret": settings.KAKAO_CLIENT_SECRET,
+                },
+            )
+            token_resp.raise_for_status()
+            kakao_access_token = token_resp.json()["access_token"]
+
+            # 2) user_resp: 카카오 리소스 서버에 access_token 보내고, kakao_id 조회
+            user_resp = await client.get(
+                "https://kapi.kakao.com/v2/user/me",
+                headers={"Authorization": f"Bearer {kakao_access_token}"},
+            )
+            user_resp.raise_for_status()
+            kakao_id = str(user_resp.json()["id"])
+    except (httpx.HTTPError, KeyError):
+        return RedirectResponse(url=f"{frontend_base}/pages/login.html?kakao_error=1")
+
+    # 3) 기존 유저 → JWT 발급 후 로그인 처리
+    user = await get_user_by_kakao_id(kakao_id, db)
+    if user is not None:
+        access_token = create_access_token({"sub": str(user.user_id)})
+        return RedirectResponse(url=f"{frontend_base}/pages/login.html?kakao_token={access_token}")
+
+    # 4) 신규 유저 → setup_token(10분) 발급 후 카카오 전용 가입 페이지로
+    setup_token = create_access_token(
+        {"sub": kakao_id, "type": "kakao_setup"},
+        expires_delta=timedelta(minutes=10),
+    )
+    return RedirectResponse(
+        url=f"{frontend_base}/pages/register.html?kakao=true&setup_token={setup_token}"
+    )
+
+
+@router.post("/kakao-setup", response_model=RegisterResponse, status_code=status.HTTP_201_CREATED)
+async def kakao_setup(body: KakaoSetupRequest, db: AsyncSession = Depends(get_db)):
+    """카카오 전용 회원가입 완료: register.html 제출 후 db 저장"""
+    # setup_token 검증 (type 확인 + 만료 확인)
+    payload = decode_access_token(body.setup_token)
+    if payload is None or payload.get("type") != "kakao_setup":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="유효하지 않은 카카오 인증입니다. 다시 로그인해 주세요.",
+        )
+
+    kakao_id = payload["sub"]
+
+    # 중복 가입 방지 (setup_token 재사용 시도 등)
+    if await get_user_by_kakao_id(kakao_id, db):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="이미 가입된 카카오 계정입니다.",
+        )
+
+    if body.user_role == UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="유효하지 않은 역할입니다.",
+        )
+
+    user = await create_kakao_user(
+        kakao_id=kakao_id,
+        name=body.name,
+        user_role=body.user_role,
+        address_data=body.address,
+        db=db,
+    )
+    access_token = create_access_token({"sub": str(user.user_id)})
+    return RegisterResponse(user=user, access_token=access_token)
 
 
 # ── SMS 인증 ───────────────────

@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     R2_PUBLIC_URL: str = ""      # 공개 버킷 CDN URL
 
     # 카카오 OAuth
-    KAKAO_CLIENT_ID: str = ""
+    KAKAO_CLIENT_ID: str = ""  # REST API KEY
     KAKAO_CLIENT_SECRET: str = ""
     KAKAO_REDIRECT_URI: str = "http://localhost:8000/api/v1/users/kakao/callback"
 
