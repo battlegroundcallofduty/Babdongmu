@@ -8,6 +8,11 @@ const setupToken = params.get('setup_token');
 if (isKakao) {
   // 카카오 안내 배너 표시
   document.getElementById('kakao-banner')?.classList.remove('hidden');
+  // 카카오 연결 완료 후 불필요한 UI 숨김
+  document.querySelector('.kakao-login-btn')?.classList.add('hidden');
+  document.getElementById('kakao-hint')?.classList.add('hidden');
+  document.querySelector('.login-divider')?.classList.add('hidden');
+  document.getElementById('email-signup-label')?.classList.add('hidden');
   // 카카오 유저에게 불필요한 필드 숨김
   ['#email', '#password', '#password-confirm'].forEach(id => {
     document.querySelector(id)?.closest('.form-group')?.classList.add('hidden');
@@ -209,8 +214,27 @@ document.querySelector('#register-form')?.addEventListener('submit', async (e) =
 
   const errorMsg = document.querySelector('#error-msg');
 
+  // 공통 검증 — 카카오/일반 모두
+  if (!document.querySelector('#name').value.trim()) {
+    errorMsg.textContent = '이름을 입력해주세요.';
+    errorMsg.classList.remove('hidden');
+    return;
+  }
+
   // 일반가입 전용 검증 — 카카오는 비번, 폰번 필드 X
   if (!isKakao) {
+    const emailInput = document.querySelector('#email');
+    if (!emailInput.value.trim()) {
+      errorMsg.textContent = '이메일을 입력해주세요.';
+      errorMsg.classList.remove('hidden');
+      return;
+    }
+    if (!emailInput.validity.valid) {
+      errorMsg.textContent = '올바른 이메일 형식을 입력해주세요.';
+      errorMsg.classList.remove('hidden');
+      return;
+    }
+
     const password = document.querySelector('#password').value;
     const passwordConfirm = document.querySelector('#password-confirm').value;
 
