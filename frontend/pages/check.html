@@ -2,7 +2,6 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <link rel="icon" href="/assets/icons/favicon.ico" type="image/x-icon">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>체크인/체크아웃 - 밥동무</title>
   <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" rel="stylesheet">
@@ -130,11 +129,13 @@
       </div>
       <h2 class="check-title">방문 확인</h2>
       <p class="check-desc">체크인 또는 체크아웃 버튼을 눌러주세요.</p>
+      <p id="checkin-time" style="font-size:13px; color:var(--success); margin-bottom:4px; min-height:20px;"></p>
+      <p id="checkout-time" style="font-size:13px; color:var(--success); margin-bottom:8px; min-height:20px;"></p>
       <div class="check-buttons">
-        <button class="btn-checkin" id="checkin-btn" onclick="handleCheckIn()">
+        <button class="btn-checkin" id="checkin-btn">
           체크인
         </button>
-        <button class="btn-checkout" id="checkout-btn" onclick="handleCheckOut()">
+        <button class="btn-checkout" id="checkout-btn">
           체크아웃
         </button>
       </div>
@@ -143,6 +144,7 @@
 
   <div class="toast" id="toast"></div>
 
+  <script src="/js/base.js"></script>
   <script src="/js/api.js"></script>
   <script type="module">
     import { requireRoles } from '/js/authGuard.js';
@@ -151,10 +153,14 @@
     const qrUuid = params.get('qr_uuid');
     let seniorId = null;
 
+    function getCurrentTime() {
+      return new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
+    }
+
     async function initPage() {
       if (!qrUuid) {
-        document.getElementById('checkin-btn').disabled = true;
-        document.getElementById('checkout-btn').disabled = true;
+        document.querySelector('#checkin-btn').disabled = true;
+        document.querySelector('#checkout-btn').disabled = true;
         showToast('유효하지 않은 QR 코드입니다.', 'error');
         return;
       }
@@ -162,21 +168,21 @@
         const data = await api(`/seniors/qr/${qrUuid}`);
         seniorId = data.senior_id;
       } catch (e) {
-        document.getElementById('checkin-btn').disabled = true;
-        document.getElementById('checkout-btn').disabled = true;
+        document.querySelector('#checkin-btn').disabled = true;
+        document.querySelector('#checkout-btn').disabled = true;
         showToast('QR 코드를 확인할 수 없습니다.', 'error');
       }
     }
 
     function showToast(message, type = '') {
-      const toast = document.getElementById('toast');
+      const toast = document.querySelector('#toast');
       toast.textContent = message;
       toast.className = `toast show ${type}`;
       setTimeout(() => { toast.className = 'toast'; }, 3000);
     }
 
     function setLoading(btnId, loading) {
-      const btn = document.getElementById(btnId);
+      const btn = document.querySelector(`#${btnId}`);
       btn.disabled = loading;
       if (btnId === 'checkin-btn') {
         btn.textContent = loading ? '처리 중...' : '체크인';
@@ -190,6 +196,8 @@
       setLoading('checkin-btn', true);
       try {
         await api(`/matches/${seniorId}/checkin`, { method: 'PATCH' });
+        document.querySelector('#checkin-time').textContent = `체크인 완료 · ${getCurrentTime()}`;
+        document.querySelector('#checkin-btn').disabled = true;
         showToast('방문 체크인이 완료되었어요!', 'success');
       } catch (e) {
         showToast(e.message, 'error');
@@ -203,6 +211,8 @@
       setLoading('checkout-btn', true);
       try {
         await api(`/matches/${seniorId}/checkout`, { method: 'PATCH' });
+        document.querySelector('#checkout-time').textContent = `체크아웃 완료 · ${getCurrentTime()}`;
+        document.querySelector('#checkout-btn').disabled = true;
         showToast('방문이 완료되었어요!', 'success');
       } catch (e) {
         showToast(e.message, 'error');
@@ -210,6 +220,9 @@
         setLoading('checkout-btn', false);
       }
     }
+
+    document.querySelector('#checkin-btn').addEventListener('click', handleCheckIn);
+    document.querySelector('#checkout-btn').addEventListener('click', handleCheckOut);
 
     async function bootstrap() {
       // authGuard.js - requireRoles 에서 로그인 여부 & 역할 확인까지 수행

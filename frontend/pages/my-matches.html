@@ -7,14 +7,14 @@
   <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" rel="stylesheet">
   <link rel="stylesheet" href="/css/common.css">
   <style>
-    @keyframes shake {
-      0%, 100% { transform: translateX(0); }
-      20% { transform: translateX(-6px); }
-      40% { transform: translateX(6px); }
-      60% { transform: translateX(-4px); }
-      80% { transform: translateX(4px); }
+    .img-wrap { position: relative; }
+    .img-wrap img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; }
+    .img-delete-btn {
+      position: absolute; top: 4px; right: 4px;
+      background: rgba(0,0,0,0.5); color: #fff;
+      border: none; border-radius: 50%; width: 22px; height: 22px;
+      font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center;
     }
-    .shake { animation: shake 0.4s ease; }
   </style>
 </head>
 <body>
@@ -52,6 +52,8 @@
       <p>아직 매칭 이력이 없어요</p>
       <p class="text-sm mt-sm"><a href="/pages/hostings.html" style="color:var(--primary);font-weight:600;">호스팅을 둘러보고</a> 첫 밥동무를 시작해보세요!</p>
     </div>
+
+    <div id="pagination" style="display:none; justify-content:center; gap:4px; margin-top:16px; flex-wrap:wrap;"></div>
   </main>
 
   <!-- 후기 작성 모달 -->
@@ -67,7 +69,6 @@
           <label class="form-label" for="review-content">후기 내용</label>
           <textarea class="form-input" id="review-content" rows="4"
             placeholder="봉사 경험을 자유롭게 작성해주세요" required
-            maxlength="500"
             style="resize:vertical; min-height:100px;"></textarea>
         </div>
         <div class="form-group">
@@ -92,12 +93,16 @@
 
   <script src="/js/api.js"></script>
   <script src="/js/base.js"></script>
+  <script src="/js/footer.js"></script>
   <script type="module">
     import { requireRoles } from '/js/authGuard.js';
     function toggleNav(){const t=document.querySelector('.nav-toggle'),d=document.querySelector('#navDrawer');t.classList.toggle('active');d.classList.toggle('open');document.body.style.overflow=d.classList.contains('open')?'hidden':'';}
     function closeNav(e){if(e.target===e.currentTarget)toggleNav();}
 
+    const PAGE_SIZE = 10;
     let currentTab = 'scheduled';
+    let currentPage = 1;
+    let selectedFiles = [];
 
     function escapeHtml(str) {
       const div = document.createElement('div');
@@ -130,7 +135,6 @@
     // 매칭 카드 HTML 생성
     function createMatchCard(match, isCompleted) {
       const dateStr = formatDate(match.hosting_at);
-      const hasCheckIn = !!match.check_in_time;
 
       if (isCompleted) {
         const timeStr = formatVolunteerTime(match);
@@ -169,8 +173,11 @@
         const meta = address ? `${dateStr} · ${address}` : dateStr;
         const seniorName = escapeHtml(match.senior_name);
         const menu = escapeHtml(match.menu);
+        const isInProgress = new Date(match.hosting_at) <= new Date();
+        const badge = isInProgress
+          ? `<span style="display:inline-block; padding:4px 12px; border-radius:20px; background:#EEF3FF; color:#4269B4; font-size:13px; font-weight:600;">진행중</span>`
+          : `<span style="display:inline-block; padding:4px 12px; border-radius:20px; background:#EDF5ED; color:#3A6B39; font-size:13px; font-weight:600;">예정</span>`;
 
-        // QR 체크인/아웃 방식이므로 버튼 없이 예정 배지만 표시
         return `
           <div class="card match-card mb-md">
             <div class="card-body">
@@ -180,9 +187,35 @@
                 </a>
                 <p class="match-meta">${meta}</p>
               </div>
-              <div class="match-actions"></div>
+              <div class="match-actions">${badge}</div>
             </div>
           </div>`;
+      }
+    }
+
+    // 숫자 페이징 버튼 렌더링
+    function renderPagination(total) {
+      const container = document.querySelector('#pagination');
+      const totalPages = Math.ceil(total / PAGE_SIZE);
+
+      if (totalPages <= 1) {
+        container.style.display = 'none';
+        return;
+      }
+
+      container.innerHTML = '';
+      container.style.display = 'flex';
+
+      for (let i = 1; i <= totalPages; i++) {
+        const btn = document.createElement('button');
+        btn.textContent = i;
+        btn.className = `btn btn-sm ${i === currentPage ? 'btn-primary' : 'btn-ghost'}`;
+        const page = i;
+        btn.addEventListener('click', () => {
+          currentPage = page;
+          loadMatches(currentTab === 'completed');
+        });
+        container.appendChild(btn);
       }
     }
 
@@ -192,17 +225,19 @@
       const empty = document.querySelector('#empty-state');
       list.innerHTML = '';
       empty.classList.add('hidden');
+      document.querySelector('#pagination').style.display = 'none';
 
       try {
-        const matches = await api(`/matches/my?is_completed=${isCompleted}&page=1`);
+        const data = await api(`/matches/my?is_completed=${isCompleted}&page=${currentPage}&size=${PAGE_SIZE}`);
 
-        if (!matches || matches.length === 0) {
+        if (!data || data.total === 0) {
           empty.classList.remove('hidden');
           return;
         }
 
-        list.innerHTML = matches.map(m => createMatchCard(m, isCompleted)).join('');
+        list.innerHTML = data.items.map(m => createMatchCard(m, isCompleted)).join('');
         bindCardEvents();
+        renderPagination(data.total);
       } catch (err) {
         const errP = document.createElement('p');
         errP.style.color = 'var(--error)';
@@ -213,7 +248,6 @@
 
     // 카드 버튼 이벤트 바인딩
     function bindCardEvents() {
-      // 후기 작성
       document.querySelectorAll('.review-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           openReviewModal(btn.dataset.matchId, decodeURIComponent(btn.dataset.title));
@@ -227,6 +261,7 @@
         document.querySelectorAll('.tab[data-tab]').forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
         currentTab = tab.dataset.tab;
+        currentPage = 1;
         loadMatches(currentTab === 'completed');
       });
     });
@@ -239,42 +274,58 @@
       document.querySelector('#review-img-preview').innerHTML = '';
       document.querySelector('#review-error').classList.add('hidden');
       document.querySelector('#review-modal-overlay').classList.add('open');
+      selectedFiles = [];
       document.body.style.overflow = 'hidden';
     }
 
     function closeReviewModal() {
       document.querySelector('#review-modal-overlay').classList.remove('open');
+      selectedFiles = [];
       document.body.style.overflow = '';
     }
 
-    // 500자 초과 입력 시 shake 효과
-    document.querySelector('#review-content')?.addEventListener('keydown', (e) => {
+    // 500자 초과 입력 시 shake 효과 (모바일 가상 키보드 대응)
+    document.querySelector('#review-content')?.addEventListener('input', (e) => {
       const textarea = e.target;
-      const editKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
-      if (textarea.value.length >= 500 && !editKeys.includes(e.key) && !e.ctrlKey && !e.metaKey) {
-        e.preventDefault();
-        textarea.classList.remove('shake');
-        void textarea.offsetWidth; // reflow로 애니메이션 재실행
-        textarea.classList.add('shake');
-        textarea.addEventListener('animationend', () => textarea.classList.remove('shake'), { once: true });
+      if (textarea.value.length > 500) {
+        textarea.value = textarea.value.slice(0, 500);
       }
     });
 
-    document.querySelector('#review-images')?.addEventListener('change', (e) => {
-      const files = [...e.target.files];
-      if (files.length > 5) {
-        alert('사진은 최대 5장까지 첨부할 수 있어요.');
-        e.target.value = '';
-        return;
-      }
+    function renderImagePreview() {
       const preview = document.querySelector('#review-img-preview');
       preview.innerHTML = '';
-      files.forEach(file => {
+      selectedFiles.forEach((file, index) => {
+        const wrap = document.createElement('div');
+        wrap.className = 'img-wrap';
         const img = document.createElement('img');
         img.src = URL.createObjectURL(file);
-        img.style.cssText = 'width:100%; aspect-ratio:1; object-fit:cover; border-radius:8px;';
-        preview.appendChild(img);
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'img-delete-btn';
+        btn.textContent = '✕';
+        btn.addEventListener('click', () => {
+          selectedFiles.splice(index, 1);
+          renderImagePreview();
+        });
+        wrap.appendChild(img);
+        wrap.appendChild(btn);
+        preview.appendChild(wrap);
       });
+    }
+
+    document.querySelector('#review-images')?.addEventListener('change', (e) => {
+      const newFiles = [...e.target.files];
+      e.target.value = '';
+
+      const combined = [...selectedFiles, ...newFiles];
+      if (combined.length > 5) {
+        alert('사진은 최대 5장까지 첨부할 수 있어요.');
+        return;
+      }
+
+      selectedFiles = combined;
+      renderImagePreview();
     });
 
     document.querySelector('#review-form')?.addEventListener('submit', async (e) => {
@@ -284,7 +335,7 @@
 
       const matchId = document.querySelector('#review-match-id').value;
       const contents = document.querySelector('#review-content').value;
-      const files = document.querySelector('#review-images')?.files || [];
+      const files = selectedFiles;
 
       const formData = new FormData();
       formData.append('match_id', matchId);

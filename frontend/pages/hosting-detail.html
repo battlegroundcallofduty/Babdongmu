@@ -489,6 +489,7 @@
     let seniorDetail = null;
     let viewMode = VIEW_MODE_GUARDIAN;
     let currentUser = null;
+    let myMatchId = null;
 
     let resultModalResolver = null;
     let confirmModalHandler = null;
@@ -865,10 +866,18 @@
       }
 
       applyButtonElement.classList.remove('hidden');
-      applyButtonElement.disabled = !isApplyEnabled(hostingDetail.hosting_status);
-      applyButtonElement.textContent = isApplyEnabled(hostingDetail.hosting_status)
-        ? '이 호스팅 신청하기'
-        : '현재 신청할 수 없어요';
+
+      if (myMatchId !== null) {
+        applyButtonElement.className = 'btn btn-secondary';
+        applyButtonElement.disabled = false;
+        applyButtonElement.textContent = '신청 취소';
+      } else {
+        applyButtonElement.className = 'btn btn-primary';
+        applyButtonElement.disabled = !isApplyEnabled(hostingDetail.hosting_status);
+        applyButtonElement.textContent = isApplyEnabled(hostingDetail.hosting_status)
+          ? '이 호스팅 신청하기'
+          : '현재 신청할 수 없어요';
+      }
     }
 
     function renderDetail() {
@@ -914,6 +923,12 @@
           seniorDetail = await api(`/seniors/${hostingDetail.senior_id}`);
         } else {
           seniorDetail = null;
+          try {
+            const checkResult = await api(`/matches/my/check?hosting_id=${hostingId}`);
+            myMatchId = checkResult.is_applied ? checkResult.matching_id : null;
+          } catch {
+            myMatchId = null;
+          }
         }
 
         renderDetail();
@@ -995,12 +1010,35 @@
       });
     }
 
+    async function cancelMyMatch() {
+      openConfirmModal({
+        title: '신청 취소',
+        message: '이 호스팅 신청을 취소할까요?',
+        confirmText: '취소하기',
+        cancelText: '닫기',
+        onConfirm: async () => {
+          try {
+            await api(`/matches/${myMatchId}/cancel`, { method: 'PATCH' });
+            await loadDetail();
+            await showResultModal('신청이 취소되었어요.', 'success');
+          } catch (error) {
+            console.error(error);
+            await showResultModal(error?.message || '신청 취소에 실패했어요.', 'error');
+          }
+        },
+      });
+    }
+
     document.querySelector('#cancel-hosting-button')?.addEventListener('click', async () => {
       await cancelHosting();
     });
 
     document.querySelector('#apply-hosting-button')?.addEventListener('click', async () => {
-      await applyToHosting();
+      if (myMatchId !== null) {
+        await cancelMyMatch();
+      } else {
+        await applyToHosting();
+      }
     });
 
     document.querySelector('#result-modal-confirm-button')?.addEventListener('click', () => {
@@ -1080,5 +1118,6 @@
     bootstrap();
   </script>
   <script src="/js/base.js"></script>
+  <script src="/js/footer.js"></script>
 </body>
 </html>
