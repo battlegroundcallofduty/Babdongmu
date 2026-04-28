@@ -43,7 +43,7 @@ async def create_match(
 )
 async def check_my_match(
     hosting_id: int,
-    current_user: User = Depends(require_approved_volunteer),
+    current_user: User = Depends(require_volunteer),
     db: AsyncSession = Depends(get_db),
 ) -> MyMatchCheckResponse:
     """내가 특정 호스팅에 신청했는지 확인합니다."""
