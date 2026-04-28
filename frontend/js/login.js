@@ -21,8 +21,9 @@ document.querySelector('#login-form')?.addEventListener('submit', async (e) => {
 
     console.log('login response:', data);
     
-    // access token 저장
+    // access token 저장, 이전 세션 캐시 클리어
     saveToken(data.access_token);
+    sessionStorage.removeItem('cachedUser');
     
     // 현재 로그인 사용자 정보 조회
     const user = await api('/users/me');
