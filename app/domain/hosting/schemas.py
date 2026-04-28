@@ -5,6 +5,7 @@ from zoneinfo import ZoneInfo
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from app.domain.common.schemas import AddressResponse
 from app.domain.hosting.models import HostingStatus
 
 KST = ZoneInfo("Asia/Seoul")
@@ -79,23 +80,10 @@ class HostingResponse(BaseModel):
     hosting_at: datetime
     hosting_end: datetime
     max_people: int
-
-    road_address: str
-    jibun_address: str | None
-    zonecode: str | None
-    sigungu: str
-    bname: str | None
-    detail_address: str
-
-    sido: str | None
-    building_name: str | None
-    is_apartment: bool | None
-    lat: float | None
-    lng: float | None
-    sigungu_code: str | None
-
+    current_people: int = Field(default=0, ge=0, description="현재 승인된 매칭 인원")
+    address: AddressResponse
     hosting_status: HostingStatus
     created_at: datetime
-    updated_at: datetime | None
+    updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)

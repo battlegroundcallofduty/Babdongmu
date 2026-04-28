@@ -20,6 +20,7 @@ from sqlalchemy import select
 
 from app.core.security import hash_password
 from app.database import AsyncSessionLocal, init_db
+from app.domain.common.models import Address
 from app.domain.user.models import CertFlag, User, UserRole
 
 load_dotenv()
@@ -35,12 +36,16 @@ async def create_admin(email: str, password: str, name: str) -> None:
             print(f"이미 존재하는 계정입니다: {email}")
             return
 
+        address = Address(road_address="관리자", sigungu="관리자", detail_address="")
+        db.add(address)
+        await db.flush()
+
         admin = User(
             email=email,
             password=hash_password(password),
             name=name,
             phone_number="010-0000-0000",
-            address="관리자",
+            address_id=address.address_id,
             user_role=UserRole.ADMIN,
             cert_flag=CertFlag.APPROVED,
         )

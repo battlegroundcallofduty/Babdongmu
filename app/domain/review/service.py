@@ -1,8 +1,12 @@
 """후기 비즈니스 로직."""
 
+import logging
+
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
+logger = logging.getLogger(__name__)
 
 from app.domain.match.models import MatchingInfo, MatchStatus
 from app.domain.review.models import Review, ReviewImg
@@ -75,6 +79,11 @@ async def create_review(
     await db.commit()
     await db.refresh(review)
 
+    logger.info(
+        "후기 작성 완료: review_id=%s match_id=%s vt_id=%s",
+        review.review_id, match_id, vt_id,
+    )
+
     # 후기 3건 이상 시 AI 소개글 자동 생성
     review_count_result = await db.execute(
         select(Review).where(Review.matching_id.in_(
@@ -85,8 +94,11 @@ async def create_review(
     if review_count >= MIN_REVIEW_COUNT:
         try:
             await update_senior_ai_summary(match.senior_id, db)
-        except Exception:
-            pass  # AI 생성 실패해도 후기 작성은 성공으로 처리
+        except Exception as e:
+            logger.warning(
+                "AI 소개글 생성 실패: senior_id=%s error=%s",
+                match.senior_id, e,
+            )  # AI 생성 실패해도 후기 작성은 성공으로 처리
 
     return _to_response(review, images)
 

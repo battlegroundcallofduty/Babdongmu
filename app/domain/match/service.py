@@ -5,6 +5,7 @@ from datetime import date, datetime, timedelta, timezone
 from fastapi import HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.domain.hosting.models import AlarmType, Hosting, HostingStatus
 from app.domain.match.models import MatchingInfo, MatchStatus
@@ -74,41 +75,41 @@ async def list_matches_by_volunteer(
     size: int = 10,
 ) -> MyMatchListResponse:
     """봉사자의 매칭 목록을 예정/완료 구분 및 페이징하여 조회합니다."""
-    base_conditions = [
-        MatchingInfo.vt_id == vt_id,
-        MatchingInfo.match_status != MatchStatus.CANCELLED,
-    ]
+    query = (
+        select(MatchingInfo, Hosting, Senior)
+        .join(Hosting, MatchingInfo.hosting_id == Hosting.hosting_id)
+        .join(Senior, MatchingInfo.senior_id == Senior.senior_id)
+        .options(selectinload(Senior.address))
+        .where(
+            MatchingInfo.vt_id == vt_id,
+            MatchingInfo.match_status != MatchStatus.CANCELLED,
+        )
+    )
 
     # NOT_VISITED는 체크아웃 없어도 완료 탭에 포함
     if is_completed:
-        base_conditions.append(
+        query = query.where(
             (MatchingInfo.check_out_time.isnot(None))
             | (MatchingInfo.match_status == MatchStatus.NOT_VISITED)
         )
     else:
-        base_conditions.extend([
+        query = query.where(
             MatchingInfo.check_out_time.is_(None),
             MatchingInfo.match_status != MatchStatus.NOT_VISITED,
-        ])
+        )
 
     # 전체 개수 조회
     count_result = await db.execute(
         select(func.count(MatchingInfo.matching_id))
         .join(Hosting, MatchingInfo.hosting_id == Hosting.hosting_id)
-        .where(*base_conditions)
+        .where(query.whereclause)
     )
     total = count_result.scalar() or 0
 
     # 목록 조회 (페이징) — 예정: 가까운 날짜 먼저, 완료: 최근 날짜 먼저
     order = Hosting.hosting_at.asc() if not is_completed else Hosting.hosting_at.desc()
     result = await db.execute(
-        select(MatchingInfo, Hosting, Senior)
-        .join(Hosting, MatchingInfo.hosting_id == Hosting.hosting_id)
-        .join(Senior, MatchingInfo.senior_id == Senior.senior_id)
-        .where(*base_conditions)
-        .order_by(order)
-        .offset((page - 1) * size)
-        .limit(size)
+        query.order_by(order).offset((page - 1) * size).limit(size)
     )
     rows = result.all()
 
@@ -134,7 +135,7 @@ async def list_matches_by_volunteer(
             hosting_at=hosting.hosting_at,
             senior_id=senior.senior_id,
             senior_name=senior.name,
-            senior_address=senior.road_address,
+            senior_address=senior.address.road_address,
             actual_volunteer_time=match.actual_volunteer_time,
             has_review=review_id_map.get(match.matching_id) is not None,
             review_id=review_id_map.get(match.matching_id),
