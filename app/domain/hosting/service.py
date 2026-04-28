@@ -519,9 +519,14 @@ async def list_hostings_for_volunteer(
 ) -> list[HostingResponse]:
     """봉사자가 탐색 가능한 공개 호스팅 목록을 조회합니다."""
 
+    visible_statuses = (
+        HostingStatus.OPEN,
+        HostingStatus.FULL,
+    )
+
     stmt = (
         select(Hosting)
-        .where(Hosting.hosting_status == HostingStatus.OPEN)
+        .where(Hosting.hosting_status.in_(visible_statuses))
         .order_by(Hosting.hosting_at.asc(), Hosting.created_at.desc())
     )
 
@@ -548,9 +553,14 @@ async def get_public_hosting_detail(
 ) -> HostingResponse:
     """봉사자가 조회 가능한 공개 호스팅 상세 정보를 반환합니다."""
 
+    visible_statuses = (
+        HostingStatus.OPEN,
+        HostingStatus.FULL,
+    )
+
     stmt = select(Hosting).where(
         Hosting.hosting_id == hosting_id,
-        Hosting.hosting_status == HostingStatus.OPEN,
+        Hosting.hosting_status.in_(visible_statuses),
     )
 
     result = await session.execute(stmt)

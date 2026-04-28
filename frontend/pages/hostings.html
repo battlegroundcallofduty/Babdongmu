@@ -39,6 +39,17 @@
       cursor: pointer;
     }
 
+    .hosting-card .card-body {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    .hosting-card:focus-visible {
+      outline: 3px solid rgba(212, 118, 60, 0.35);
+      outline-offset: 4px;
+    }
+
     .hosting-header {
       display: flex;
       align-items: flex-start;
@@ -66,6 +77,10 @@
     }
 
     .hosting-name {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
       font-size: 18px;
       font-weight: 700;
       line-height: 1.45;
@@ -102,6 +117,10 @@
     }
 
     .hosting-menu {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
       font-size: 22px;
       font-weight: 700;
       line-height: 1.4;
@@ -121,6 +140,7 @@
       display: flex;
       align-items: flex-start;
       gap: 8px;
+      min-width: 0;
       color: #6B5E53;
       font-size: 15px;
       font-weight: 500;
@@ -140,6 +160,9 @@
 
     .hosting-meta-value {
       min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
       word-break: keep-all;
     }
 
@@ -149,12 +172,16 @@
       font-weight: 500;
       line-height: 1.5;
       margin-bottom: 16px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .hosting-card-actions {
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
+      margin-top: auto;
     }
 
     .hosting-card-actions .btn {
@@ -893,12 +920,12 @@
           <div class="hosting-header">
             <div class="hosting-avatar">${escapeHtml(avatarText)}</div>
             <div class="hosting-header-text">
-              <div class="hosting-name">${escapeHtml(seniorName)}</div>
+              <div class="hosting-name" title="${escapeHtml(seniorName)}">${escapeHtml(seniorName)}</div>
               <div class="hosting-address" title="${escapeHtml(addressText || '-')}">${escapeHtml(addressText || '-')}</div>
             </div>
           </div>
 
-          <div class="hosting-menu">${escapeHtml(hosting.menu || '-')}</div>
+          <div class="hosting-menu" title="${escapeHtml(hosting.menu || '-')}">${escapeHtml(hosting.menu || '-')}</div>
 
           <div class="hosting-status-row hosting-status-row-after-menu">
             <span class="badge hosting-status-badge ${statusMeta.className}">
@@ -921,7 +948,7 @@
 
           <div class="hosting-card-actions">
             <a class="btn btn-primary" href="/pages/hosting-detail.html?id=${hosting.hosting_id}&view=guardian">
-              상세 보기
+              호스팅 관리
             </a>
           </div>
         </div>

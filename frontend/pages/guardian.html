@@ -248,6 +248,37 @@
       line-height: 1.5;
     }
 
+    .form-section-title {
+      margin: 24px 0 12px;
+      color: #2C2420;
+      font-size: 15px;
+      font-weight: 800;
+    }
+
+    .form-section-title:first-of-type {
+      margin-top: 0;
+    }
+
+    .form-grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .form-input-readonly,
+    .form-input[readonly].form-input-readonly {
+      background: #F8F5F1;
+      color: #2C2420;
+      cursor: default;
+      opacity: 1;
+    }
+
+    @media (max-width: 768px) {
+      .form-grid-2 {
+        grid-template-columns: 1fr;
+      }
+    }
+
     .hosting-entry-card {
       max-width: none;
     }
@@ -507,22 +538,13 @@
         <form id="senior-form">
           <input type="hidden" id="senior-id">
 
-          <div class="grid grid-2">
+          <div class="form-section-title">기본 정보</div>
+          <div class="form-grid-2">
             <div class="form-group">
               <label class="form-label" for="senior-name">이름</label>
               <input class="form-input" type="text" id="senior-name" placeholder="홍길순" required>
             </div>
 
-            <div class="form-group">
-              <label class="form-label" for="senior-birth-date">생년월일</label>
-              <input class="form-input" type="date" id="senior-birth-date" required>
-              <div id="senior-age-preview" class="age-preview">
-                생년월일을 선택하면 현재 기준 나이가 표시돼요.
-              </div>
-            </div>
-          </div>
-
-          <div class="grid grid-2">
             <div class="form-group">
               <label class="form-label" for="senior-gender">성별</label>
               <select class="form-input" id="senior-gender" required>
@@ -534,6 +556,23 @@
             </div>
 
             <div class="form-group">
+              <label class="form-label" for="senior-birth-date">생년월일</label>
+              <input class="form-input" type="date" id="senior-birth-date" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="senior-age">현재 나이</label>
+              <input
+                class="form-input form-input-readonly"
+                type="text"
+                id="senior-age"
+                value="-"
+                readonly
+                tabindex="-1"
+              >              
+            </div>
+
+            <div class="form-group">
               <label class="form-label" for="senior-max-people">최대 동행 인원</label>
               <select class="form-input" id="senior-max-people" required>
                 <option value="2">2명</option>
@@ -541,8 +580,17 @@
                 <option value="4">4명</option>
               </select>
             </div>
+
+            <div class="form-group">
+              <label class="form-label" for="senior-active-flag">상태</label>
+              <select class="form-input" id="senior-active-flag" required>
+                <option value="true">활성</option>
+                <option value="false">비활성</option>
+              </select>
+            </div>
           </div>
 
+          <div class="form-section-title">주소 정보</div>
           <div class="form-group">
             <label class="form-label" for="senior-road-address">주소</label>
 
@@ -572,6 +620,7 @@
             >
           </div>
 
+          <div class="form-section-title">추가 정보</div>
           <div class="form-group">
             <label class="form-label" for="senior-note">특이사항</label>
             <input
@@ -580,14 +629,6 @@
               id="senior-note"
               placeholder="청력이 약하심, 계단 없는 1층 등"
             >
-          </div>
-
-          <div class="form-group">
-            <label class="form-label" for="senior-active-flag">상태</label>
-            <select class="form-input" id="senior-active-flag" required>
-              <option value="true">활성</option>
-              <option value="false">비활성</option>
-            </select>
           </div>
 
           <div class="card-actions">
@@ -610,30 +651,40 @@
         <div class="senior-detail-form">
           <input type="hidden" id="detail-senior-id">
 
-          <div class="grid grid-2">
+          <div class="form-section-title">기본 정보</div>
+          <div class="form-grid-2">
             <div class="form-group">
               <label class="form-label" for="detail-senior-name">이름</label>
               <input class="form-input" type="text" id="detail-senior-name" readonly>
             </div>
 
             <div class="form-group">
+              <label class="form-label" for="detail-senior-gender">성별</label>
+              <input class="form-input" type="text" id="detail-senior-gender" readonly>
+            </div>
+
+            <div class="form-group">
               <label class="form-label" for="detail-senior-birth-date">생년월일</label>
               <input class="form-input" type="text" id="detail-senior-birth-date" readonly>
             </div>
-          </div>
 
-          <div class="grid grid-2">
             <div class="form-group">
-              <label class="form-label" for="detail-senior-gender">성별</label>
-              <input class="form-input" type="text" id="detail-senior-gender" readonly>
+              <label class="form-label" for="detail-senior-age">현재 나이</label>
+              <input class="form-input" type="text" id="detail-senior-age" readonly>
             </div>
 
             <div class="form-group">
               <label class="form-label" for="detail-senior-max-people">최대 동행 인원</label>
               <input class="form-input" type="text" id="detail-senior-max-people" readonly>
             </div>
+
+            <div class="form-group">
+              <label class="form-label" for="detail-senior-active-flag">상태</label>
+              <input class="form-input" type="text" id="detail-senior-active-flag" readonly>
+            </div>
           </div>
 
+          <div class="form-section-title">주소 정보</div>
           <div class="form-group">
             <label class="form-label" for="detail-senior-road-address">주소</label>
             <textarea
@@ -649,21 +700,15 @@
             <input class="form-input" type="text" id="detail-senior-detail-address" readonly>
           </div>
 
+          <div class="form-section-title">호스팅 / 특이사항</div>
+          <div class="form-group">
+            <label class="form-label" for="detail-senior-hosting-status">호스팅 현황</label>
+            <input class="form-input" type="text" id="detail-senior-hosting-status" readonly>
+          </div>
+
           <div class="form-group">
             <label class="form-label" for="detail-senior-note">특이사항</label>
             <input class="form-input" type="text" id="detail-senior-note" readonly>
-          </div>
-
-          <div class="grid grid-2">
-            <div class="form-group">
-              <label class="form-label" for="detail-senior-active-flag">상태</label>
-              <input class="form-input" type="text" id="detail-senior-active-flag" readonly>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label" for="detail-senior-hosting-status">호스팅 현황</label>
-              <input class="form-input" type="text" id="detail-senior-hosting-status" readonly>
-            </div>
           </div>
 
           <div class="detail-modal-actions">
@@ -762,7 +807,7 @@
     const cancelEditButtonElement = document.querySelector('#cancel-edit-button');
 
     const birthDateInputElement = document.querySelector('#senior-birth-date');
-    const agePreviewElement = document.querySelector('#senior-age-preview');
+    const seniorAgeInputElement = document.querySelector('#senior-age');
 
     const roadAddressInputElement = document.querySelector('#senior-road-address');
     const detailAddressInputElement = document.querySelector('#senior-detail-address');
@@ -940,11 +985,11 @@
       const age = calculateAgeFromBirthDate(birthDateInputElement.value);
 
       if (age === null) {
-        agePreviewElement.textContent = '생년월일을 선택하면 현재 기준 나이가 표시돼요.';
+        seniorAgeInputElement.value = '-';
         return;
       }
 
-      agePreviewElement.textContent = `현재 기준 ${age}세`;
+      seniorAgeInputElement.value = `${age}세`;
     }
 
 

@@ -113,6 +113,10 @@
     }
 
     .hosting-name {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
       font-size: 18px;
       font-weight: 700;
       line-height: 1.45;
@@ -135,6 +139,10 @@
     }
 
     .hosting-menu {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
       font-size: 22px;
       font-weight: 700;
       line-height: 1.4;
@@ -795,12 +803,12 @@
           <div class="hosting-header">
             <div class="hosting-avatar">${escapeHtml(avatarText)}</div>
             <div class="hosting-header-text">
-              <div class="hosting-name">${escapeHtml(titleText)}</div>
+              <div class="hosting-name" title="${escapeHtml(titleText)}">${escapeHtml(titleText)}</div>
               <div class="hosting-address" title="${escapeHtml(addressText || '-')}">${escapeHtml(addressText || '-')}</div>
             </div>
           </div>
 
-          <div class="hosting-menu">${escapeHtml(hosting.menu || '-')}</div>
+          <div class="hosting-menu" title="${escapeHtml(hosting.menu || '-')}">${escapeHtml(hosting.menu || '-')}</div>
 
           <div class="hosting-status-row hosting-status-row-after-menu">
             <span class="badge hosting-status-badge ${statusMeta.className}">
