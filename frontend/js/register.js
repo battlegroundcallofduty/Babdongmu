@@ -1,5 +1,21 @@
 import { mapKakaoAddressToPayload } from '/js/addressMapper.js';
 
+// 카카오 모드 감지 (?kakao=true&setup_token=xxx 로 넘어온 경우)
+const params = new URLSearchParams(window.location.search);
+const isKakao = params.get('kakao') === 'true';
+const setupToken = params.get('setup_token');
+
+if (isKakao) {
+  // 카카오 안내 배너 표시
+  document.getElementById('kakao-banner')?.classList.remove('hidden');
+  // 카카오 유저에게 불필요한 필드 숨김
+  ['#email', '#password', '#password-confirm'].forEach(id => {
+    document.querySelector(id)?.closest('.form-group')?.classList.add('hidden');
+  });
+  document.querySelector('#phone')?.closest('.form-group')?.classList.add('hidden');
+  document.getElementById('verify-group')?.classList.add('hidden');
+}
+
 // 보호자 서류 종류 셀렉트 변경 시 파일 업로드 라벨 동기화
 document.querySelector('#doc-guardian-type')?.addEventListener('change', (e) => {
   const label = document.querySelector('#doc-family-label');
@@ -59,7 +75,7 @@ document.querySelectorAll('input[type="file"]').forEach(input => {
   });
 });
 
-// 활동 동네 주소 검색
+// 주소 검색
 let registerAddressData = null;
 
 document.querySelector('#btn-search-address')?.addEventListener('click', () => {
@@ -191,30 +207,34 @@ async function uploadDocument(token, documentType, file) {
 document.querySelector('#register-form')?.addEventListener('submit', async (e) => {
   e.preventDefault();
 
-  const password = document.querySelector('#password').value;
-  const passwordConfirm = document.querySelector('#password-confirm').value;
   const errorMsg = document.querySelector('#error-msg');
 
-  if (password.length < 8) {
-    errorMsg.textContent = '비밀번호는 8자 이상이어야 합니다.';
-    errorMsg.classList.remove('hidden');
-    return;
-  }
+  // 일반가입 전용 검증 — 카카오는 비번, 폰번 필드 X
+  if (!isKakao) {
+    const password = document.querySelector('#password').value;
+    const passwordConfirm = document.querySelector('#password-confirm').value;
 
-  if (password !== passwordConfirm) {
-    errorMsg.textContent = '비밀번호가 일치하지 않습니다.';
-    errorMsg.classList.remove('hidden');
-    return;
-  }
+    if (password.length < 8) {
+      errorMsg.textContent = '비밀번호는 8자 이상이어야 합니다.';
+      errorMsg.classList.remove('hidden');
+      return;
+    }
 
-  if (!phoneVerified) {
-    errorMsg.textContent = '전화번호 인증을 완료해주세요.';
-    errorMsg.classList.remove('hidden');
-    return;
+    if (password !== passwordConfirm) {
+      errorMsg.textContent = '비밀번호가 일치하지 않습니다.';
+      errorMsg.classList.remove('hidden');
+      return;
+    }
+
+    if (!phoneVerified) {
+      errorMsg.textContent = '전화번호 인증을 완료해주세요.';
+      errorMsg.classList.remove('hidden');
+      return;
+    }
   }
 
   if (!document.querySelector('#district').value) {
-    errorMsg.textContent = '활동 동네를 검색해주세요.';
+    errorMsg.textContent = '주소를 검색해주세요.';
     errorMsg.classList.remove('hidden');
     return;
   }
@@ -238,19 +258,35 @@ document.querySelector('#register-form')?.addEventListener('submit', async (e) =
   let token = null; // catch에서 가입 성공 판단 위해 try 바깥에 선언
 
   try {
-    // 1) 회원가입 → 유저 정보 반환
-    const result = await api('/users/register', {
-      method: 'POST',
-      body: JSON.stringify({
-        email: document.querySelector('#email').value,
-        password,
-        password_confirm: passwordConfirm,
-        name: document.querySelector('#name').value,
-        phone_number: normalizePhone(document.querySelector('#phone').value),
-        user_role: role,
-        address: registerAddressData,
-      }),
-    });
+    let result;
+
+    if (isKakao) {
+      // 1-카카오) kakao-setup 호출 → 이 시점에 DB에 계정 생성
+      // setup_token: 카카오 인증 완료 증거 (콜백에서 발급한 10분짜리 토큰)
+      result = await api('/users/kakao-setup', {
+        method: 'POST',
+        body: JSON.stringify({
+          setup_token: setupToken,
+          name: document.querySelector('#name').value,
+          user_role: role,
+          address: registerAddressData,
+        }),
+      });
+    } else {
+      // 1-일반) 일반 회원가입
+      result = await api('/users/register', {
+        method: 'POST',
+        body: JSON.stringify({
+          email: document.querySelector('#email').value,
+          password: document.querySelector('#password').value,
+          password_confirm: document.querySelector('#password-confirm').value,
+          name: document.querySelector('#name').value,
+          phone_number: normalizePhone(document.querySelector('#phone').value),
+          user_role: role,
+          address: registerAddressData,
+        }),
+      });
+    }
 
     // 2) 토큰 저장 (서류 업로드 시 인증에 필요)
     token = result.access_token;
