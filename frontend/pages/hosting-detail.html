@@ -154,6 +154,24 @@
       min-width: 0;
     }
 
+    .status-action-button {
+      background: #F0EBE6;
+      color: #6B5E53;
+      border-color: #E8E0D8;
+      cursor: default;
+      box-shadow: none;
+    }
+
+    .status-action-button:hover,
+    .status-action-button:focus,
+    .status-action-button:active {
+      background: #F0EBE6;
+      color: #6B5E53;
+      border-color: #E8E0D8;
+      transform: none;
+      box-shadow: none;
+    }
+
     .back-link {
       display: inline-flex;
       gap: 8px;
@@ -849,18 +867,40 @@
       cancelButtonElement.classList.add('hidden');
       applyButtonElement.classList.add('hidden');
 
-      if (isGuardianView()) {
-        const canCancel = ['OPEN', 'FULL', 'FAILED'].includes(hostingDetail.hosting_status);
+      cancelButtonElement.classList.remove('status-action-button');
+      cancelButtonElement.classList.add('btn-secondary');
 
+      if (isGuardianView()) {
         cancelButtonElement.classList.remove('hidden');
-        cancelButtonElement.disabled = !canCancel;
+
+        if (['OPEN', 'FULL'].includes(hostingDetail.hosting_status)) {
+          cancelButtonElement.textContent = '호스팅 취소';
+          cancelButtonElement.disabled = false;
+          return;
+        }
+
+        if (['FIXED', 'IN_PROGRESS'].includes(hostingDetail.hosting_status)) {
+          cancelButtonElement.textContent = '진행 중인 호스팅';
+          cancelButtonElement.disabled = false;
+          cancelButtonElement.classList.remove('btn-secondary');
+          cancelButtonElement.classList.add('status-action-button');
+          return;
+        }
 
         if (hostingDetail.hosting_status === 'FAILED') {
           cancelButtonElement.textContent = '취소됨';
-        } else {
-          cancelButtonElement.textContent = '호스팅 취소';
+          cancelButtonElement.disabled = true;
+          return;
         }
 
+        if (hostingDetail.hosting_status === 'CLOSED') {
+          cancelButtonElement.textContent = '완료된 호스팅';
+          cancelButtonElement.disabled = true;
+          return;
+        }
+
+        cancelButtonElement.textContent = '호스팅 취소';
+        cancelButtonElement.disabled = true;
         return;
       }
 
@@ -933,8 +973,26 @@
         return;
       }
 
+      if (['FIXED', 'IN_PROGRESS'].includes(hostingDetail.hosting_status)) {
+        await showResultModal(
+          '확정 이후 호스팅 변경이나 취소는 관리자에게 문의해 주세요.',
+          'info',
+        );
+        return;
+      }
+
+      if (hostingDetail.hosting_status === 'CLOSED') {
+        await showResultModal('이미 완료된 호스팅이에요.', 'info');
+        return;
+      }
+
       if (hostingDetail.hosting_status === 'FAILED') {
         await showResultModal('이미 취소된 호스팅이에요.', 'info');
+        return;
+      }
+
+      if (!['OPEN', 'FULL'].includes(hostingDetail.hosting_status)) {
+        await showResultModal('현재 상태에서는 보호자가 직접 취소할 수 없어요.', 'info');
         return;
       }
 
