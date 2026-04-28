@@ -4,9 +4,10 @@ import enum
 from datetime import datetime, timezone
 
 from sqlalchemy import TIMESTAMP, Boolean, Enum, ForeignKey, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
+from app.domain.common.models import Address
 
 
 class UserRole(enum.Enum):
@@ -25,13 +26,17 @@ class User(Base):
     __tablename__ = "users"
 
     user_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    kakao_id: Mapped[str | None] = mapped_column(String(50), unique=True, nullable=True, index=True)
     name: Mapped[str] = mapped_column(String(100))
-    email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    email: Mapped[str | None] = mapped_column(String(255), unique=True, nullable=True, index=True)
     password: Mapped[str | None] = mapped_column(
         String(255), nullable=True
     )  # 카카오 로그인 시 None
-    phone_number: Mapped[str] = mapped_column(String(20))
-    address: Mapped[str] = mapped_column(String(255))
+    phone_number: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    address_id: Mapped[int] = mapped_column(
+        ForeignKey("addresses.address_id"), unique=True, nullable=False
+    )
+    address: Mapped[Address] = relationship("Address")
     user_role: Mapped[UserRole] = mapped_column(Enum(UserRole))
     cert_flag: Mapped[CertFlag] = mapped_column(Enum(CertFlag), default=CertFlag.PENDING)
     cert_reject_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)

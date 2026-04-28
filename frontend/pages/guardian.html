@@ -995,8 +995,8 @@
 
     function buildSeniorAddressLabel(senior) {
       return formatAddressPreview({
-        road_address: senior.road_address,
-        detail_address: senior.detail_address,
+        road_address: senior.address.road_address,
+        detail_address: senior.address.detail_address,
       });
     }
 
@@ -1063,8 +1063,8 @@
       document.querySelector('#detail-senior-age').value = formatSeniorAge(senior);
       document.querySelector('#detail-senior-gender').value = getGenderLabel(senior.gender);
       document.querySelector('#detail-senior-max-people').value = `${senior.max_people}명`;
-      document.querySelector('#detail-senior-road-address').value = senior.road_address || '-';
-      document.querySelector('#detail-senior-detail-address').value = senior.detail_address || '-';
+      document.querySelector('#detail-senior-road-address').value = senior.address.road_address || '-';
+      document.querySelector('#detail-senior-detail-address').value = senior.address.detail_address || '-';
       document.querySelector('#detail-senior-note').value = senior.special_note || '등록된 특이사항 없음';
       document.querySelector('#detail-senior-active-flag').value = senior.active_flag ? '활성' : '비활성';
       document.querySelector('#detail-senior-hosting-status').value = buildHostingStatusText(senior);
@@ -1186,18 +1186,18 @@
       document.querySelector('#senior-active-flag').value = String(senior.active_flag);
 
       setAddressState({
-        road_address: senior.road_address,
-        jibun_address: senior.jibun_address,
-        zonecode: senior.zonecode,
-        sigungu: senior.sigungu,
-        bname: senior.bname,
-        detail_address: senior.detail_address,
-        sido: senior.sido,
-        building_name: senior.building_name,
-        is_apartment: senior.is_apartment,
-        lat: senior.lat,
-        lng: senior.lng,
-        sigungu_code: senior.sigungu_code,
+        road_address: senior.address.road_address,
+        jibun_address: senior.address.jibun_address,
+        zonecode: senior.address.zonecode,
+        sigungu: senior.address.sigungu,
+        bname: senior.address.bname,
+        detail_address: senior.address.detail_address,
+        sido: senior.address.sido,
+        building_name: senior.address.building_name,
+        is_apartment: senior.address.is_apartment,
+        lat: senior.address.lat,
+        lng: senior.address.lng,
+        sigungu_code: senior.address.sigungu_code,
       });
 
       setEditMode();
@@ -1417,7 +1417,7 @@
         name: document.querySelector('#senior-name').value.trim(),
         gender: document.querySelector('#senior-gender').value,
         birth_date: document.querySelector('#senior-birth-date').value,
-        ...addressState,
+        address: { ...addressState },
         special_note: document.querySelector('#senior-note').value.trim() || null,
         active_flag: document.querySelector('#senior-active-flag').value === 'true',
         max_people: Number(document.querySelector('#senior-max-people').value),
@@ -1566,12 +1566,12 @@
         return;
       }
 
-      if (!payload.road_address) {
+      if (!payload.address.road_address) {
         await showResultModal('주소 검색으로 도로명 주소를 먼저 선택해 주세요.', true);
         return;
       }
 
-      if (!payload.detail_address) {
+      if (!payload.address.detail_address) {
         await showResultModal('상세주소를 입력해 주세요.', true);
         return;
       }

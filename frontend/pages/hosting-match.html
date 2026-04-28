@@ -727,20 +727,20 @@
     }
 
     function buildHostingAddressText(hosting) {
-      const baseAddress = [hosting?.road_address, hosting?.detail_address]
+      const baseAddress = [hosting?.address.road_address, hosting?.address.detail_address]
         .filter(Boolean)
         .join(' ')
         .trim();
 
       if (!baseAddress) {
-        return hosting?.building_name ?? '';
+        return hosting?.address.building_name ?? '';
       }
 
-      if (!hosting?.building_name) {
+      if (!hosting?.address.building_name) {
         return baseAddress;
       }
 
-      return `${baseAddress} (${hosting.building_name})`;
+      return `${baseAddress} (${hosting.address.building_name})`;
     }
 
     function getCurrentPeopleCount(hosting) {
@@ -755,7 +755,7 @@
     }
 
     function buildHostingTitle(hosting) {
-      const regionParts = [hosting?.sigungu, hosting?.bname].filter(Boolean);
+      const regionParts = [hosting?.address.sigungu, hosting?.address.bname].filter(Boolean);
       return regionParts.length > 0 ? `${regionParts.join(' · ')} 호스팅` : '호스팅';
     }
 
@@ -772,15 +772,15 @@
 
       const cardElement = document.createElement('article');
       cardElement.className = 'card hosting-card slide-up';
-      cardElement.dataset.sigungu = hosting.sigungu ?? '';
+      cardElement.dataset.sigungu = hosting.address.sigungu ?? '';
       cardElement.dataset.status = hosting.hosting_status ?? '';
       cardElement.dataset.keyword = [
         hosting.menu,
-        hosting.sigungu,
-        hosting.bname,
-        hosting.road_address,
-        hosting.detail_address,
-        hosting.building_name,
+        hosting.address.sigungu,
+        hosting.address.bname,
+        hosting.address.road_address,
+        hosting.address.detail_address,
+        hosting.address.building_name,
       ]
         .filter(Boolean)
         .join(' ')
@@ -844,7 +844,7 @@
 
       const sigunguSet = new Set(
         hostingItems
-          .map((hosting) => hosting.sigungu ?? '')
+          .map((hosting) => hosting.address.sigungu ?? '')
           .filter(Boolean)
       );
 
@@ -886,16 +886,16 @@
       hostingListElement.innerHTML = '';
 
       const filteredItems = hostingItems.filter((hosting) => {
-        const matchesSigungu = !selectedSigungu || hosting.sigungu === selectedSigungu;
+        const matchesSigungu = !selectedSigungu || hosting.address.sigungu === selectedSigungu;
         const matchesStatus = !selectedStatus || hosting.hosting_status === selectedStatus;
 
         const keywordTarget = [
           hosting.menu,
-          hosting.sigungu,
-          hosting.bname,
-          hosting.road_address,
-          hosting.detail_address,
-          hosting.building_name,
+          hosting.address.sigungu,
+          hosting.address.bname,
+          hosting.address.road_address,
+          hosting.address.detail_address,
+          hosting.address.building_name,
         ]
           .filter(Boolean)
           .join(' ')

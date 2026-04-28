@@ -724,18 +724,18 @@
 
     function buildHostingAddress() {
       const addressParts = [
-        hostingDetail?.road_address,
-        hostingDetail?.detail_address,
+        hostingDetail?.address.road_address,
+        hostingDetail?.address.detail_address,
       ].filter(Boolean);
 
       const buildingParts = [];
 
-      if (hostingDetail?.is_apartment) {
+      if (hostingDetail?.address.is_apartment) {
         buildingParts.push('아파트');
       }
 
-      if (hostingDetail?.building_name) {
-        buildingParts.push(hostingDetail.building_name);
+      if (hostingDetail?.address.building_name) {
+        buildingParts.push(hostingDetail.address.building_name);
       }
 
       const buildingText = buildingParts.join(' / ');
@@ -795,7 +795,7 @@
       const seniorMetaElement = document.querySelector('#senior-meta');
       const summaryElement = document.querySelector('#senior-summary');
 
-      const hostingAddress = [hostingDetail?.road_address, hostingDetail?.detail_address]
+      const hostingAddress = [hostingDetail?.address.road_address, hostingDetail?.address.detail_address]
         .filter(Boolean)
         .join(' ');
 
@@ -829,13 +829,13 @@
         return;
       }
 
-      seniorAvatarElement.textContent = (hostingDetail?.sigungu ?? '밥').charAt(0);
-      seniorNameElement.textContent = hostingDetail?.sigungu
-        ? `${hostingDetail.sigungu} 호스팅`
+      seniorAvatarElement.textContent = (hostingDetail?.address.sigungu ?? '호').charAt(0);
+      seniorNameElement.textContent = hostingDetail?.address.sigungu
+        ? `${hostingDetail.address.sigungu} 호스팅`
         : '호스팅 상세';
       seniorMetaElement.textContent = [
         hostingAddress,
-        hostingDetail?.bname,
+        hostingDetail?.address.bname,
       ].filter(Boolean).join(' · ') || '-';
 
       summaryElement.textContent = '일정과 주소를 확인한 뒤 신청해 주세요.';

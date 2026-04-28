@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.security import decode_access_token
 from app.database import get_db
 from app.domain.user.models import CertFlag, User, UserRole
-from app.domain.user.service import get_user_by_id
+from app.domain.user.service import get_user_with_address
 
 security = HTTPBearer()
 
@@ -39,7 +39,7 @@ async def get_current_user(
     except ValueError:
         raise credentials_exception
 
-    user = await get_user_by_id(user_id_int, db)
+    user = await get_user_with_address(user_id_int, db)
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

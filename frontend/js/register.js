@@ -1,3 +1,5 @@
+import { mapKakaoAddressToPayload } from '/js/addressMapper.js';
+
 // 보호자 서류 종류 셀렉트 변경 시 파일 업로드 라벨 동기화
 document.querySelector('#doc-guardian-type')?.addEventListener('change', (e) => {
   const label = document.querySelector('#doc-family-label');
@@ -58,6 +60,8 @@ document.querySelectorAll('input[type="file"]').forEach(input => {
 });
 
 // 활동 동네 주소 검색
+let registerAddressData = null;
+
 document.querySelector('#btn-search-address')?.addEventListener('click', () => {
   if (!window.daum?.Postcode) {
     alert('주소 검색을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
@@ -68,6 +72,7 @@ document.querySelector('#btn-search-address')?.addEventListener('click', () => {
     oncomplete(data) {
       const parts = [data.sido, data.sigungu, data.bname].filter(Boolean);
       document.querySelector('#district').value = parts.join(' ');
+      registerAddressData = mapKakaoAddressToPayload(data);
     },
   }).open();
 });
@@ -243,7 +248,7 @@ document.querySelector('#register-form')?.addEventListener('submit', async (e) =
         name: document.querySelector('#name').value,
         phone_number: normalizePhone(document.querySelector('#phone').value),
         user_role: role,
-        address: document.querySelector('#district').value,
+        address: registerAddressData,
       }),
     });
 

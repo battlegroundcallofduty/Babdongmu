@@ -12,6 +12,7 @@ from zoneinfo import ZoneInfo
 from solapi import SolapiMessageService
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.config import settings
 from app.domain.hosting.models import AlarmType, Hosting, SmsLog
@@ -56,6 +57,7 @@ async def send_sms(
             select(Hosting, Senior)
             .join(Senior, Hosting.senior_id == Senior.senior_id)
             .where(Hosting.hosting_id == hosting_id)
+            .options(selectinload(Hosting.address))
         )
         row = result.one_or_none()
         if row:
@@ -76,7 +78,7 @@ async def send_sms(
                 f"[밥동무 매칭 확정]\n\n"
                 f"호스팅 매칭이 확정되었습니다.\n\n"
                 f"어르신: {senior_name}\n"
-                f"장소: {hosting.road_address} {hosting.detail_address}\n"
+                f"장소: {hosting.address.road_address} {hosting.address.detail_address}\n"
                 f"일시: {time_str}"
             )
         else:

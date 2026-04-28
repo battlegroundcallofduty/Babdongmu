@@ -3,8 +3,9 @@
 from datetime import date, datetime
 from zoneinfo import ZoneInfo
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator
 
+from app.domain.common.schemas import AddressCreate, AddressResponse
 from app.domain.senior.models import GenderEnum
 
 KST = ZoneInfo("Asia/Seoul")
@@ -43,21 +44,7 @@ class SeniorCreateRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=100, description="어르신 이름")
     gender: GenderEnum = Field(..., description="성별")
     birth_date: date = Field(..., description="생년월일")
-
-    road_address: str = Field(..., min_length=1, max_length=255, description="도로명 주소")
-    jibun_address: str | None = Field(default=None, max_length=255, description="지번 주소")
-    zonecode: str | None = Field(default=None, max_length=10, description="우편번호")
-    sigungu: str = Field(..., min_length=1, max_length=100, description="시군구")
-    bname: str | None = Field(default=None, max_length=100, description="법정동명")
-    detail_address: str = Field(..., min_length=1, max_length=255, description="상세 주소")
-
-    sido: str | None = Field(default=None, max_length=50, description="시도")
-    building_name: str | None = Field(default=None, max_length=100, description="건물명")
-    is_apartment: bool | None = Field(default=None, description="아파트 여부")
-    lat: float | None = Field(default=None, description="위도")
-    lng: float | None = Field(default=None, description="경도")
-    sigungu_code: str | None = Field(default=None, max_length=20, description="시군구 코드")
-
+    address: AddressCreate = Field(..., description="주소")
     special_note: str | None = Field(default=None, description="특이사항")
     active_flag: bool = Field(default=True, description="활성 여부")
     max_people: int = Field(..., ge=2, le=4, description="최대 봉사자 인원")
@@ -76,31 +63,7 @@ class SeniorUpdateRequest(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=100, description="어르신 이름")
     gender: GenderEnum | None = Field(default=None, description="성별")
     birth_date: date | None = Field(default=None, description="생년월일")
-
-    road_address: str | None = Field(
-        default=None,
-        min_length=1,
-        max_length=255,
-        description="도로명 주소",
-    )
-    jibun_address: str | None = Field(default=None, max_length=255, description="지번 주소")
-    zonecode: str | None = Field(default=None, max_length=10, description="우편번호")
-    sigungu: str | None = Field(default=None, min_length=1, max_length=100, description="시군구")
-    bname: str | None = Field(default=None, max_length=100, description="법정동명")
-    detail_address: str | None = Field(
-        default=None,
-        min_length=1,
-        max_length=255,
-        description="상세 주소",
-    )
-
-    sido: str | None = Field(default=None, max_length=50, description="시도")
-    building_name: str | None = Field(default=None, max_length=100, description="건물명")
-    is_apartment: bool | None = Field(default=None, description="아파트 여부")
-    lat: float | None = Field(default=None, description="위도")
-    lng: float | None = Field(default=None, description="경도")
-    sigungu_code: str | None = Field(default=None, max_length=20, description="시군구 코드")
-
+    address: AddressCreate | None = Field(default=None, description="주소 (제공 시 전체 교체)")
     special_note: str | None = Field(default=None, description="특이사항")
     active_flag: bool | None = Field(default=None, description="활성 여부")
     max_people: int | None = Field(default=None, ge=2, le=4, description="최대 봉사자 인원")
@@ -124,21 +87,13 @@ class SeniorResponse(BaseModel):
     name: str
     gender: GenderEnum
     birth_date: date
-    age: int
+    address: AddressResponse
 
-    road_address: str
-    jibun_address: str | None
-    zonecode: str | None
-    sigungu: str
-    bname: str | None
-    detail_address: str
-
-    sido: str | None
-    building_name: str | None
-    is_apartment: bool | None
-    lat: float | None
-    lng: float | None
-    sigungu_code: str | None
+    @computed_field
+    @property
+    def age(self) -> int:
+        """생년월일 기준 현재 만 나이."""
+        return calculate_age_from_birth_date(self.birth_date)
 
     special_note: str | None
     active_flag: bool
