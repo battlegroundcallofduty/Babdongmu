@@ -29,6 +29,11 @@ class Settings(BaseSettings):
     R2_PRIVATE_BUCKET: str = ""  # 비공개 버킷 (신원 서류)
     R2_PUBLIC_URL: str = ""      # 공개 버킷 CDN URL
 
+    # 카카오 OAuth
+    KAKAO_CLIENT_ID: str = ""
+    KAKAO_CLIENT_SECRET: str = ""
+    KAKAO_REDIRECT_URI: str = "http://localhost:8000/api/v1/users/kakao/callback"
+
     # 프론트엔드 base URL (QR 코드에 담을 체크인 페이지 URL 생성에 사용)
     FRONTEND_BASE_URL: str = "http://localhost:8000"
 
