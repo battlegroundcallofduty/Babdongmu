@@ -11,6 +11,7 @@ from app.domain.common.models import Address
 from app.domain.hosting.models import Hosting, HostingStatus
 from app.domain.senior.models import Senior
 from app.domain.senior.schemas import (
+    GuardianStatsResponse,
     SeniorCreateRequest,
     SeniorResponse,
     SeniorUpdateRequest,
@@ -395,3 +396,45 @@ async def get_senior_id_by_qr(
         )
 
     return senior_id
+
+
+async def get_guardian_stats(
+    session: AsyncSession,
+    guardian_id: int,
+) -> GuardianStatsResponse:
+    """보호자 마이페이지 통계를 조회합니다."""
+
+    active_statuses = [
+        HostingStatus.OPEN,
+        HostingStatus.FULL,
+        HostingStatus.FIXED,
+        HostingStatus.IN_PROGRESS,
+    ]
+
+    stmt = (
+        select(
+            func.count(Senior.senior_id.distinct()).label("senior_count"),
+            func.count(Hosting.hosting_id)
+            .filter(Hosting.hosting_status.in_(active_statuses))
+            .label("active_hosting_count"),
+            func.count(Hosting.hosting_id)
+            .filter(Hosting.hosting_status == HostingStatus.FAILED)
+            .label("cancelled_hosting_count"),
+            func.count(Hosting.hosting_id)
+            .filter(Hosting.hosting_status == HostingStatus.CLOSED)
+            .label("completed_hosting_count"),
+        )
+        .select_from(Senior)
+        .outerjoin(Hosting, Hosting.senior_id == Senior.senior_id)
+        .where(Senior.guardian_id == guardian_id, Senior.active_flag.is_(True))
+    )
+
+    result = await session.execute(stmt)
+    row = result.one()
+
+    return GuardianStatsResponse(
+        senior_count=row.senior_count,
+        active_hosting_count=row.active_hosting_count,
+        cancelled_hosting_count=row.cancelled_hosting_count,
+        completed_hosting_count=row.completed_hosting_count,
+    )

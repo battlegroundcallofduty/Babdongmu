@@ -139,6 +139,36 @@ function renderDocumentSlots(docs, userRole, certFlag) {
   container.innerHTML = html;
 }
 
+function setStats(entries) {
+  entries.forEach(({ id, value, label }) => {
+    document.getElementById(`stat-val-${id}`).textContent = value;
+    document.getElementById(`stat-label-${id}`).textContent = label;
+  });
+}
+
+async function loadStats(role) {
+  try {
+    const s = await api('/users/me/stats');
+    if (role === 'volunteer') {
+      setStats([
+        { id: 1, value: `${(s.total_volunteer_minutes / 60).toFixed(1)}h`, label: '누적 봉사시간' },
+        { id: 2, value: s.visit_count,   label: '방문 횟수' },
+        { id: 3, value: s.review_count,  label: '작성 후기' },
+        { id: 4, value: s.senior_count,  label: '만난 어르신' },
+      ]);
+    } else {
+      setStats([
+        { id: 1, value: s.senior_count,            label: '어르신 수' },
+        { id: 2, value: s.active_hosting_count,    label: '호스팅 중' },
+        { id: 3, value: s.cancelled_hosting_count, label: '호스팅 취소' },
+        { id: 4, value: s.completed_hosting_count, label: '호스팅 완료' },
+      ]);
+    }
+  } catch {
+    document.querySelector('.stats-grid')?.remove();
+  }
+}
+
 // 서류 목록 로드
 // 즉시실행함수에서 me.user_role, me.cert_flag를 저장해두는 전역변수
 let currentUserRole = null;
@@ -269,6 +299,8 @@ document.getElementById('docs-list')?.addEventListener('change', async (e) => {
     // 역할/인증상태 저장 후 서류 슬롯 로드
     currentUserRole = me.user_role;
     currentCertFlag = me.cert_flag;
+    if (me.user_role === 'volunteer' || me.user_role === 'guardian') loadStats(me.user_role);
+    else document.querySelector('.stats-grid')?.remove();
     await loadDocuments();
   } catch {
     // 토큰 없거나 만료되면 안내 후 로그인 페이지로
