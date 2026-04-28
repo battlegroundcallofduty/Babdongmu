@@ -48,8 +48,9 @@
       border-radius: var(--radius-full);
       flex-shrink: 0;
     }
-    .badge-approved  { background: #EDF5ED; color: #3A6B39; }
-    .badge-cancelled { background: #F0EBE6; color: #6B5E53; }
+    .badge-approved    { background: #EDF5ED; color: #3A6B39; }
+    .badge-cancelled   { background: #F0EBE6; color: #6B5E53; }
+    .badge-not-visited { background: #FDF5E6; color: #8B6914; }
     .badge-pending   { background: #FDF5E6; color: #8B6914; }
 
     .time-item {
@@ -78,6 +79,20 @@
       color: var(--text);
     }
     .time-unit { font-size: 13px; color: var(--muted); }
+    .btn-stepper {
+      width: 40px;
+      height: 32px;
+      border: 1px solid var(--primary);
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--primary);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background 150ms ease-out, color 150ms ease-out;
+    }
+    .btn-stepper:hover { background: var(--primary); color: #fff; }
 
     .stats-grid {
       display: grid;
@@ -320,8 +335,8 @@
     }
 
     // ── 최근 매칭 신청 ───────────────────────────────────────
-    const STATUS_LABEL = { approved: '확정', cancelled: '취소', pending: '대기', rejected: '반려' };
-    const STATUS_BADGE  = { approved: 'badge-approved', cancelled: 'badge-cancelled', pending: 'badge-pending', rejected: 'badge-cancelled' };
+    const STATUS_LABEL = { approved: '확정', cancelled: '취소', not_visited: '미방문' };
+    const STATUS_BADGE  = { approved: 'badge-approved', cancelled: 'badge-cancelled', not_visited: 'badge-not-visited' };
 
     async function loadRecentMatches() {
       const wrap = document.getElementById('recent-match-list');
@@ -549,13 +564,15 @@
           nameDiv.textContent = `${m.volunteer_name} → ${m.senior_name} 어르신`;
 
           // 실제 체크인→체크아웃 경과 시간 계산
-          const actualMinutes = (m.check_in_time && m.check_out_time)
-            ? Math.floor((new Date(m.check_out_time) - new Date(m.check_in_time)) / 60000)
+          const elapsedMs = (m.check_in_time && m.check_out_time)
+            ? new Date(m.check_out_time) - new Date(m.check_in_time)
             : null;
+          const rawMinutes = elapsedMs != null ? Math.floor(elapsedMs / 60000) : null;
+          const roundedMinutes = elapsedMs != null ? Math.floor(elapsedMs / 60000 / 30) * 30 : null;
 
           const metaDiv = document.createElement('div');
           metaDiv.className = 'time-meta';
-          metaDiv.textContent = `체크인 ${formatDatetime(m.check_in_time)} · 체크아웃 ${formatDatetime(m.check_out_time)} · 실제 ${actualMinutes ?? '-'}분`;
+          metaDiv.textContent = `체크인 ${formatDatetime(m.check_in_time)} · 체크아웃 ${formatDatetime(m.check_out_time)} · 실제 ${rawMinutes ?? '-'}분`;
 
           info.appendChild(nameDiv);
           info.appendChild(metaDiv);
@@ -563,25 +580,39 @@
           const inputWrap = document.createElement('div');
           inputWrap.className = 'time-input-wrap';
 
+          const btnMinus = document.createElement('button');
+          btnMinus.className = 'btn-stepper';
+          btnMinus.type = 'button';
+          btnMinus.textContent = '-30';
+          btnMinus.onclick = () => stepTime(m.matching_id, -30);
+
           const input = document.createElement('input');
           input.className = 'time-input';
           input.type = 'number';
           input.min = '0';
           input.placeholder = '0';
           input.id = `time-input-${m.matching_id}`;
-          if (actualMinutes != null) input.value = actualMinutes;
+          if (roundedMinutes != null) input.value = roundedMinutes;
 
           const unit = document.createElement('span');
           unit.className = 'time-unit';
           unit.textContent = '분';
+
+          const btnPlus = document.createElement('button');
+          btnPlus.className = 'btn-stepper';
+          btnPlus.type = 'button';
+          btnPlus.textContent = '+30';
+          btnPlus.onclick = () => stepTime(m.matching_id, 30);
 
           const btn = document.createElement('button');
           btn.className = 'btn btn-primary btn-sm';
           btn.textContent = '부여';
           btn.onclick = () => grantTime(m.matching_id);
 
+          inputWrap.appendChild(btnMinus);
           inputWrap.appendChild(input);
           inputWrap.appendChild(unit);
+          inputWrap.appendChild(btnPlus);
           inputWrap.appendChild(btn);
 
           item.appendChild(info);
@@ -596,6 +627,12 @@
             <p>목록을 불러올 수 없어요</p>
           </div>`;
       }
+    }
+
+    function stepTime(matchingId, delta) {
+      const input = document.getElementById(`time-input-${matchingId}`);
+      const current = parseInt(input.value, 10) || 0;
+      input.value = Math.max(0, current + delta);
     }
 
     async function grantTime(matchingId) {
