@@ -48,3 +48,10 @@ class MyMatchResponse(BaseModel):
     review_id: int | None
 
     model_config = {"from_attributes": False}
+
+
+class MyMatchListResponse(BaseModel):
+    """내 매칭 목록 페이징 응답 스키마."""
+
+    total: int
+    items: list[MyMatchResponse]

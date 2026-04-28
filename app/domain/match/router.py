@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.domain.match import service
-from app.domain.match.schemas import MatchResponse, MyMatchResponse
+from app.domain.match.schemas import MatchResponse, MyMatchListResponse
 from app.domain.user.dependency import get_current_user
 from app.domain.user.models import User, UserRole
 
@@ -29,16 +29,19 @@ async def create_match(
     return await service.create_match(db, hosting_id, current_user.user_id)
 
 
-@router.get("/my", response_model=list[MyMatchResponse])
+@router.get("/my", response_model=MyMatchListResponse)
 async def list_my_matches(
     is_completed: bool,
     page: int = 1,
+    size: int = 10,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """내 매칭 목록을 예정/완료 구분하여 조회합니다."""
     _require_volunteer(current_user)
-    return await service.list_matches_by_volunteer(db, current_user.user_id, is_completed, page)
+    return await service.list_matches_by_volunteer(
+        db, current_user.user_id, is_completed, page, size
+    )
 
 
 @router.patch("/{matching_id}/cancel", response_model=MatchResponse)

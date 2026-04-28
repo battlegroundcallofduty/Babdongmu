@@ -281,6 +281,32 @@
         order: 2;
       }
     }
+
+    .qr-modal-panel {
+      max-width: 320px;
+      text-align: center;
+    }
+
+    #qr-modal-image {
+      width: 100%;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      background: #F5F1ED;
+      min-height: 200px;
+    }
+
+    #qr-modal-image[src=''] {
+      display: none;
+    }
+
+    .qr-loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 200px;
+      color: var(--muted);
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
@@ -299,13 +325,13 @@
         <li><a href="/pages/guardian.html" class="active">어르신 관리</a></li>
         <li><a href="/pages/mypage.html">마이페이지</a></li>
       </ul>
-      <button class="nav-toggle" onclick="toggleNav()" aria-label="메뉴">
+      <button class="nav-toggle" aria-label="메뉴">
         <span></span><span></span><span></span>
       </button>
     </div>
   </nav>
 
-  <div class="nav-drawer" id="navDrawer" onclick="closeNav(event)">
+  <div class="nav-drawer" id="navDrawer">
     <div class="nav-drawer-content">
       <a href="/pages/guardian.html" class="active">어르신 관리</a>
       <a href="/pages/mypage.html">마이페이지</a>
@@ -491,6 +517,18 @@
       </div>
     </div>
 
+    <div id="qr-modal" class="modal-overlay hidden">
+      <div class="modal-panel qr-modal-panel" role="dialog" aria-modal="true" aria-labelledby="qr-modal-title">
+        <div class="modal-header">
+          <h3 id="qr-modal-title">QR 코드</h3>
+          <button id="close-qr-modal-button" type="button" class="modal-close-button" aria-label="닫기">×</button>
+        </div>
+        <div id="qr-loading" class="qr-loading">불러오는 중...</div>
+        <img id="qr-modal-image" src="" alt="QR 코드">
+        <a id="qr-download-link" href="#" download class="btn btn-primary" style="display:block; width:100%; box-sizing:border-box;">이미지 저장</a>
+      </div>
+    </div>
+
     <div id="confirm-modal" class="modal-overlay hidden">
       <div class="modal-panel confirm-modal-panel" role="dialog" aria-modal="true" aria-labelledby="confirm-modal-title">
         <div class="modal-header">
@@ -526,6 +564,7 @@
 
   <script src="/js/api.js"></script>
   <script src="/js/base.js"></script>
+  <script src="/js/footer.js"></script>
   <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
   <script type="module">
     import { requireRoles } from '/js/authGuard.js';
@@ -577,6 +616,59 @@
     let confirmModalHandler = null;
     let isActiveOnly = activeOnlyToggleElement?.checked ?? false;
     let addressState = createEmptyAddressPayload();
+    let qrObjectUrl = null;
+
+    async function openQrModal(seniorId, seniorName) {
+      const modal = document.querySelector('#qr-modal');
+      const img = document.querySelector('#qr-modal-image');
+      const link = document.querySelector('#qr-download-link');
+      const loading = document.querySelector('#qr-loading');
+
+      document.querySelector('#qr-modal-title').textContent = `${seniorName} 어르신 QR 코드`;
+      img.src = '';
+      link.href = '#';
+      loading.style.display = 'flex';
+      img.style.display = 'none';
+      modal.classList.remove('hidden');
+      document.body.classList.add('modal-open');
+
+      try {
+        const token = localStorage.getItem('access_token');
+        const res = await fetch(`/api/v1/seniors/${seniorId}/qr`, {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+        });
+        if (!res.ok) throw new Error('QR 코드를 불러오지 못했어요.');
+        const blob = await res.blob();
+        if (qrObjectUrl) URL.revokeObjectURL(qrObjectUrl);
+        qrObjectUrl = URL.createObjectURL(blob);
+        img.src = qrObjectUrl;
+        img.style.display = 'block';
+        link.href = qrObjectUrl;
+        link.download = `${seniorName}_QR.png`;
+      } catch (err) {
+        showMessage(err.message, true);
+        closeQrModal();
+        return;
+      } finally {
+        loading.style.display = 'none';
+      }
+    }
+
+    function closeQrModal() {
+      document.querySelector('#qr-modal').classList.add('hidden');
+      if (qrObjectUrl) {
+        URL.revokeObjectURL(qrObjectUrl);
+        qrObjectUrl = null;
+      }
+      document.querySelector('#qr-modal-image').src = '';
+      document.querySelector('#qr-download-link').href = '#';
+      if (
+        registerFormModalElement.classList.contains('hidden') &&
+        confirmModalElement.classList.contains('hidden')
+      ) {
+        document.body.classList.remove('modal-open');
+      }
+    }
 
     function toggleNav() {
       const toggleButton = document.querySelector('.nav-toggle');
@@ -874,6 +966,16 @@
 
               <button
                 type="button"
+                class="btn btn-ghost btn-sm"
+                data-action="show-qr"
+                data-senior-id="${senior.senior_id}"
+                data-senior-name="${escapeHtml(senior.name)}"
+              >
+                QR 보기
+              </button>
+
+              <button
+                type="button"
                 class="btn btn-primary btn-sm"
                 data-action="create-hosting"
                 data-senior-id="${senior.senior_id}"
@@ -1018,8 +1120,24 @@
       }
     });
 
+    document.querySelector('#close-qr-modal-button')?.addEventListener('click', () => {
+      closeQrModal();
+    });
+
+    document.querySelector('#qr-modal')?.addEventListener('click', (event) => {
+      if (event.target === event.currentTarget) closeQrModal();
+    });
+
+    document.querySelector('.nav-toggle')?.addEventListener('click', toggleNav);
+    document.querySelector('#navDrawer')?.addEventListener('click', closeNav);
+
     document.addEventListener('keydown', (event) => {
       if (event.key === 'Escape') {
+        if (!document.querySelector('#qr-modal').classList.contains('hidden')) {
+          closeQrModal();
+          return;
+        }
+
         if (!confirmModalElement.classList.contains('hidden')) {
           closeConfirmModal();
           return;
@@ -1101,6 +1219,12 @@
           const senior = await fetchSeniorDetail(seniorId);
           fillForm(senior);
           openForm();
+          return;
+        }
+
+        if (action === 'show-qr') {
+          const seniorName = actionButton.dataset.seniorName;
+          await openQrModal(seniorId, seniorName);
           return;
         }
 
