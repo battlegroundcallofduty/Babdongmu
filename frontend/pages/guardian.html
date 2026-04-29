@@ -732,7 +732,7 @@
       mapKakaoAddressToPayload,
       mergeDetailAddress,
     } from '/js/addressMapper.js';
-    import { getGenderLabel } from '/js/hosting-shared.js';
+    import { getGenderLabel, escapeHtml } from '/js/hosting-shared.js';
 
     const seniorListElement = document.querySelector('#senior-list');
     const seniorEmptyElement = document.querySelector('#senior-empty');
@@ -822,15 +822,6 @@
       ) {
         document.body.classList.remove('modal-open');
       }
-    }
-
-    function escapeHtml(value) {
-      return String(value)
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;')
-        .replaceAll("'", '&#39;');
     }
 
     function isAnyModalOpen() {

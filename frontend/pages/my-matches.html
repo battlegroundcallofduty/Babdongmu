@@ -85,17 +85,12 @@
   <script src="/js/footer.js"></script>
   <script type="module">
     import { requireRoles } from '/js/authGuard.js';
+    import { escapeHtml } from '/js/hosting-shared.js';
 
     const PAGE_SIZE = 10;
     let currentTab = 'scheduled';
     let currentPage = 1;
     let selectedFiles = [];
-
-    function escapeHtml(str) {
-      const div = document.createElement('div');
-      div.textContent = String(str);
-      return div.innerHTML;
-    }
 
     // 날짜 포맷: "4월 15일 (화) · 점심"
     function formatDate(datetimeStr) {
