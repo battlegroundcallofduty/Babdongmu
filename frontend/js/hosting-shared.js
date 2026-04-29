@@ -213,61 +213,6 @@ const SHARED_CSS = `
   color: #D4763C;
 }
 
-/* ---------- 알림 모달 (info / success / error) ---------- */
-.alert-modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  z-index: 60;
-  box-sizing: border-box;
-}
-
-.alert-modal-overlay.open {
-  display: flex;
-}
-
-.alert-modal {
-  width: min(100%, 420px);
-  background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 20px 48px rgba(44, 36, 32, 0.18);
-  padding: 24px;
-}
-
-.alert-modal-title {
-  font-size: 20px;
-  font-weight: 700;
-  line-height: 1.4;
-  color: #2C2420;
-  margin-bottom: 8px;
-}
-
-.alert-modal-message {
-  font-size: 15px;
-  line-height: 1.6;
-  color: #6B5E53;
-  margin-bottom: 20px;
-  white-space: pre-wrap;
-  word-break: keep-all;
-}
-
-.alert-modal-actions {
-  display: flex;
-  justify-content: flex-end;
-}
-
-.alert-modal.success .alert-modal-title { color: #2E5D2E; }
-.alert-modal.error .alert-modal-title { color: #9A3838; }
-.alert-modal.info .alert-modal-title { color: #6B5E53; }
-
-body.modal-open {
-  overflow: hidden;
-}
-
 /* ---------- 반응형 ---------- */
 @media (max-width: 768px) {
   .filter-bar {
@@ -284,10 +229,6 @@ body.modal-open {
 
   .hosting-menu {
     font-size: 20px;
-  }
-
-  .alert-modal {
-    padding: 20px;
   }
 }
 `;

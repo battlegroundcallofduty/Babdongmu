@@ -355,7 +355,7 @@
         await loadHostings();
       } catch (error) {
         console.error(error);
-        await showAlertModal(
+        await showResultModal(
           error?.message || '호스팅 목록을 불러오지 못했어요.',
           'error'
         );
