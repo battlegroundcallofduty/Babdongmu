@@ -69,7 +69,7 @@
         <span class="review-author">내 후기</span>
         <span class="review-date" id="review-date"></span>
       </div>
-      <p class="review-message" id="review-contents" style="white-space:pre-wrap;"></p>
+      <p class="review-message" id="review-contents" style="white-space:pre-wrap; word-break:break-word;"></p>
       <div class="img-grid" id="review-images"></div>
     </div>
 
@@ -120,6 +120,7 @@
 
   <script src="/js/api.js"></script>
   <script src="/js/base.js"></script>
+  <script src="/js/footer.js"></script>
   <script>
     if (!localStorage.getItem('access_token')) {
       window.location.href = '/pages/login.html';
