@@ -350,6 +350,7 @@
       parseApiDateTime,
       getHostingDurationHours,
       getGenderLabel,
+      escapeHtml,
     } from '/js/hosting-shared.js';
 
     const KST_TIME_ZONE = 'Asia/Seoul';
@@ -668,7 +669,7 @@
       }
 
       listElement.innerHTML = reviews.map((review) => {
-        const dateText = formatDate(review.created_at, {
+        const dateText = formatKstDate(review.created_at, {
           year: 'numeric',
           month: 'long',
           day: 'numeric',
@@ -681,7 +682,7 @@
         return `
           <div class="review-card">
             <p class="review-card-date">${dateText}</p>
-            <p class="review-card-contents">${review.contents}</p>
+            <p class="review-card-contents">${escapeHtml(review.contents)}</p>
             ${imagesHtml}
           </div>
         `;
