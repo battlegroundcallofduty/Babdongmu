@@ -732,6 +732,7 @@
       mapKakaoAddressToPayload,
       mergeDetailAddress,
     } from '/js/addressMapper.js';
+    import { getGenderLabel } from '/js/hosting-shared.js';
 
     const seniorListElement = document.querySelector('#senior-list');
     const seniorEmptyElement = document.querySelector('#senior-empty');
@@ -856,16 +857,6 @@
         return '<span class="badge badge-open">활성</span>';
       }
       return '<span class="badge badge-done">비활성</span>';
-    }
-
-    function getGenderLabel(gender) {
-      if (gender === 'male') {
-        return '남성';
-      }
-      if (gender === 'female') {
-        return '여성';
-      }
-      return '기타';
     }
 
     function normalizeCertFlag(certFlag) {

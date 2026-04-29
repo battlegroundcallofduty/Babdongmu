@@ -96,34 +96,34 @@ async def list_matches_by_volunteer(
     size: int = 10,
 ) -> MyMatchListResponse:
     """봉사자의 매칭 목록을 예정/완료 구분 및 페이징하여 조회합니다."""
+    where_conditions = [
+        MatchingInfo.vt_id == vt_id,
+        MatchingInfo.match_status != MatchStatus.CANCELLED,
+    ]
+
+    # NOT_VISITED는 체크아웃 없어도 완료 탭에 포함
+    if is_completed:
+        where_conditions.append(
+            (MatchingInfo.check_out_time.isnot(None))
+            | (MatchingInfo.match_status == MatchStatus.NOT_VISITED)
+        )
+    else:
+        where_conditions.append(MatchingInfo.check_out_time.is_(None))
+        where_conditions.append(MatchingInfo.match_status != MatchStatus.NOT_VISITED)
+
     query = (
         select(MatchingInfo, Hosting, Senior)
         .join(Hosting, MatchingInfo.hosting_id == Hosting.hosting_id)
         .join(Senior, MatchingInfo.senior_id == Senior.senior_id)
         .options(selectinload(Senior.address))
-        .where(
-            MatchingInfo.vt_id == vt_id,
-            MatchingInfo.match_status != MatchStatus.CANCELLED,
-        )
+        .where(*where_conditions)
     )
-
-    # NOT_VISITED는 체크아웃 없어도 완료 탭에 포함
-    if is_completed:
-        query = query.where(
-            (MatchingInfo.check_out_time.isnot(None))
-            | (MatchingInfo.match_status == MatchStatus.NOT_VISITED)
-        )
-    else:
-        query = query.where(
-            MatchingInfo.check_out_time.is_(None),
-            MatchingInfo.match_status != MatchStatus.NOT_VISITED,
-        )
 
     # 전체 개수 조회
     count_result = await db.execute(
         select(func.count(MatchingInfo.matching_id))
         .join(Hosting, MatchingInfo.hosting_id == Hosting.hosting_id)
-        .where(query.whereclause)
+        .where(*where_conditions)
     )
     total = count_result.scalar() or 0
 

@@ -346,6 +346,11 @@
       validateHostingDetailAccess,
       getCurrentUser,
     } from '/js/authGuard.js';
+    import {
+      parseApiDateTime,
+      getHostingDurationHours,
+      getGenderLabel,
+    } from '/js/hosting-shared.js';
 
     const KST_TIME_ZONE = 'Asia/Seoul';
     const VIEW_MODE_GUARDIAN = 'guardian';
@@ -368,29 +373,7 @@
         CLOSED: { label: '완료', className: 'badge-closed' },
       };
 
-      return metaMap[status] ?? { label: status ?? '-', className: 'badge-closed' };
-    }
-
-    function parseApiDateTime(value) {
-      if (!value) {
-        return null;
-      }
-
-      if (value instanceof Date) {
-        return value;
-      }
-
-      if (typeof value === 'string') {
-        const normalizedValue = value.includes('T')
-          && !value.endsWith('Z')
-          && !/[+-]\d{2}:\d{2}$/.test(value)
-          ? `${value}Z`
-          : value;
-
-        return new Date(normalizedValue);
-      }
-
-      return new Date(value);
+      return metaMap[status] || { label: status || '-', className: 'badge-closed' };
     }
 
     function formatKstDate(value, options = {}) {
@@ -404,27 +387,6 @@
         timeZone: KST_TIME_ZONE,
         ...options,
       }).format(date);
-    }
-
-    function getHostingDurationHours(hostingAt, hostingEnd) {
-      const startDate = parseApiDateTime(hostingAt);
-      const endDate = parseApiDateTime(hostingEnd);
-
-      if (!startDate || Number.isNaN(startDate.getTime())
-        || !endDate || Number.isNaN(endDate.getTime())) {
-        return null;
-      }
-
-      const durationMs = endDate.getTime() - startDate.getTime();
-      const durationHours = durationMs / (60 * 60 * 1000);
-
-      if (!Number.isFinite(durationHours) || durationHours <= 0) {
-        return null;
-      }
-
-      return Number.isInteger(durationHours)
-        ? String(durationHours)
-        : durationHours.toFixed(1);
     }
 
     function formatDateTimeRange(hostingAt, hostingEnd) {
@@ -524,20 +486,10 @@
         || hostingDetail?.hosting_status === 'FIXED'
         || hostingDetail?.hosting_status === 'IN_PROGRESS'
         || hostingDetail?.hosting_status === 'CLOSED') {
-        return hostingDetail?.max_people ?? 0;
+        return hostingDetail?.max_people || 0;
       }
 
       return 0;
-    }
-
-    function getGenderLabel(gender) {
-      const genderMap = {
-        male: '남성',
-        female: '여성',
-        other: '기타',
-      };
-
-      return genderMap[gender] ?? '';
     }
 
     function buildAddressText(address) {
@@ -584,7 +536,7 @@
       const summaryElement = document.querySelector('#senior-summary');
       const senior = getSeniorDisplayData();
 
-      const seniorName = senior?.name ?? '';
+      const seniorName = senior?.name || '';
       const fullSeniorName = seniorName
         ? `${seniorName} 어르신`
         : `어르신 #${hostingDetail.senior_id}`;
@@ -760,7 +712,7 @@
         if (isGuardianView()) {
           seniorDetail = await api(`/seniors/${hostingDetail.senior_id}`);
         } else {
-          seniorDetail = hostingDetail?.senior ?? null;
+          seniorDetail = hostingDetail?.senior || null;
           try {
             const checkResult = await api(`/matches/my/check?hosting_id=${hostingId}`);
             myMatchId = checkResult.is_applied ? checkResult.matching_id : null;
