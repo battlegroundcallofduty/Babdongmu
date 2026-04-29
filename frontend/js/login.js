@@ -1,6 +1,47 @@
+const params = new URLSearchParams(window.location.search);
+
 // 회원가입 직후 넘어온 경우 안내 메시지 표시
-if (new URLSearchParams(window.location.search).get('registered') === '1') {
+if (params.get('registered') === '1') {
   document.getElementById('register-notice').classList.remove('hidden');
+}
+
+// 카카오 에러: 취소하거나 카카오 API 오류 발생
+if (params.get('kakao_error') === '1') {
+  const errorMsg = document.getElementById('error-msg');
+  errorMsg.textContent = '카카오 로그인에 실패했습니다. 다시 시도해주세요.';
+  errorMsg.classList.remove('hidden');
+}
+
+// 카카오 로그인 성공 (기존 유저): 콜백에서 kakao_token 받아서 로그인 처리
+const kakaoToken = params.get('kakao_token');
+if (kakaoToken) {
+  (async () => {
+    const errorMsg = document.getElementById('error-msg');
+    try {
+      saveToken(kakaoToken);
+
+      const user = await api('/users/me');
+      const normalizedRole = String(user.user_role ?? '').trim().toLowerCase();
+
+      localStorage.setItem(
+        'currentUser',
+        JSON.stringify({
+          user_id: user.user_id,
+          name: user.name,
+          user_role: normalizedRole,
+        }),
+      );
+
+      if (normalizedRole === 'admin') { window.location.replace('/pages/admin.html'); return; }
+      if (normalizedRole === 'guardian') { window.location.replace('/pages/guardian.html'); return; }
+      if (normalizedRole === 'volunteer') { window.location.replace('/pages/hosting-match.html'); return; }
+
+      throw new Error(`알 수 없는 user_role: ${user.user_role}`);
+    } catch (err) {
+      errorMsg.textContent = '카카오 로그인 처리 중 오류가 발생했습니다.';
+      errorMsg.classList.remove('hidden');
+    }
+  })();
 }
 
 // 이메일/비밀번호 로그인
