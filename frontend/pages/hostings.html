@@ -306,8 +306,6 @@
     import { requireRoles } from '/js/authGuard.js';
     import {
       KST_TIME_ZONE,
-      toggleNav,
-      closeNav,
       parseApiDateTime,
       buildHostingCard,
       formatHostingPeopleText,
@@ -327,9 +325,6 @@
     let selectedSeniorIdFromQuery = '';
     let shouldOpenCreateModalFromQuery = false;
     let seniorHostingRuleMap = new Map();
-
-    window.toggleNav = toggleNav;
-    window.closeNav = closeNav;
 
     /* showMessage 별칭 — 기존 코드 호환 */
     function showMessage(message, type = 'info') {

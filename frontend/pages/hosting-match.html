@@ -159,8 +159,6 @@
   <script type="module">
     import { requireRoles } from '/js/authGuard.js';
     import {
-      toggleNav,
-      closeNav,
       buildHostingCard,
       formatHostingPeopleText,
       renderSigunguOptions,
@@ -174,8 +172,6 @@
     let hostingItems = [];
     let appliedHostingIdSet = new Set();
     let resultModalResolver = null;
-    window.closeNav = closeNav;
-
     /* ---------- 페이지 고유 헬퍼 ---------- */
 
     function buildHostingTitle(hosting) {

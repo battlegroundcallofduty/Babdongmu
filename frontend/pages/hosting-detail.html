@@ -491,9 +491,6 @@
     let resultModalResolver = null;
     let confirmModalHandler = null;
 
-    window.toggleNav = toggleNav;
-    window.closeNav = closeNav;
-
     function isAnyModalOpen() {
       return document.querySelector('#result-modal').classList.contains('open')
         || document.querySelector('#confirm-modal').classList.contains('open');

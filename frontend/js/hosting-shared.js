@@ -315,28 +315,7 @@ injectSharedStyles();
 export const KST_TIME_ZONE = 'Asia/Seoul';
 
 /* ================================================================
- * 2. 네비게이션 토글
- * ================================================================ */
-
-export function toggleNav() {
-  const toggleElement = document.querySelector('.nav-toggle');
-  const drawerElement = document.querySelector('#navDrawer');
-  if (!toggleElement || !drawerElement) {
-    return;
-  }
-  toggleElement.classList.toggle('active');
-  drawerElement.classList.toggle('open');
-  document.body.style.overflow = drawerElement.classList.contains('open') ? 'hidden' : '';
-}
-
-export function closeNav(event) {
-  if (event.target === event.currentTarget) {
-    toggleNav();
-  }
-}
-
-/* ================================================================
- * 3. 문자열 / 날짜 유틸
+ * 2. 문자열 / 날짜 유틸
  * ================================================================ */
 
 export function escapeHtml(value) {
