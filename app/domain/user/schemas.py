@@ -74,6 +74,16 @@ class PasswordChangeRequest(BaseModel):
         return self
 
 
+# ── 카카오 요청 ────────────────
+class KakaoSetupRequest(BaseModel):
+    """카카오 전용 회원가입 완료 요청"""
+
+    setup_token: str
+    name: str = Field(min_length=1)
+    user_role: UserRole
+    address: AddressCreate
+
+
 # ── SMS 요청 ───────────────
 
 
