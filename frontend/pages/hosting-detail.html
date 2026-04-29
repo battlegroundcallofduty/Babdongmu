@@ -202,99 +202,6 @@
       margin-bottom: 10px;
     }
 
-    .modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.45);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-      z-index: 60;
-      box-sizing: border-box;
-      overflow: hidden;
-    }
-
-    .modal-overlay.open {
-      display: flex;
-    }
-
-    .modal-panel {
-      width: min(100%, 420px);
-      max-height: calc(100vh - 48px);
-      background: #fff;
-      border-radius: 16px;
-      box-shadow: 0 20px 48px rgba(44, 36, 32, 0.18);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      box-sizing: border-box;
-    }
-
-    .modal-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 20px 24px 14px;
-      border-bottom: 1px solid #F2ECE6;
-      flex-shrink: 0;
-    }
-
-    .modal-header h3 {
-      margin: 0;
-      font-size: 20px;
-      line-height: 1.4;
-      color: #2C2420;
-    }
-
-    .modal-close-button {
-      border: 0;
-      background: transparent;
-      font-size: 24px;
-      cursor: pointer;
-      color: #8C7E73;
-      line-height: 1;
-      padding: 0;
-    }
-
-    .modal-body {
-      padding: 18px 24px 24px;
-      overflow-y: auto;
-      scrollbar-gutter: stable;
-    }
-
-    .modal-message {
-      font-size: 15px;
-      line-height: 1.6;
-      color: #6B5E53;
-      white-space: pre-wrap;
-      word-break: keep-all;
-    }
-
-    .modal-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-top: 20px;
-    }
-
-    .result-modal.success .modal-header h3 {
-      color: #2E5D2E;
-    }
-
-    .result-modal.error .modal-header h3 {
-      color: #9A3838;
-    }
-
-    .result-modal.info .modal-header h3 {
-      color: #6B5E53;
-    }
-
-    body.modal-open {
-      overflow: hidden;
-    }
 
     @media (max-width: 768px) {
       .detail-row {
@@ -314,56 +221,12 @@
         font-size: 24px;
       }
 
-      .modal-overlay {
-        padding: 16px;
-      }
-
-      .modal-panel {
-        max-height: calc(100vh - 32px);
-      }
-
-      .modal-header {
-        padding: 18px 20px 12px;
-      }
-
-      .modal-body {
-        padding: 16px 20px 20px;
-      }
     }
   </style>
 </head>
 <body>
-  <nav class="nav">
-    <div class="nav-inner">
-      <a href="/" class="nav-logo">
-        <svg class="nav-logo-icon" viewBox="0 0 32 32" fill="none">
-          <circle cx="16" cy="16" r="14" fill="#D4763C" opacity="0.12"/>
-          <path d="M8 18c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke="#D4763C" stroke-width="2" stroke-linecap="round"/>
-          <path d="M6 18h20v1c0 3.3-2.7 6-6 6h-8c-3.3 0-6-2.7-6-6v-1z" fill="#D4763C" opacity="0.2"/>
-          <ellipse cx="16" cy="18" rx="10" ry="2" fill="#D4763C" opacity="0.15"/>
-          <path d="M13 14c-.5-2 .5-4 3-4s3.5 2 3 4" stroke="#5B8C5A" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
-        </svg>
-        밥동무
-      </a>
+<div id="nav-placeholder"></div>
 
-      <ul id="desktop-nav-links" class="nav-links">
-        <li><a id="desktop-nav-primary" href="/pages/hostings.html">호스팅 관리</a></li>
-        <li><a id="desktop-nav-secondary" href="/pages/my-matches.html">내 매칭</a></li>
-        <li><a href="/pages/mypage.html">마이페이지</a></li>
-      </ul>
-
-      <button class="nav-toggle" type="button" onclick="toggleNav()" aria-label="메뉴 열기">
-        <span></span><span></span><span></span>
-      </button>
-    </div>
-  </nav>
-
-  <div class="nav-drawer" id="navDrawer" onclick="closeNav(event)">
-    <div class="nav-drawer-content">
-      <a id="drawer-nav-primary" href="/pages/hostings.html">호스팅 관리</a>
-      <a id="drawer-nav-secondary" href="/pages/my-matches.html">내 매칭</a>
-      <a href="/pages/mypage.html">마이페이지</a>
-    </div>
   </div>
 
   <main class="container page-shell">
@@ -429,76 +292,11 @@
     </section>
   </main>
 
-  <div
-    id="result-modal"
-    class="modal-overlay"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="result-modal-title"
-  >
-    <div id="result-modal-panel" class="modal-panel result-modal info">
-      <div class="modal-header">
-        <h3 id="result-modal-title">안내</h3>
-        <button
-          id="close-result-modal-button"
-          type="button"
-          class="modal-close-button"
-          aria-label="닫기"
-        >
-          ×
-        </button>
-      </div>
-
-      <div class="modal-body">
-        <div id="result-modal-message" class="modal-message"></div>
-
-        <div class="modal-actions">
-          <button id="result-modal-confirm-button" type="button" class="btn btn-primary btn-sm">
-            확인
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div
-    id="confirm-modal"
-    class="modal-overlay"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="confirm-modal-title"
-  >
-    <div class="modal-panel">
-      <div class="modal-header">
-        <h3 id="confirm-modal-title">안내</h3>
-        <button
-          id="close-confirm-modal-button"
-          type="button"
-          class="modal-close-button"
-          aria-label="닫기"
-        >
-          ×
-        </button>
-      </div>
-
-      <div class="modal-body">
-        <div id="confirm-modal-message" class="modal-message"></div>
-
-        <div class="modal-actions">
-          <button id="confirm-modal-cancel-button" type="button" class="btn btn-ghost btn-sm">
-            취소
-          </button>
-          <button id="confirm-modal-confirm-button" type="button" class="btn btn-primary btn-sm">
-            확인
-          </button>
-        </div>
-      </div>
-    </div>
-  </div> 
 
   <div id="footer-placeholder"></div>
 
   <script src="/js/api.js"></script>
+  <script src="/js/modal.js"></script>
   <script type="module">
     import {
       requireAuth,
@@ -517,119 +315,6 @@
     let currentUser = null;
     let myMatchId = null;
 
-    let resultModalResolver = null;
-    let confirmModalHandler = null;
-
-    function toggleNav() {
-      const toggleElement = document.querySelector('.nav-toggle');
-      const drawerElement = document.querySelector('#navDrawer');
-      toggleElement.classList.toggle('active');
-      drawerElement.classList.toggle('open');
-      document.body.style.overflow = drawerElement.classList.contains('open') ? 'hidden' : '';
-    }
-
-    function closeNav(event) {
-      if (event.target === event.currentTarget) {
-        toggleNav();
-      }
-    }
-
-    window.toggleNav = toggleNav;
-    window.closeNav = closeNav;
-
-    function isAnyModalOpen() {
-      return document.querySelector('#result-modal').classList.contains('open')
-        || document.querySelector('#confirm-modal').classList.contains('open');
-    }
-
-    function syncBodyScrollLock() {
-      if (isAnyModalOpen()) {
-        document.body.classList.add('modal-open');
-      } else {
-        document.body.classList.remove('modal-open');
-      }
-    }
-
-    function getResultModalTitle(type) {
-      if (type === 'success') {
-        return '완료';
-      }
-      if (type === 'error') {
-        return '오류';
-      }
-      return '안내';
-    }
-
-    function showResultModal(message, type = 'info') {
-      return new Promise((resolve) => {
-        const resultModalElement = document.querySelector('#result-modal');
-        const resultModalPanelElement = document.querySelector('#result-modal-panel');
-        const resultModalTitleElement = document.querySelector('#result-modal-title');
-        const resultModalMessageElement = document.querySelector('#result-modal-message');
-
-        resultModalPanelElement.className = `modal-panel result-modal ${type}`;
-        resultModalTitleElement.textContent = getResultModalTitle(type);
-        resultModalMessageElement.textContent = message;
-
-        resultModalElement.classList.add('open');
-        resultModalResolver = resolve;
-        syncBodyScrollLock();
-      });
-    }
-
-    function closeResultModal() {
-      const resultModalElement = document.querySelector('#result-modal');
-      resultModalElement.classList.remove('open');
-
-      if (resultModalResolver) {
-        const resolve = resultModalResolver;
-        resultModalResolver = null;
-        resolve();
-      }
-
-      syncBodyScrollLock();
-    }
-
-    function openConfirmModal({
-      title,
-      message,
-      confirmText = '확인',
-      cancelText = '취소',
-      onConfirm = null,
-    }) {
-      const confirmModalElement = document.querySelector('#confirm-modal');
-      const confirmModalTitleElement = document.querySelector('#confirm-modal-title');
-      const confirmModalMessageElement = document.querySelector('#confirm-modal-message');
-      const confirmModalConfirmButtonElement = document.querySelector('#confirm-modal-confirm-button');
-      const confirmModalCancelButtonElement = document.querySelector('#confirm-modal-cancel-button');
-
-      confirmModalTitleElement.textContent = title;
-      confirmModalMessageElement.textContent = message;
-      confirmModalConfirmButtonElement.textContent = confirmText;
-      confirmModalCancelButtonElement.textContent = cancelText;
-      confirmModalHandler = onConfirm;
-
-      confirmModalElement.classList.add('open');
-      syncBodyScrollLock();
-    }
-
-    function closeConfirmModal() {
-      const confirmModalElement = document.querySelector('#confirm-modal');
-      confirmModalElement.classList.remove('open');
-      confirmModalHandler = null;
-      syncBodyScrollLock();
-    }
-
-    async function handleConfirmModalAction() {
-      if (!confirmModalHandler) {
-        closeConfirmModal();
-        return;
-      }
-
-      const handler = confirmModalHandler;
-      closeConfirmModal();
-      await handler();
-    }
 
     function getStatusMeta(status) {
       const metaMap = {
@@ -844,43 +529,9 @@
     function configurePageByViewMode() {
       const backLinkElement = document.querySelector('#back-link');
       const backLinkTextElement = document.querySelector('#back-link-text');
-      const desktopPrimaryElement = document.querySelector('#desktop-nav-primary');
-      const drawerPrimaryElement = document.querySelector('#drawer-nav-primary');
-      const desktopSecondaryElement = document.querySelector('#desktop-nav-secondary');
-      const drawerSecondaryElement = document.querySelector('#drawer-nav-secondary');
 
       backLinkElement.href = getBackLinkHref();
       backLinkTextElement.textContent = getBackLinkText();
-
-      if (isVolunteerView()) {
-        desktopPrimaryElement.textContent = '호스팅 탐색';
-        desktopPrimaryElement.href = '/pages/hosting-match.html';
-        desktopPrimaryElement.classList.add('active');
-
-        drawerPrimaryElement.textContent = '호스팅 탐색';
-        drawerPrimaryElement.href = '/pages/hosting-match.html';
-        drawerPrimaryElement.classList.add('active');
-
-        desktopSecondaryElement.textContent = '내 매칭';
-        desktopSecondaryElement.href = '/pages/my-matches.html';
-
-        drawerSecondaryElement.textContent = '내 매칭';
-        drawerSecondaryElement.href = '/pages/my-matches.html';
-      } else {
-        desktopPrimaryElement.textContent = '호스팅 관리';
-        desktopPrimaryElement.href = '/pages/hostings.html';
-        desktopPrimaryElement.classList.add('active');
-
-        drawerPrimaryElement.textContent = '호스팅 관리';
-        drawerPrimaryElement.href = '/pages/hostings.html';
-        drawerPrimaryElement.classList.add('active');
-
-        desktopSecondaryElement.textContent = '내 매칭';
-        desktopSecondaryElement.href = '/pages/my-matches.html';
-
-        drawerSecondaryElement.textContent = '내 매칭';
-        drawerSecondaryElement.href = '/pages/my-matches.html';
-      }
     }
 
     function renderProfileHeader() {
@@ -1162,49 +813,13 @@
       }
     });
 
-    document.querySelector('#result-modal-confirm-button')?.addEventListener('click', () => {
-      closeResultModal();
-    });
-
-    document.querySelector('#close-result-modal-button')?.addEventListener('click', () => {
-      closeResultModal();
-    });
-
-    document.querySelector('#result-modal')?.addEventListener('click', (event) => {
-      if (event.target === event.currentTarget) {
-        closeResultModal();
-      }
-    });
-
-    document.querySelector('#close-confirm-modal-button')?.addEventListener('click', () => {
-      closeConfirmModal();
-    });
-
-    document.querySelector('#confirm-modal-cancel-button')?.addEventListener('click', () => {
-      closeConfirmModal();
-    });
-
-    document.querySelector('#confirm-modal-confirm-button')?.addEventListener('click', async () => {
-      await handleConfirmModalAction();
-    });
-
-    document.querySelector('#confirm-modal')?.addEventListener('click', (event) => {
-      if (event.target === event.currentTarget) {
-        closeConfirmModal();
-      }
-    });
-
     document.addEventListener('keydown', (event) => {
-      if (event.key !== 'Escape') {
-        return;
-      }
-
-      if (document.querySelector('#result-modal').classList.contains('open')) {
+      if (event.key !== 'Escape') return;
+      if (document.getElementById('result-modal')?.classList.contains('open')) {
         closeResultModal();
         return;
       }
-
-      if (document.querySelector('#confirm-modal').classList.contains('open')) {
+      if (document.getElementById('confirm-modal')?.classList.contains('open')) {
         closeConfirmModal();
       }
     });
@@ -1230,6 +845,10 @@
 
       configurePageByViewMode();
       await loadDetail();
+
+      if (currentUser.user_role === 'admin') {
+        document.querySelector('.action-row')?.remove();
+      }
     }
 
     bootstrap();

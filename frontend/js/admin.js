@@ -20,14 +20,6 @@ async function checkAdmin() {
   return true;
 }
 
-// ── 토스트 ───────────────────────────────────────────────
-function showToast(msg, type = '') {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.className = 'toast show ' + type;
-  setTimeout(() => { el.className = 'toast'; }, 2500);
-}
-
 // ── 유틸 ────────────────────────────────────────────────
 function formatDate(iso) {
   if (!iso) return '-';

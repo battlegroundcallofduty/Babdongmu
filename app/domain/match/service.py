@@ -9,7 +9,12 @@ from sqlalchemy.orm import selectinload
 
 from app.domain.hosting.models import AlarmType, Hosting, HostingStatus
 from app.domain.match.models import MatchingInfo, MatchStatus
-from app.domain.match.schemas import MyMatchCheckResponse, MyMatchListResponse, MyMatchResponse
+from app.domain.match.schemas import (
+    MyMatchCheckResponse,
+    MyMatchListResponse,
+    MyMatchResponse,
+    VolunteerStatsResponse,
+)
 from app.domain.review.models import Review
 from app.domain.senior.models import Senior
 from app.services.sms import send_sms
@@ -302,3 +307,27 @@ async def check_out(db: AsyncSession, senior_id: int, vt_id: int) -> MatchingInf
     await db.commit()
 
     return match
+
+
+async def get_volunteer_stats(db: AsyncSession, vt_id: int) -> VolunteerStatsResponse:
+    """봉사자 마이페이지 통계를 조회합니다."""
+
+    match_row = (await db.execute(
+        select(
+            func.coalesce(func.sum(MatchingInfo.actual_volunteer_time), 0)
+            .label("total_volunteer_minutes"),
+            func.count().filter(MatchingInfo.check_in_time.is_not(None)).label("visit_count"),
+            func.count(MatchingInfo.senior_id.distinct()).label("senior_count"),
+        ).where(MatchingInfo.vt_id == vt_id)
+    )).one()
+
+    review_count: int = (await db.execute(
+        select(func.count()).where(Review.vt_id == vt_id)
+    )).scalar_one()
+
+    return VolunteerStatsResponse(
+        total_volunteer_minutes=match_row.total_volunteer_minutes,
+        visit_count=match_row.visit_count,
+        review_count=review_count,
+        senior_count=match_row.senior_count,
+    )

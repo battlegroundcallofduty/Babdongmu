@@ -48,8 +48,9 @@
       border-radius: var(--radius-full);
       flex-shrink: 0;
     }
-    .badge-approved  { background: #EDF5ED; color: #3A6B39; }
-    .badge-cancelled { background: #F0EBE6; color: #6B5E53; }
+    .badge-approved    { background: #EDF5ED; color: #3A6B39; }
+    .badge-cancelled   { background: #F0EBE6; color: #6B5E53; }
+    .badge-not-visited { background: #FDF5E6; color: #8B6914; }
     .badge-pending   { background: #FDF5E6; color: #8B6914; }
 
     .time-item {
@@ -78,6 +79,20 @@
       color: var(--text);
     }
     .time-unit { font-size: 13px; color: var(--muted); }
+    .btn-stepper {
+      width: 40px;
+      height: 32px;
+      border: 1px solid var(--primary);
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--primary);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background 150ms ease-out, color 150ms ease-out;
+    }
+    .btn-stepper:hover { background: var(--primary); color: #fff; }
 
     .stats-grid {
       display: grid;
@@ -90,24 +105,6 @@
       .doc-item, .time-item { flex-wrap: wrap; }
     }
 
-    .toast {
-      position: fixed;
-      bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%) translateY(80px);
-      background: var(--text);
-      color: #fff;
-      padding: 10px 20px;
-      border-radius: var(--radius-full);
-      font-size: 14px;
-      font-weight: 500;
-      z-index: 9999;
-      transition: transform 0.3s ease;
-      pointer-events: none;
-    }
-    .toast.show { transform: translateX(-50%) translateY(0); }
-    .toast.success { background: var(--secondary); }
-    .toast.error { background: var(--error); }
 
     .access-denied {
       display: none;
@@ -162,26 +159,8 @@
   </style>
 </head>
 <body>
-  <nav class="nav">
-    <div class="nav-inner">
-      <a href="/" class="nav-logo">
-        <svg class="nav-logo-icon" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="14" fill="#D4763C" opacity="0.12"/><path d="M8 18c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke="#D4763C" stroke-width="2" stroke-linecap="round"/><path d="M6 18h20v1c0 3.3-2.7 6-6 6h-8c-3.3 0-6-2.7-6-6v-1z" fill="#D4763C" opacity="0.2"/><path d="M13 14c-.5-2 .5-4 3-4s3.5 2 3 4" stroke="#5B8C5A" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/></svg>
-        밥동무
-      </a>
-      <ul class="nav-links">
-        <li><a href="/pages/admin.html" class="active">대시보드</a></li>
-        <li><a href="/pages/hostings.html">호스팅</a></li>
-        <li><a href="#" onclick="logout()">로그아웃</a></li>
-      </ul>
-      <button class="nav-toggle" onclick="toggleNav()" aria-label="메뉴"><span></span><span></span><span></span></button>
-    </div>
-  </nav>
-  <div class="nav-drawer" id="navDrawer" onclick="closeNav(event)">
-    <div class="nav-drawer-content">
-      <a href="/pages/admin.html" class="active">대시보드</a>
-      <a href="/pages/hostings.html">호스팅</a>
-      <a href="#" onclick="logout()">로그아웃</a>
-    </div>
+<div id="nav-placeholder"></div>
+
   </div>
 
   <main class="container" style="padding-top: var(--space-xl); padding-bottom: var(--space-3xl);">
@@ -261,7 +240,6 @@
 
   <div id="footer-placeholder"></div>
 
-  <div class="toast" id="toast"></div>
 
   <!-- 반려사유 입력 모달 -->
   <div class="modal-overlay" id="rejectModal">
@@ -283,8 +261,8 @@
   </div>
 
   <script src="/js/api.js"></script>
-  <script src="/js/admin.js"></script>
   <script src="/js/base.js"></script>
+  <script src="/js/admin.js"></script>
   <script src="/js/footer.js"></script>
   <script>
     // ── XSS 방어 헬퍼 ───────────────────────────────────────
@@ -296,14 +274,6 @@
     }
 
     // ── 네비게이션 ──────────────────────────────────────────
-    function toggleNav() {
-      const t = document.querySelector('.nav-toggle');
-      const d = document.getElementById('navDrawer');
-      t.classList.toggle('active');
-      d.classList.toggle('open');
-      document.body.style.overflow = d.classList.contains('open') ? 'hidden' : '';
-    }
-    function closeNav(e) { if (e.target === e.currentTarget) toggleNav(); }
 
     // ── 통계 ────────────────────────────────────────────────
     async function loadStats() {
@@ -321,8 +291,8 @@
     }
 
     // ── 최근 매칭 신청 ───────────────────────────────────────
-    const STATUS_LABEL = { approved: '확정', cancelled: '취소', pending: '대기', rejected: '반려' };
-    const STATUS_BADGE  = { approved: 'badge-approved', cancelled: 'badge-cancelled', pending: 'badge-pending', rejected: 'badge-cancelled' };
+    const STATUS_LABEL = { approved: '확정', cancelled: '취소', not_visited: '미방문' };
+    const STATUS_BADGE  = { approved: 'badge-approved', cancelled: 'badge-cancelled', not_visited: 'badge-not-visited' };
 
     async function loadRecentMatches() {
       const wrap = document.getElementById('recent-match-list');
@@ -550,13 +520,15 @@
           nameDiv.textContent = `${m.volunteer_name} → ${m.senior_name} 어르신`;
 
           // 실제 체크인→체크아웃 경과 시간 계산
-          const actualMinutes = (m.check_in_time && m.check_out_time)
-            ? Math.floor((new Date(m.check_out_time) - new Date(m.check_in_time)) / 60000)
+          const elapsedMs = (m.check_in_time && m.check_out_time)
+            ? new Date(m.check_out_time) - new Date(m.check_in_time)
             : null;
+          const rawMinutes = elapsedMs != null ? Math.floor(elapsedMs / 60000) : null;
+          const roundedMinutes = elapsedMs != null ? Math.floor(elapsedMs / 60000 / 30) * 30 : null;
 
           const metaDiv = document.createElement('div');
           metaDiv.className = 'time-meta';
-          metaDiv.textContent = `체크인 ${formatDatetime(m.check_in_time)} · 체크아웃 ${formatDatetime(m.check_out_time)} · 실제 ${actualMinutes ?? '-'}분`;
+          metaDiv.textContent = `체크인 ${formatDatetime(m.check_in_time)} · 체크아웃 ${formatDatetime(m.check_out_time)} · 실제 ${rawMinutes ?? '-'}분`;
 
           info.appendChild(nameDiv);
           info.appendChild(metaDiv);
@@ -564,25 +536,39 @@
           const inputWrap = document.createElement('div');
           inputWrap.className = 'time-input-wrap';
 
+          const btnMinus = document.createElement('button');
+          btnMinus.className = 'btn-stepper';
+          btnMinus.type = 'button';
+          btnMinus.textContent = '-30';
+          btnMinus.onclick = () => stepTime(m.matching_id, -30);
+
           const input = document.createElement('input');
           input.className = 'time-input';
           input.type = 'number';
           input.min = '0';
           input.placeholder = '0';
           input.id = `time-input-${m.matching_id}`;
-          if (actualMinutes != null) input.value = actualMinutes;
+          if (roundedMinutes != null) input.value = roundedMinutes;
 
           const unit = document.createElement('span');
           unit.className = 'time-unit';
           unit.textContent = '분';
+
+          const btnPlus = document.createElement('button');
+          btnPlus.className = 'btn-stepper';
+          btnPlus.type = 'button';
+          btnPlus.textContent = '+30';
+          btnPlus.onclick = () => stepTime(m.matching_id, 30);
 
           const btn = document.createElement('button');
           btn.className = 'btn btn-primary btn-sm';
           btn.textContent = '부여';
           btn.onclick = () => grantTime(m.matching_id);
 
+          inputWrap.appendChild(btnMinus);
           inputWrap.appendChild(input);
           inputWrap.appendChild(unit);
+          inputWrap.appendChild(btnPlus);
           inputWrap.appendChild(btn);
 
           item.appendChild(info);
@@ -597,6 +583,12 @@
             <p>목록을 불러올 수 없어요</p>
           </div>`;
       }
+    }
+
+    function stepTime(matchingId, delta) {
+      const input = document.getElementById(`time-input-${matchingId}`);
+      const current = parseInt(input.value, 10) || 0;
+      input.value = Math.max(0, current + delta);
     }
 
     async function grantTime(matchingId) {
