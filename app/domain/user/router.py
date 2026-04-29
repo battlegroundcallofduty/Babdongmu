@@ -1,6 +1,7 @@
 """유저 API 엔드포인트."""
 
 import asyncio
+import logging
 import secrets
 from datetime import timedelta
 
@@ -55,6 +56,8 @@ from app.services.r2 import (
     get_presigned_url,
     upload_image,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -269,7 +272,7 @@ async def get_document_url(
 @router.get("/kakao/login")
 async def kakao_login(request: Request):
     """카카오 로그인 페이지로 redirect"""
-    state = secrets.token_urlsafe(32)  # 32자 난수 생성
+    state = secrets.token_urlsafe(32)  # 32바이트 난수 생성
     kakao_auth_url = (
         f"https://kauth.kakao.com/oauth/authorize"
         f"?client_id={settings.KAKAO_CLIENT_ID}"
@@ -334,14 +337,15 @@ async def kakao_callback(
             )
             user_resp.raise_for_status()
             kakao_id = str(user_resp.json()["id"])
-    except (httpx.HTTPError, KeyError):
+    except Exception:
+        logger.exception("카카오 콜백 처리 중 오류")
         return RedirectResponse(url=f"{frontend_base}/pages/login.html?kakao_error=1")
 
     # 3) 기존 유저 → JWT 발급 후 로그인 처리
     user = await get_user_by_kakao_id(kakao_id, db)
     if user is not None:
         access_token = create_access_token({"sub": str(user.user_id)})
-        return RedirectResponse(url=f"{frontend_base}/pages/login.html?kakao_token={access_token}")
+        return RedirectResponse(url=f"{frontend_base}/pages/login.html#kakao_token={access_token}")
 
     # 4) 신규 유저 → setup_token(10분) 발급 후 카카오 전용 가입 페이지로
     setup_token = create_access_token(

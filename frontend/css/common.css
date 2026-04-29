@@ -503,6 +503,18 @@ h3 { font-size: 18px; line-height: 1.4; }
 .badge-done { background: #F0EBE6; color: #6B5E53; }
 .badge-pending { background: #FDF5E6; color: #8B6914; }
 .badge-cancelled { background: #FDEDED; color: #8B2C2C; }
+.badge-kakao {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  background: #FEE500;
+  color: #181600;
+  border-radius: 4px;
+  padding: 2px 7px;
+  vertical-align: middle;
+  letter-spacing: 0.02em;
+  margin-left: 6px;
+}
 
 /* --- Footer --- */
 .footer {

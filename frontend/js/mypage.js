@@ -304,7 +304,7 @@ document.getElementById('docs-list')?.addEventListener('change', async (e) => {
       document.getElementById('row-email')?.classList.add('hidden');
       document.getElementById('row-phone')?.classList.add('hidden');
       document.getElementById('profile-name').innerHTML =
-        `${me.name} <span style="display:inline-block; font-size:0.65rem; font-weight:700; background:#FEE500; color:#181600; border-radius:4px; padding:2px 7px; vertical-align:middle; letter-spacing:0.02em; margin-left:6px;">카카오</span>`;
+        `${me.name} <span class="badge-kakao">카카오</span>`;
     }
     // 토큰 없거나 만료되면 비밀번호 변경폼 그냥 표시
 
