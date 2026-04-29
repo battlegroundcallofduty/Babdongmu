@@ -17,7 +17,7 @@ from app.domain.match.schemas import VolunteerStatsResponse
 from app.domain.match.service import get_volunteer_stats
 from app.domain.senior.schemas import GuardianStatsResponse
 from app.domain.senior.service import get_guardian_stats, list_seniors_by_guardian
-from app.domain.user.dependency import get_current_user
+from app.domain.user.dependency import get_current_user, require_guardian, require_volunteer
 from app.domain.user.models import DocumentType, User, UserRole
 from app.domain.user.schemas import (
     DocumentResponse,
@@ -114,20 +114,22 @@ async def get_me(current_user: User = Depends(get_current_user)):
     return current_user
 
 
-@router.get("/me/stats", response_model=VolunteerStatsResponse | GuardianStatsResponse)
-async def get_my_stats(
-    current_user: User = Depends(get_current_user),
+@router.get("/me/stats/volunteer", response_model=VolunteerStatsResponse)
+async def get_my_volunteer_stats(
+    current_user: User = Depends(require_volunteer),
     db: AsyncSession = Depends(get_db),
-) -> VolunteerStatsResponse | GuardianStatsResponse:
-    """역할별 마이페이지 통계 반환 (봉사자/보호자)."""
-    if current_user.user_role == UserRole.VOLUNTEER:
-        return await get_volunteer_stats(db=db, vt_id=current_user.user_id)
-    if current_user.user_role == UserRole.GUARDIAN:
-        return await get_guardian_stats(session=db, guardian_id=current_user.user_id)
-    raise HTTPException(
-        status_code=status.HTTP_403_FORBIDDEN,
-        detail="통계를 제공하지 않는 역할입니다.",
-    )
+) -> VolunteerStatsResponse:
+    """봉사자 마이페이지 통계 반환."""
+    return await get_volunteer_stats(db=db, vt_id=current_user.user_id)
+
+
+@router.get("/me/stats/guardian", response_model=GuardianStatsResponse)
+async def get_my_guardian_stats(
+    current_user: User = Depends(require_guardian),
+    db: AsyncSession = Depends(get_db),
+) -> GuardianStatsResponse:
+    """보호자 마이페이지 통계 반환."""
+    return await get_guardian_stats(session=db, guardian_id=current_user.user_id)
 
 
 # ── 마이페이지 ───────────────────
