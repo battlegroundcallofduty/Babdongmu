@@ -1,4 +1,6 @@
 const params = new URLSearchParams(window.location.search);
+// url의 # 이후 전체 문자열 + '#' 제거
+const hashParams = new URLSearchParams(window.location.hash.slice(1));
 
 // 회원가입 직후 넘어온 경우 안내 메시지 표시
 if (params.get('registered') === '1') {
@@ -13,8 +15,10 @@ if (params.get('kakao_error') === '1') {
 }
 
 // 카카오 로그인 성공 (기존 유저): 콜백에서 kakao_token 받아서 로그인 처리
-const kakaoToken = params.get('kakao_token');
+const kakaoToken = hashParams.get('kakao_token');
 if (kakaoToken) {
+  // 토큰 읽은후 주소창에서 #kakao_token=... 제거
+  history.replaceState(null, '', window.location.pathname + window.location.search);
   (async () => {
     const errorMsg = document.getElementById('error-msg');
     try {
