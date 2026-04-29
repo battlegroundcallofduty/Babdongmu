@@ -9,10 +9,26 @@ from sqlalchemy.orm import selectinload
 
 from app.domain.hosting.models import AlarmType, Hosting, HostingStatus
 from app.domain.match.models import MatchingInfo, MatchStatus
-from app.domain.match.schemas import MyMatchResponse
+from app.domain.match.schemas import MyMatchCheckResponse, MyMatchListResponse, MyMatchResponse
 from app.domain.review.models import Review
 from app.domain.senior.models import Senior
 from app.services.sms import send_sms
+
+
+async def check_my_match(db: AsyncSession, hosting_id: int, vt_id: int) -> MyMatchCheckResponse:
+    """봉사자의 호스팅 신청 여부를 조회합니다."""
+    result = await db.execute(
+        select(MatchingInfo).where(
+            MatchingInfo.hosting_id == hosting_id,
+            MatchingInfo.vt_id == vt_id,
+            MatchingInfo.match_status != MatchStatus.CANCELLED,
+        )
+    )
+    match = result.scalar_one_or_none()
+    return MyMatchCheckResponse(
+        is_applied=match is not None,
+        matching_id=match.matching_id if match else None,
+    )
 
 
 async def create_match(db: AsyncSession, hosting_id: int, vt_id: int) -> MatchingInfo:
@@ -73,7 +89,7 @@ async def list_matches_by_volunteer(
     is_completed: bool,
     page: int = 1,
     size: int = 10,
-) -> list[MyMatchResponse]:
+) -> MyMatchListResponse:
     """봉사자의 매칭 목록을 예정/완료 구분 및 페이징하여 조회합니다."""
     query = (
         select(MatchingInfo, Hosting, Senior)
@@ -98,9 +114,19 @@ async def list_matches_by_volunteer(
             MatchingInfo.match_status != MatchStatus.NOT_VISITED,
         )
 
-    query = query.offset((page - 1) * size).limit(size)
+    # 전체 개수 조회
+    count_result = await db.execute(
+        select(func.count(MatchingInfo.matching_id))
+        .join(Hosting, MatchingInfo.hosting_id == Hosting.hosting_id)
+        .where(query.whereclause)
+    )
+    total = count_result.scalar() or 0
 
-    result = await db.execute(query)
+    # 목록 조회 (페이징) — 예정: 가까운 날짜 먼저, 완료: 최근 날짜 먼저
+    order = Hosting.hosting_at.asc() if not is_completed else Hosting.hosting_at.desc()
+    result = await db.execute(
+        query.order_by(order).offset((page - 1) * size).limit(size)
+    )
     rows = result.all()
 
     # 후기 여부 조회 (matching_id → review_id 맵)
@@ -114,7 +140,7 @@ async def list_matches_by_volunteer(
         )
         review_id_map = {row.matching_id: row.review_id for row in review_result.all()}
 
-    return [
+    items = [
         MyMatchResponse(
             matching_id=match.matching_id,
             match_status=match.match_status,
@@ -132,6 +158,8 @@ async def list_matches_by_volunteer(
         )
         for match, hosting, senior in rows
     ]
+
+    return MyMatchListResponse(total=total, items=items)
 
 
 async def cancel_match(db: AsyncSession, matching_id: int, vt_id: int) -> MatchingInfo:
