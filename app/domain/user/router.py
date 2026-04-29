@@ -1,10 +1,11 @@
 """유저 API 엔드포인트."""
 
 import asyncio
+import secrets
 from datetime import timedelta
 
 import httpx
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
 from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -247,25 +248,45 @@ async def get_document_url(
 
 # ── 카카오 OAuth(카카오 계정으로 가입/로그인) ───────────────────
 @router.get("/kakao/login")
-async def kakao_login():
+async def kakao_login(request: Request):
     """카카오 로그인 페이지로 redirect"""
+    state = secrets.token_urlsafe(32)  # 32자 난수 생성
     kakao_auth_url = (
         f"https://kauth.kakao.com/oauth/authorize"
         f"?client_id={settings.KAKAO_CLIENT_ID}"
         f"&redirect_uri={settings.KAKAO_REDIRECT_URI}"
         f"&response_type=code"
+        f"&state={state}"
     )
-    return RedirectResponse(url=kakao_auth_url)
+    # response 객체 + 쿠키
+    response = RedirectResponse(url=kakao_auth_url)
+    response.set_cookie(
+        "oauth_state",
+        state,
+        httponly=True,
+        secure=request.url.scheme == "https",
+        samesite="lax",  # 외부(카카오) -> 밥동무
+        max_age=600,
+    )
+    return response
 
 
 @router.get("/kakao/callback")
 async def kakao_callback(
+    request: Request,
     code: str | None = None,
     error: str | None = None,
+    state: str | None = None,
     db: AsyncSession = Depends(get_db),
 ):
     """카카오 콜백: code → kakao_id 조회 → 신규유저 / 기존유저"""
     frontend_base = settings.FRONTEND_BASE_URL
+
+    # state 검증: 유저가 시작한 로그인 흐름인지 확인 (CSRF 방어)
+    cookie_state = request.cookies.get("oauth_state")
+    # 카카오가 state 안보냈거나, 쿠키 없거나, state값 다를때: 에러
+    if not state or not cookie_state or state != cookie_state:
+        return RedirectResponse(url=f"{frontend_base}/pages/login.html?kakao_error=1")
 
     # 유저가 카카오 로그인을 취소한 경우(또는 에러)
     if error or code is None:
