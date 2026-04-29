@@ -16,6 +16,7 @@ from app.domain.hosting.service import (
 from app.domain.user.dependency import (
     get_current_user,
     require_guardian,
+    require_volunteer,
 )
 from app.domain.user.models import CertFlag, User, UserRole
 
@@ -90,23 +91,14 @@ async def list_public_hostings_endpoint(
 async def get_public_hosting_detail_endpoint(
     hosting_id: int,
     session: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_volunteer: User = Depends(require_volunteer),
 ) -> HostingResponse:
-    """승인된 봉사자 또는 관리자가 조회 가능한 공개 호스팅 상세 정보를 조회합니다."""
-
-    is_approved_volunteer = (
-        current_user.user_role == UserRole.VOLUNTEER
-        and current_user.cert_flag == CertFlag.APPROVED
-    )
-    if current_user.user_role != UserRole.ADMIN and not is_approved_volunteer:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="승인된 봉사자만 호스팅을 탐색할 수 있습니다.",
-        )
+    """승인된 봉사자가 조회 가능한 공개 호스팅 상세 정보를 조회합니다."""
 
     return await get_public_hosting_detail(
         session=session,
         hosting_id=hosting_id,
+        volunteer_id=current_volunteer.user_id,
     )
 
 
