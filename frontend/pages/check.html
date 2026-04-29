@@ -129,8 +129,6 @@
       </div>
       <h2 class="check-title">방문 확인</h2>
       <p class="check-desc">체크인 또는 체크아웃 버튼을 눌러주세요.</p>
-      <p id="checkin-time" style="font-size:13px; color:var(--success); margin-bottom:4px; min-height:20px;"></p>
-      <p id="checkout-time" style="font-size:13px; color:var(--success); margin-bottom:8px; min-height:20px;"></p>
       <div class="check-buttons">
         <button class="btn-checkin" id="checkin-btn">
           체크인
@@ -203,12 +201,12 @@
       setLoading('checkin-btn', true);
       try {
         await api(`/matches/${seniorId}/checkin`, { method: 'PATCH' });
-        document.querySelector('#checkin-time').textContent = `체크인 완료 · ${getCurrentTime()}`;
-        document.querySelector('#checkin-btn').disabled = true;
+        const btn = document.querySelector('#checkin-btn');
+        btn.textContent = `체크인 완료 · ${getCurrentTime()}`;
+        btn.disabled = true;
         showToast('방문 체크인이 완료되었어요!', 'success');
       } catch (e) {
         showToast(e.message, 'error');
-      } finally {
         setLoading('checkin-btn', false);
       }
     }
@@ -218,12 +216,12 @@
       setLoading('checkout-btn', true);
       try {
         await api(`/matches/${seniorId}/checkout`, { method: 'PATCH' });
-        document.querySelector('#checkout-time').textContent = `체크아웃 완료 · ${getCurrentTime()}`;
-        document.querySelector('#checkout-btn').disabled = true;
+        const btn = document.querySelector('#checkout-btn');
+        btn.textContent = `체크아웃 완료 · ${getCurrentTime()}`;
+        btn.disabled = true;
         showToast('방문이 완료되었어요!', 'success');
       } catch (e) {
         showToast(e.message, 'error');
-      } finally {
         setLoading('checkout-btn', false);
       }
     }
