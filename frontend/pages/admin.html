@@ -377,7 +377,11 @@
 
           const metaDiv = document.createElement('div');
           metaDiv.className = 'doc-meta';
-          metaDiv.textContent = `${user.user_email} · 가입일 ${formatDate(user.created_at)}`;
+          if (user.is_social_login) {
+            metaDiv.innerHTML = `<span class="badge-kakao">카카오</span> · 가입일 ${formatDate(user.created_at)}`;
+          } else {
+            metaDiv.textContent = `${user.user_email} · 가입일 ${formatDate(user.created_at)}`;
+          }
 
           const linksDiv = document.createElement('div');
           linksDiv.style.cssText = 'display:flex; gap:var(--space-sm); flex-wrap:wrap; margin-top:6px;';
