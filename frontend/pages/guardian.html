@@ -1108,7 +1108,6 @@
       document.querySelector('#detail-senior-id').value = senior.senior_id;
       document.querySelector('#detail-senior-name').value = `${senior.name} 어르신`;
       document.querySelector('#detail-senior-birth-date').value = formatBirthDate(senior.birth_date);
-      document.querySelector('#detail-senior-age').value = formatSeniorAge(senior);
       document.querySelector('#detail-senior-gender').value = getGenderLabel(senior.gender);
       document.querySelector('#detail-senior-max-people').value = `${senior.max_people}명`;
       document.querySelector('#detail-senior-road-address').value = senior.address.road_address || '-';
