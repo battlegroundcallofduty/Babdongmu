@@ -11,9 +11,14 @@ from sqlalchemy.orm import selectinload
 
 from app.domain.common.models import Address
 from app.domain.hosting.models import AlarmType, Hosting, HostingStatus
-from app.domain.hosting.schemas import HostingCreateRequest, HostingResponse
+from app.domain.hosting.schemas import (
+    HostingCreateRequest,
+    HostingResponse,
+    HostingSeniorResponse,
+)
 from app.domain.match.models import MatchingInfo, MatchStatus
 from app.domain.senior.models import Senior
+from app.domain.senior.schemas import calculate_age_from_birth_date
 from app.services.sms import send_sms
 
 logger = logging.getLogger(__name__)
@@ -80,6 +85,40 @@ async def get_guardian_hosting_by_id(
     return hosting
 
 
+async def get_senior_with_address_by_id(
+    session: AsyncSession,
+    senior_id: int | None,
+) -> Senior | None:
+    """어르신 주소를 포함해 어르신 정보를 조회합니다."""
+
+    if senior_id is None:
+        return None
+
+    result = await session.execute(
+        select(Senior)
+        .where(Senior.senior_id == senior_id)
+        .options(selectinload(Senior.address))
+    )
+    return result.scalar_one_or_none()
+
+
+def build_hosting_senior_response(senior: Senior | None) -> HostingSeniorResponse | None:
+    """호스팅 응답에 포함할 어르신 요약 응답을 생성합니다."""
+
+    if senior is None:
+        return None
+
+    return HostingSeniorResponse(
+        senior_id=senior.senior_id,
+        name=senior.name,
+        age=calculate_age_from_birth_date(senior.birth_date),
+        gender=senior.gender,
+        address=senior.address,
+        special_note=senior.special_note,
+        ai_summary=senior.ai_summary,
+    )
+
+
 def get_now_utc() -> datetime:
     """현재 UTC 시간을 반환합니다."""
 
@@ -131,20 +170,19 @@ async def get_current_people_count_map(
         .group_by(MatchingInfo.hosting_id)
     )
 
-    return {
-        hosting_id: current_people
-        for hosting_id, current_people in result.all()
-    }
+    return {hosting_id: current_people for hosting_id, current_people in result.all()}
 
 
 def build_hosting_response(
     hosting: Hosting,
     current_people: int = 0,
+    senior: Senior | None = None,
 ) -> HostingResponse:
-    """현재 모집 인원을 포함한 호스팅 응답을 생성합니다."""
+    """현재 모집 인원과 어르신 요약 정보를 포함한 호스팅 응답을 생성합니다."""
 
     response = HostingResponse.model_validate(hosting)
     response.current_people = current_people
+    response.senior = build_hosting_senior_response(senior)
     return response
 
 
@@ -299,8 +337,17 @@ async def run_hosting_status_scheduler(
         if new_status in {HostingStatus.FAILED, HostingStatus.FIXED}:
             vt_ids = await get_approved_volunteer_ids(session, hosting.hosting_id)
             senior = await session.get(Senior, hosting.senior_id)
-            alarm_type = AlarmType.DELETE if new_status == HostingStatus.FAILED else AlarmType.MATCH
-            notification_map[hosting.hosting_id] = (alarm_type, senior.guardian_id, vt_ids)
+            if senior is not None:
+                alarm_type = (
+                    AlarmType.DELETE
+                    if new_status == HostingStatus.FAILED
+                    else AlarmType.MATCH
+                )
+                notification_map[hosting.hosting_id] = (
+                    alarm_type,
+                    senior.guardian_id,
+                    vt_ids,
+                )
 
         if new_status in {HostingStatus.FAILED, HostingStatus.CLOSED}:
             await mark_matches_not_visited(
@@ -416,8 +463,9 @@ async def create_hosting(
         .options(selectinload(Hosting.address))
     )
     hosting = result.scalar_one()
+    senior = await get_senior_with_address_by_id(session, hosting.senior_id)
 
-    return build_hosting_response(hosting=hosting, current_people=0)
+    return build_hosting_response(hosting=hosting, current_people=0, senior=senior)
 
 
 async def list_hostings_by_guardian(
@@ -467,10 +515,12 @@ async def get_hosting_detail(
         session=session,
         hosting_id=hosting.hosting_id,
     )
+    senior = await get_senior_with_address_by_id(session, hosting.senior_id)
 
     return build_hosting_response(
         hosting=hosting,
         current_people=current_people,
+        senior=senior,
     )
 
 
@@ -522,7 +572,6 @@ async def cancel_hosting(
     if sms_tasks:
         await session.commit()
 
-    # commit 후 address relationship 포함해 재조회
     hosting = await get_guardian_hosting_by_id(
         session=session,
         guardian_id=guardian_id,
@@ -532,10 +581,12 @@ async def cancel_hosting(
         session=session,
         hosting_id=hosting.hosting_id,
     )
+    senior = await get_senior_with_address_by_id(session, hosting.senior_id)
 
     return build_hosting_response(
         hosting=hosting,
         current_people=current_people,
+        senior=senior,
     )
 
 
@@ -586,9 +637,10 @@ async def get_public_hosting_detail(
 
     stmt = (
         select(Hosting)
-        .where(Hosting.hosting_id == hosting_id,
-               Hosting.hosting_status.in_(visible_statuses),
-               )
+        .where(
+            Hosting.hosting_id == hosting_id,
+            Hosting.hosting_status.in_(visible_statuses),
+        )
         .options(selectinload(Hosting.address))
     )
 
@@ -605,8 +657,10 @@ async def get_public_hosting_detail(
         session=session,
         hosting_id=hosting.hosting_id,
     )
+    senior = await get_senior_with_address_by_id(session, hosting.senior_id)
 
     return build_hosting_response(
         hosting=hosting,
         current_people=current_people,
+        senior=senior,
     )

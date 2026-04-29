@@ -7,8 +7,7 @@
   <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" rel="stylesheet">
   <link rel="stylesheet" href="/css/common.css">
   <style>
-    .hidden { display: none !important; }
-
+    /* hostings 페이지 고유 스타일 */
     .hosting-page-header {
       display: flex;
       align-items: flex-start;
@@ -24,215 +23,20 @@
       justify-content: flex-end;
     }
 
-    .filter-bar {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 12px;
-      margin-bottom: 24px;
-    }
-
-    .hosting-card {
-      display: block;
-      text-decoration: none;
-      color: inherit;
-      height: 100%;
-      cursor: pointer;
-    }
-
-    .hosting-card .card-body {
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-    }
-
-    .hosting-card:focus-visible {
-      outline: 3px solid rgba(212, 118, 60, 0.35);
-      outline-offset: 4px;
-    }
-
-    .hosting-header {
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-      margin-bottom: 16px;
-    }
-
-    .hosting-avatar {
-      width: 44px;
-      height: 44px;
-      border-radius: 999px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #fff;
-      font-size: 20px;
-      font-weight: 700;
-      background: linear-gradient(135deg, #D4763C, #5B8C5A);
-      flex-shrink: 0;
-    }
-
-    .hosting-header-text {
-      min-width: 0;
-      flex: 1;
-    }
-
-    .hosting-name {
-      display: block;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      font-size: 18px;
-      font-weight: 700;
-      line-height: 1.45;
-      color: #2C2420;
-      margin-bottom: 6px;
-      word-break: keep-all;
-    }
-
-    .hosting-address {
-      color: #8C7E73;
-      font-size: 14px;
-      line-height: 1.5;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: normal;
-      word-break: keep-all;
-    }
-
-    .hosting-status-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .hosting-status-row-after-menu {
-      margin-bottom: 14px;
-    }
-
-    .hosting-status-badge {
-      width: fit-content;
-    }
-
-    .hosting-menu {
-      display: block;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      font-size: 22px;
-      font-weight: 700;
-      line-height: 1.4;
-      color: #D4763C;
-      margin-bottom: 16px;
-      word-break: keep-all;
-    }
-
-    .hosting-meta {
-      display: block;
-      margin-bottom: 12px;
-      padding-top: 14px;
-      border-top: 1px solid #F2ECE6;
-    }
-
-    .hosting-meta-row {
-      display: flex;
-      align-items: flex-start;
-      gap: 8px;
-      min-width: 0;
-      color: #6B5E53;
-      font-size: 15px;
-      font-weight: 500;
-      line-height: 1.5;
-    }
-
-    .hosting-meta-row + .hosting-meta-row {
-      margin-top: 6px;
-    }
-
-    .hosting-meta-label {
-      min-width: 36px;
-      color: #8C7E73;
-      font-weight: 700;
-      flex-shrink: 0;
-    }
-
+    /* 관리 페이지에서는 meta-value를 한 줄로 자르고 helper도 ellipsis 적용 */
     .hosting-meta-value {
-      min-width: 0;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      word-break: keep-all;
     }
 
     .hosting-helper {
-      color: #8C7E73;
-      font-size: 14px;
-      font-weight: 500;
-      line-height: 1.5;
-      margin-bottom: 16px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
 
-    .hosting-card-actions {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-top: auto;
-    }
-
-    .hosting-card-actions .btn {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 999px;
-      padding: 6px 12px;
-      font-size: 13px;
-      font-weight: 700;
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
-
-    .badge-open { background: #EDF5ED; color: #3A6B39; }
-    .badge-full { background: #FDF5E6; color: #8B6914; }
-    .badge-failed { background: #FDECEC; color: #B44646; }
-    .badge-progress { background: #EEF3FF; color: #4269B4; }
-    .badge-closed { background: #F0EBE6; color: #6B5E53; }
-
-    .message-box {
-      display: none;
-      border-radius: 12px;
-      padding: 14px 16px;
-      margin-bottom: 16px;
-      border: 1px solid #E8E0D8;
-      background: #fff;
-    }
-
-    .message-box.show { display: block; }
-    .message-box.success { background: #F6FBF6; color: #2E5D2E; border-color: #D8EAD8; }
-    .message-box.error { background: #FFF6F6; color: #9A3838; border-color: #F1D0D0; }
-    .message-box.info { background: #F8F5F1; color: #6B5E53; }
-
-    .empty-state {
-      padding: 56px 24px;
-      text-align: center;
-    }
-
-    .empty-state-icon {
-      width: 80px;
-      height: 80px;
-      margin: 0 auto 16px;
-      color: #D4763C;
-    }
-
+    /* ---------- 호스팅 등록 모달 (페이지 고유) ---------- */
     .modal-overlay {
       position: fixed;
       inset: 0;
@@ -320,69 +124,7 @@
       color: #8C7E73;
     }
 
-    .alert-modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.45);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-      z-index: 60;
-      box-sizing: border-box;
-    }
-
-    .alert-modal-overlay.open {
-      display: flex;
-    }
-
-    .alert-modal {
-      width: min(100%, 420px);
-      background: #fff;
-      border-radius: 16px;
-      box-shadow: 0 20px 48px rgba(44, 36, 32, 0.18);
-      padding: 24px;
-    }
-
-    .alert-modal-title {
-      font-size: 20px;
-      font-weight: 700;
-      line-height: 1.4;
-      color: #2C2420;
-      margin-bottom: 8px;
-    }
-
-    .alert-modal-message {
-      font-size: 15px;
-      line-height: 1.6;
-      color: #6B5E53;
-      margin-bottom: 20px;
-      white-space: pre-wrap;
-      word-break: keep-all;
-    }
-
-    .alert-modal-actions {
-      display: flex;
-      justify-content: flex-end;
-    }
-
-    .alert-modal.success .alert-modal-title {
-      color: #2E5D2E;
-    }
-
-    .alert-modal.error .alert-modal-title {
-      color: #9A3838;
-    }
-
-    .alert-modal.info .alert-modal-title {
-      color: #6B5E53;
-    }
-
     @media (max-width: 768px) {
-      .filter-bar {
-        grid-template-columns: 1fr;
-      }
-
       .time-range {
         grid-template-columns: 1fr;
       }
@@ -395,17 +137,8 @@
         width: 100%;
       }
 
-      .page-actions .btn,
-      .hosting-card-actions .btn {
+      .page-actions .btn {
         width: 100%;
-      }
-
-      .hosting-name {
-        font-size: 17px;
-      }
-
-      .hosting-menu {
-        font-size: 20px;
       }
 
       .modal-overlay {
@@ -422,10 +155,6 @@
 
       .modal-body {
         padding: 16px 20px 20px;
-      }
-
-      .alert-modal {
-        padding: 20px;
       }
     }
   </style>
@@ -475,7 +204,6 @@
       </div>
     </div>
 
-
     <div class="filter-bar slide-up stagger-1">
       <select id="filter-senior" class="form-input">
         <option value="">전체 어르신</option>
@@ -512,6 +240,7 @@
     </div>
   </main>
 
+  <!-- 호스팅 등록 모달 (페이지 고유) -->
   <div class="modal-overlay" id="hosting-modal" role="dialog" aria-modal="true" aria-labelledby="hosting-modal-title">
     <div class="modal">
       <div class="modal-header">
@@ -534,7 +263,7 @@
 
           <div class="form-group">
             <label class="form-label" for="hosting-menu">메뉴</label>
-            <input class="form-input" type="text" id="hosting-menu" placeholder="그날의 식사 메뉴를 적어주세요." required>
+            <input class="form-input" type="text" id="hosting-menu" required placeholder="예: 김치찌개, 비빔밥">
           </div>
 
           <div class="form-group">
@@ -586,6 +315,7 @@
     </div>
   </div>
 
+  <!-- 공통 알림 모달 -->
   <div class="alert-modal-overlay" id="alert-modal" role="dialog" aria-modal="true" aria-labelledby="alert-modal-title">
     <div class="alert-modal info" id="alert-modal-panel">
       <div class="alert-modal-title" id="alert-modal-title">안내</div>
@@ -601,361 +331,76 @@
   <script src="/js/api.js"></script>
   <script type="module">
     import { requireRoles } from '/js/authGuard.js';
+    import {
+      KST_TIME_ZONE,
+      toggleNav,
+      closeNav,
+      parseApiDateTime,
+      buildHostingCard,
+      formatHostingPeopleText,
+      renderSigunguOptions,
+      showAlertModal,
+      closeAlertModal,
+      isAlertModalOpen,
+    } from '/js/hosting-shared.js';
 
-    const KST_TIME_ZONE = 'Asia/Seoul';
     const MIN_HOSTING_INTERVAL_DAYS = 7;
     const MIN_HOSTING_START_HOUR = 7;
     const MAX_HOSTING_START_HOUR = 20;
     const MAX_HOSTING_END_HOUR = 22;
 
-
     let seniorsCache = [];
     let hostingItems = [];
     let selectedSeniorIdFromQuery = '';
     let shouldOpenCreateModalFromQuery = false;
-    let alertModalResolve = null;
     let seniorHostingRuleMap = new Map();
-
-    function toggleNav() {
-      const toggleElement = document.querySelector('.nav-toggle');
-      const drawerElement = document.querySelector('#navDrawer');
-      toggleElement.classList.toggle('active');
-      drawerElement.classList.toggle('open');
-      document.body.style.overflow = drawerElement.classList.contains('open') ? 'hidden' : '';
-    }
-
-    function closeNav(event) {
-      if (event.target === event.currentTarget) {
-        toggleNav();
-      }
-    }
 
     window.toggleNav = toggleNav;
     window.closeNav = closeNav;
 
-    function isHostingModalOpen() {
-      return document.querySelector('#hosting-modal').classList.contains('open');
+    /* showMessage 별칭 — 기존 코드 호환 */
+    function showMessage(message, type = 'info') {
+      return showAlertModal(message, type);
     }
-
     function hideMessage() {
-      if (document.querySelector('#alert-modal').classList.contains('open')) {
+      if (isAlertModalOpen()) {
         closeAlertModal();
       }
     }
 
-    function getAlertModalTitle(type) {
-      if (type === 'success') {
-        return '완료';
-      }
-      if (type === 'error') {
-        return '오류';
-      }
-      return '안내';
-    }
-
-    function showAlertModal(message, type = 'info') {
-      return new Promise((resolve) => {
-        const alertModalElement = document.querySelector('#alert-modal');
-        const alertModalPanelElement = document.querySelector('#alert-modal-panel');
-        const alertModalTitleElement = document.querySelector('#alert-modal-title');
-        const alertModalMessageElement = document.querySelector('#alert-modal-message');
-
-        alertModalPanelElement.className = `alert-modal ${type}`;
-        alertModalTitleElement.textContent = getAlertModalTitle(type);
-        alertModalMessageElement.textContent = message;
-        alertModalElement.classList.add('open');
-        alertModalResolve = resolve;
-      });
-    }
-
-    function closeAlertModal() {
-      const alertModalElement = document.querySelector('#alert-modal');
-      alertModalElement.classList.remove('open');
-
-      if (alertModalResolve) {
-        const resolve = alertModalResolve;
-        alertModalResolve = null;
-        resolve();
-      }
-    }
-
-    function showMessage(message, type = 'info') {
-      return showAlertModal(message, type);
-    }
-
-    function getStatusMeta(status) {
-      const metaMap = {
-        'OPEN': { label: '신청가능', className: 'badge-open' },
-        'FULL': { label: '모집완료', className: 'badge-full' },
-        'FIXED': { label: '확정', className: 'badge-full' },
-        'FAILED': { label: '취소됨', className: 'badge-failed' },
-        'IN_PROGRESS': { label: '진행중', className: 'badge-progress' },
-        'CLOSED': { label: '완료', className: 'badge-closed' },
-      };
-
-      return metaMap[status] ?? { label: status ?? '-', className: 'badge-closed' };
-    }
+    /* ---------- 어르신 매핑 ---------- */
 
     function getSeniorMap() {
       return new Map(seniorsCache.map((senior) => [String(senior.senior_id), senior]));
     }
 
-    function escapeHtml(value) {
-      return String(value ?? '')
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;')
-        .replaceAll("'", '&#39;');
-    }
+    /* ---------- 카드 빌더 (공통 빌더에 옵션 주입) ---------- */
 
-    function parseApiDateTime(value) {
-      if (!value) {
-        return null;
-      }
-
-      if (value instanceof Date) {
-        return value;
-      }
-
-      if (typeof value === 'string') {
-        const normalizedValue = value.includes('T')
-          && !value.endsWith('Z')
-          && !/[+-]\d{2}:\d{2}$/.test(value)
-          ? `${value}Z`
-          : value;
-
-        return new Date(normalizedValue);
-      }
-
-      return new Date(value);
-    }
-
-    function formatDateTimeRange(hostingAt, hostingEnd) {
-      const startDate = parseApiDateTime(hostingAt);
-      const endDate = parseApiDateTime(hostingEnd);
-
-      if (!startDate || Number.isNaN(startDate.getTime()) || !endDate || Number.isNaN(endDate.getTime())) {
-        return '-';
-      }
-
-      const dateText = new Intl.DateTimeFormat('ko-KR', {
-        timeZone: KST_TIME_ZONE,
-        month: 'long',
-        day: 'numeric',
-        weekday: 'short',
-      }).format(startDate);
-
-      const startTimeText = new Intl.DateTimeFormat('ko-KR', {
-        timeZone: KST_TIME_ZONE,
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-      }).format(startDate);
-
-      const endTimeText = new Intl.DateTimeFormat('ko-KR', {
-        timeZone: KST_TIME_ZONE,
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-      }).format(endDate);
-
-      return `${dateText} · ${startTimeText} ~ ${endTimeText}`;
-    }
-
-    function formatHostingDate(hostingAt) {
-      const startDate = parseApiDateTime(hostingAt);
-
-      if (!startDate || Number.isNaN(startDate.getTime())) {
-        return '-';
-      }
-
-      return new Intl.DateTimeFormat('ko-KR', {
-        timeZone: KST_TIME_ZONE,
-        month: 'long',
-        day: 'numeric',
-        weekday: 'short',
-      }).format(startDate);
-    }
-
-    function formatHostingTimeRange(hostingAt, hostingEnd) {
-      const startDate = parseApiDateTime(hostingAt);
-      const endDate = parseApiDateTime(hostingEnd);
-
-      if (!startDate || Number.isNaN(startDate.getTime()) || !endDate || Number.isNaN(endDate.getTime())) {
-        return '-';
-      }
-
-      const startTimeText = new Intl.DateTimeFormat('ko-KR', {
-        timeZone: KST_TIME_ZONE,
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-      }).format(startDate);
-
-      const endTimeText = new Intl.DateTimeFormat('ko-KR', {
-        timeZone: KST_TIME_ZONE,
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-      }).format(endDate);
-
-      return `${startTimeText} ~ ${endTimeText}`;
-    }
-
-    function getHostingDurationHours(hostingAt, hostingEnd) {
-      const startDate = parseApiDateTime(hostingAt);
-      const endDate = parseApiDateTime(hostingEnd);
-
-      if (!startDate || Number.isNaN(startDate.getTime()) || !endDate || Number.isNaN(endDate.getTime())) {
-        return null;
-      }
-
-      const durationMs = endDate.getTime() - startDate.getTime();
-      const durationHours = durationMs / (60 * 60 * 1000);
-
-      if (!Number.isFinite(durationHours) || durationHours <= 0) {
-        return null;
-      }
-
-      return Number.isInteger(durationHours)
-        ? String(durationHours)
-        : durationHours.toFixed(1);
-    }
-
-    function formatDateTimeRangeWithDuration(hostingAt, hostingEnd) {
-      const dateTimeRangeText = formatDateTimeRange(hostingAt, hostingEnd);
-      const durationHours = getHostingDurationHours(hostingAt, hostingEnd);
-
-      if (dateTimeRangeText === '-' || !durationHours) {
-        return dateTimeRangeText;
-      }
-
-      return `${dateTimeRangeText} (${durationHours}시간 진행)`;
-    }
-
-    function formatHostingTimeRangeWithDuration(hostingAt, hostingEnd) {
-      const timeRangeText = formatHostingTimeRange(hostingAt, hostingEnd);
-      const durationHours = getHostingDurationHours(hostingAt, hostingEnd);
-
-      if (timeRangeText === '-' || !durationHours) {
-        return timeRangeText;
-      }
-
-      return `${timeRangeText} (${durationHours}시간 진행)`;
-    }
-
-    function buildHostingAddressText(hosting) {
-      const baseAddress = [hosting?.address.road_address, hosting?.address.detail_address]
-        .filter(Boolean)
-        .join(' ')
-        .trim();
-
-      if (!baseAddress) {
-        return hosting?.address.building_name ?? '';
-      }
-
-      if (!hosting?.address.building_name) {
-        return baseAddress;
-      }
-
-      return `${baseAddress} (${hosting.address.building_name})`;
-    }
-
-    function getCurrentPeopleCount(hosting) {
-      return Number(hosting?.current_people ?? 0);
-    }
-
-    function formatHostingPeopleText(hosting) {
-      const currentPeople = getCurrentPeopleCount(hosting);
-      const maxPeople = Number(hosting?.max_people ?? 0);
-
-      return `${currentPeople}/${maxPeople}명`;
-    }
-
-    function buildHostingCard(hosting) {
+    function buildManageCard(hosting) {
       const seniorMap = getSeniorMap();
       const senior = seniorMap.get(String(hosting.senior_id));
       const seniorName = senior?.name ? `${senior.name} 어르신` : `어르신 #${hosting.senior_id}`;
       const avatarText = senior?.name ? senior.name.charAt(0) : '어';
-      const statusMeta = getStatusMeta(hosting.hosting_status);
-      const addressText = buildHostingAddressText(hosting);
-      const helperText = formatHostingPeopleText(hosting);
 
-      const cardElement = document.createElement('article');
-      cardElement.className = 'card hosting-card slide-up';
-      cardElement.dataset.seniorId = String(hosting.senior_id);
-      cardElement.dataset.sigungu = hosting.address.sigungu ?? '';
-      cardElement.dataset.status = hosting.hosting_status ?? '';
-      cardElement.dataset.keyword = [
-        hosting.menu,
-        hosting.address.road_address,
-        hosting.address.detail_address,
-        hosting.address.sigungu,
-        hosting.address.bname,
-        hosting.address.building_name,
-        senior?.name,
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase();
-      cardElement.tabIndex = 0;
-      cardElement.setAttribute('role', 'link');
-      cardElement.setAttribute('aria-label', `${seniorName} 호스팅 상세 보기`);
-      cardElement.addEventListener('click', (event) => {
-        if (event.target.closest('.hosting-card-actions a, .hosting-card-actions button')) {
-          return;
-        }
-        window.location.href = `/pages/hosting-detail.html?id=${hosting.hosting_id}&view=guardian`;
+      return buildHostingCard(hosting, {
+        title: seniorName,
+        avatarText,
+        ariaLabel: `${seniorName} 호스팅 상세 보기`,
+        extraKeywordTokens: [senior?.name],
+        dataset: { seniorId: String(hosting.senior_id) },
+        helperText: `모집 인원 ${formatHostingPeopleText(hosting)}`,
+        actionsHtml: `
+          <a class="btn btn-primary" href="/pages/hosting-detail.html?id=${hosting.hosting_id}&view=guardian">
+            호스팅 관리
+          </a>
+        `,
+        onActivate: (h) => {
+          window.location.href = `/pages/hosting-detail.html?id=${h.hosting_id}&view=guardian`;
+        },
       });
-      cardElement.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          window.location.href = `/pages/hosting-detail.html?id=${hosting.hosting_id}&view=guardian`;
-        }
-      });
-
-      cardElement.innerHTML = `
-        <div class="card-body">
-          <div class="hosting-header">
-            <div class="hosting-avatar">${escapeHtml(avatarText)}</div>
-            <div class="hosting-header-text">
-              <div class="hosting-name" title="${escapeHtml(seniorName)}">${escapeHtml(seniorName)}</div>
-              <div class="hosting-address" title="${escapeHtml(addressText || '-')}">${escapeHtml(addressText || '-')}</div>
-            </div>
-          </div>
-
-          <div class="hosting-menu" title="${escapeHtml(hosting.menu || '-')}">${escapeHtml(hosting.menu || '-')}</div>
-
-          <div class="hosting-status-row hosting-status-row-after-menu">
-            <span class="badge hosting-status-badge ${statusMeta.className}">
-              ${escapeHtml(statusMeta.label)}
-            </span>
-          </div>
-
-          <div class="hosting-meta">
-            <div class="hosting-meta-row">
-              <span class="hosting-meta-label">날짜</span>
-              <span class="hosting-meta-value">${escapeHtml(formatHostingDate(hosting.hosting_at))}</span>
-            </div>
-            <div class="hosting-meta-row">
-              <span class="hosting-meta-label">시간</span>
-              <span class="hosting-meta-value">${escapeHtml(formatHostingTimeRangeWithDuration(hosting.hosting_at, hosting.hosting_end))}</span>
-            </div>
-          </div>
-
-          <div class="hosting-helper">모집 인원 ${escapeHtml(helperText)}</div>
-
-          <div class="hosting-card-actions">
-            <a class="btn btn-primary" href="/pages/hosting-detail.html?id=${hosting.hosting_id}&view=guardian">
-              호스팅 관리
-            </a>
-          </div>
-        </div>
-      `;
-
-      return cardElement;
     }
+
+    /* ---------- 필터 옵션 ---------- */
 
     function renderSeniorFilterOptions() {
       const seniorFilterElement = document.querySelector('#filter-senior');
@@ -975,29 +420,10 @@
       ) ? nextValue : '';
     }
 
-    function renderSigunguOptions() {
-      const sigunguSelectElement = document.querySelector('#filter-sigungu');
-      const previousValue = sigunguSelectElement.value;
-
-      const sigunguSet = new Set(
-        hostingItems
-          .map((hosting) => hosting.address.sigungu ?? '')
-          .filter(Boolean)
-      );
-
-      sigunguSelectElement.innerHTML = '<option value="">전체 시군구</option>';
-
-      [...sigunguSet]
-        .sort((left, right) => left.localeCompare(right, 'ko'))
-        .forEach((sigungu) => {
-          sigunguSelectElement.appendChild(new Option(sigungu, sigungu));
-        });
-
-      sigunguSelectElement.value = [...sigunguSet].includes(previousValue) ? previousValue : '';
-    }
+    /* ---------- 렌더 ---------- */
 
     function renderHostings() {
-      const hostingListElement = document.querySelector('#hosting-list');
+      const listElement = document.querySelector('#hosting-list');
       const emptyStateElement = document.querySelector('#empty-state');
       const emptyTitleElement = document.querySelector('#empty-title');
       const emptyDescriptionElement = document.querySelector('#empty-description');
@@ -1007,21 +433,25 @@
       const selectedStatus = document.querySelector('#filter-status').value;
       const keyword = document.querySelector('#filter-keyword').value.trim().toLowerCase();
 
-      hostingListElement.innerHTML = '';
+      listElement.innerHTML = '';
 
-      const filteredItems = hostingItems.filter((hosting) => {
+      const filtered = hostingItems.filter((hosting) => {
         const matchesSenior = !selectedSeniorId || String(hosting.senior_id) === selectedSeniorId;
-        const matchesSigungu = !selectedSigungu || hosting.address.sigungu === selectedSigungu;
+        const matchesSigungu = !selectedSigungu || hosting.address?.sigungu === selectedSigungu;
         const matchesStatus = !selectedStatus || hosting.hosting_status === selectedStatus;
+
+        const seniorName = seniorsCache.find(
+          (senior) => String(senior.senior_id) === String(hosting.senior_id)
+        )?.name;
 
         const keywordTarget = [
           hosting.menu,
-          hosting.address.road_address,
-          hosting.address.detail_address,
-          hosting.address.sigungu,
-          hosting.address.bname,
-          hosting.address.building_name,
-          seniorsCache.find((senior) => String(senior.senior_id) === String(hosting.senior_id))?.name,
+          hosting.address?.road_address,
+          hosting.address?.detail_address,
+          hosting.address?.sigungu,
+          hosting.address?.bname,
+          hosting.address?.building_name,
+          seniorName,
         ]
           .filter(Boolean)
           .join(' ')
@@ -1039,7 +469,7 @@
         return;
       }
 
-      if (filteredItems.length === 0) {
+      if (filtered.length === 0) {
         emptyStateElement.classList.remove('hidden');
         emptyTitleElement.textContent = '조건에 맞는 호스팅이 없어요';
         emptyDescriptionElement.textContent = '어르신, 상태, 지역 필터를 바꾸면 다른 호스팅을 볼 수 있어요.';
@@ -1047,20 +477,20 @@
       }
 
       emptyStateElement.classList.add('hidden');
-
-      filteredItems.forEach((hosting) => {
-        hostingListElement.appendChild(buildHostingCard(hosting));
+      filtered.forEach((hosting) => {
+        listElement.appendChild(buildManageCard(hosting));
       });
     }
 
+    /* ================================================================
+     * 호스팅 등록 모달 관련 (페이지 고유)
+     * ================================================================ */
 
     function getNormalizedHostingStartDate(hosting) {
       const hostingAt = parseApiDateTime(hosting?.hosting_at);
-
       if (!hostingAt || Number.isNaN(hostingAt.getTime())) {
         return null;
       }
-
       return hostingAt;
     }
 
@@ -1072,22 +502,18 @@
       if (!date || Number.isNaN(date.getTime())) {
         return '';
       }
-
-      const formatter = new Intl.DateTimeFormat('en-CA', {
+      return new Intl.DateTimeFormat('en-CA', {
         timeZone: KST_TIME_ZONE,
         year: 'numeric',
         month: '2-digit',
         day: '2-digit',
-      });
-
-      return formatter.format(date);
+      }).format(date);
     }
 
     function formatDateTimeForNotice(date) {
       if (!date || Number.isNaN(date.getTime())) {
         return '-';
       }
-
       return new Intl.DateTimeFormat('ko-KR', {
         timeZone: KST_TIME_ZONE,
         year: 'numeric',
@@ -1138,43 +564,29 @@
     }
 
     function getSeniorHostingRules(seniorId) {
-      if (!seniorId) {
-        return [];
-      }
-
+      if (!seniorId) return [];
       return seniorHostingRuleMap.get(String(seniorId)) ?? [];
-    }
-
-    function getSelectedSeniorRules() {
-      const seniorId = document.querySelector('#hosting-senior')?.value;
-      return getSeniorHostingRules(seniorId);
     }
 
     function findConflictingHostingRule(seniorId, candidateStartDate) {
       if (!candidateStartDate || Number.isNaN(candidateStartDate.getTime())) {
         return null;
       }
-
       return getSeniorHostingRules(seniorId).find((rule) => {
         return candidateStartDate > rule.blockedStartAt && candidateStartDate < rule.blockedEndAt;
       }) ?? null;
     }
 
     function buildKstDateTime(dateValue, timeValue) {
-      if (!dateValue || !timeValue) {
-        return null;
-      }
-
+      if (!dateValue || !timeValue) return null;
       return parseApiDateTime(`${dateValue}T${timeValue}:00+09:00`);
     }
 
     function buildCandidateStartTimesForDate(dateValue) {
       const times = [];
-
       for (let hour = MIN_HOSTING_START_HOUR; hour <= MAX_HOSTING_START_HOUR; hour += 1) {
         times.push(`${String(hour).padStart(2, '0')}:00`);
       }
-
       return times.filter((timeValue) => isStartDateTimeSelectable(dateValue, timeValue));
     }
 
@@ -1220,10 +632,8 @@
         if (startTimes.length > 0) {
           return dateValue;
         }
-
         cursor = addDays(cursor, 1);
       }
-
       return '';
     }
 
@@ -1238,14 +648,10 @@
     }
 
     function getDateRuleBlockingRules(dateValue) {
-      if (!dateValue) {
-        return [];
-      }
+      if (!dateValue) return [];
 
       const selectedSeniorId = document.querySelector('#hosting-senior')?.value;
-      if (!selectedSeniorId) {
-        return [];
-      }
+      if (!selectedSeniorId) return [];
 
       const candidateTimes = [];
       for (let hour = MIN_HOSTING_START_HOUR; hour <= MAX_HOSTING_START_HOUR; hour += 1) {
@@ -1253,24 +659,21 @@
       }
 
       const blockingRules = new Map();
-
       candidateTimes.forEach((timeValue) => {
         const candidateDate = buildKstDateTime(dateValue, timeValue);
         const conflictingRule = findConflictingHostingRule(selectedSeniorId, candidateDate);
-
         if (conflictingRule) {
           blockingRules.set(String(conflictingRule.hostingId), conflictingRule);
         }
       });
 
-      return [...blockingRules.values()].sort((left, right) => left.hostingAt - right.hostingAt);
+      return [...blockingRules.values()].sort((a, b) => a.hostingAt - b.hostingAt);
     }
 
     function buildHostingIntervalRuleMessage(rules) {
       const hostingTimesText = rules
         .map((rule) => formatDateTimeForNotice(rule.hostingAt))
         .join(', ');
-
       return `등록된 각 호스팅 시작 시각의 전후 ${MIN_HOSTING_INTERVAL_DAYS}일은 새 호스팅 시작 시각으로 선택할 수 없어요.
 기준 호스팅: ${hostingTimesText}`;
     }
@@ -1286,11 +689,7 @@
       if (!document.querySelector('#hosting-senior')?.value || dateInputElement.min > dateInputElement.max) {
         dateInputElement.value = '';
         dateInputElement.disabled = true;
-        return {
-          isAvailable: false,
-          baseMinDate,
-          baseMaxDate,
-        };
+        return { isAvailable: false, baseMinDate, baseMaxDate };
       }
 
       const closestSelectableDateValue = findClosestSelectableDateValue(preferredDateValue || dateInputElement.value);
@@ -1298,21 +697,12 @@
       if (!closestSelectableDateValue) {
         dateInputElement.value = '';
         dateInputElement.disabled = true;
-        return {
-          isAvailable: false,
-          baseMinDate,
-          baseMaxDate,
-        };
+        return { isAvailable: false, baseMinDate, baseMaxDate };
       }
 
       dateInputElement.disabled = false;
       dateInputElement.value = closestSelectableDateValue;
-
-      return {
-        isAvailable: true,
-        baseMinDate,
-        baseMaxDate,
-      };
+      return { isAvailable: true, baseMinDate, baseMaxDate };
     }
 
     function updateStartTimeOptionsForSelectedDate() {
@@ -1363,7 +753,6 @@
         updateTimeSummaryPreview();
         return false;
       }
-
       return true;
     }
 
@@ -1440,11 +829,8 @@
 
       durationSelectElement.innerHTML = '';
       durationSelectElement.appendChild(new Option('진행 시간 선택', ''));
-
       durationOptions.forEach((durationHour) => {
-        durationSelectElement.appendChild(
-          new Option(`${durationHour}시간`, String(durationHour))
-        );
+        durationSelectElement.appendChild(new Option(`${durationHour}시간`, String(durationHour)));
       });
 
       durationSelectElement.disabled = false;
@@ -1483,13 +869,8 @@
       const startTimeValue = document.querySelector('#hosting-start-time').value;
       const durationValue = document.querySelector('#hosting-duration').value;
 
-      if (!startTimeValue) {
-        throw new Error('호스팅 시작 시간을 선택해 주세요.');
-      }
-
-      if (!durationValue) {
-        throw new Error('호스팅 진행 시간을 선택해 주세요.');
-      }
+      if (!startTimeValue) throw new Error('호스팅 시작 시간을 선택해 주세요.');
+      if (!durationValue) throw new Error('호스팅 진행 시간을 선택해 주세요.');
 
       const startMinutes = convertTimeToMinutes(startTimeValue);
       const endMinutes = startMinutes + (Number(durationValue) * 60);
@@ -1497,25 +878,17 @@
       if (endMinutes > (MAX_HOSTING_END_HOUR * 60)) {
         throw new Error('종료 시간은 22:00를 넘을 수 없습니다.');
       }
-
       return convertMinutesToTime(endMinutes);
     }
 
-
     function buildSeniorAddressText(senior) {
-      const baseAddress = [senior?.address.road_address, senior?.address.detail_address]
+      const baseAddress = [senior?.address?.road_address, senior?.address?.detail_address]
         .filter(Boolean)
         .join(' ')
         .trim();
 
-      if (!baseAddress) {
-        return senior?.address.building_name ?? '';
-      }
-
-      if (!senior?.address.building_name) {
-        return baseAddress;
-      }
-
+      if (!baseAddress) return senior?.address?.building_name ?? '';
+      if (!senior?.address?.building_name) return baseAddress;
       return `${baseAddress} (${senior.address.building_name})`;
     }
 
@@ -1525,7 +898,6 @@
         updateHostingFormAvailability();
         return;
       }
-
       document.querySelector('#hosting-guests').value = String(senior.max_people ?? 2);
       updateHostingAvailabilityNotice();
       updateHostingFormAvailability();
@@ -1603,17 +975,9 @@
       const startTimeValue = document.querySelector('#hosting-start-time').value;
       const endTimeValue = getCalculatedEndTime();
 
-      if (!seniorIdValue) {
-        throw new Error('어르신을 먼저 선택해 주세요.');
-      }
-
-      if (!dateValue) {
-        throw new Error('호스팅 날짜를 선택해 주세요.');
-      }
-
-      if (!startTimeValue) {
-        throw new Error('호스팅 시작 시간을 선택해 주세요.');
-      }
+      if (!seniorIdValue) throw new Error('어르신을 먼저 선택해 주세요.');
+      if (!dateValue) throw new Error('호스팅 날짜를 선택해 주세요.');
+      if (!startTimeValue) throw new Error('호스팅 시작 시간을 선택해 주세요.');
 
       const nextHostingStart = buildKstDateTime(dateValue, startTimeValue);
       const conflictingRule = findConflictingHostingRule(seniorIdValue, nextHostingStart);
@@ -1660,6 +1024,8 @@
       shouldOpenCreateModalFromQuery = params.get('open_create') === 'true';
     }
 
+    /* ---------- 데이터 로드 ---------- */
+
     async function loadSeniors() {
       const seniors = await api('/seniors/?active_only=true');
       seniorsCache = seniors;
@@ -1670,7 +1036,7 @@
     async function loadHostings() {
       hostingItems = await api('/hostings/');
       buildSeniorHostingRuleMap();
-      renderSigunguOptions();
+      renderSigunguOptions(document.querySelector('#filter-sigungu'), hostingItems);
       renderHostings();
     }
 
@@ -1692,6 +1058,8 @@
         await showMessage(error?.message || '호스팅 정보를 불러오지 못했어요.', 'error');
       }
     }
+
+    /* ---------- 이벤트 ---------- */
 
     document.querySelector('#filter-senior')?.addEventListener('change', renderHostings);
     document.querySelector('#filter-sigungu')?.addEventListener('change', renderHostings);
@@ -1725,7 +1093,7 @@
 
     document.addEventListener('keydown', (event) => {
       if (event.key === 'Escape') {
-        if (document.querySelector('#alert-modal').classList.contains('open')) {
+        if (isAlertModalOpen()) {
           closeAlertModal();
           return;
         }
@@ -1781,7 +1149,6 @@
 
     document.querySelector('#hosting-form')?.addEventListener('submit', async (event) => {
       event.preventDefault();
-
       const submitButtonElement = document.querySelector('#hosting-submit-button');
 
       try {
@@ -1815,7 +1182,6 @@
       if (!currentUser) {
         return;
       }
-
       await initializePage();
     }
 

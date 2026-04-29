@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.domain.common.schemas import AddressResponse
 from app.domain.hosting.models import HostingStatus
+from app.domain.senior.models import GenderEnum
 
 KST = ZoneInfo("Asia/Seoul")
 MIN_HOSTING_LEAD_TIME = timedelta(hours=24)
@@ -71,6 +72,20 @@ class HostingCreateRequest(BaseModel):
         return self
 
 
+class HostingSeniorResponse(BaseModel):
+    """호스팅 상세에 함께 내려줄 어르신 요약 응답입니다."""
+
+    senior_id: int
+    name: str
+    age: int
+    gender: GenderEnum
+    address: AddressResponse
+    special_note: str | None = None
+    ai_summary: str | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class HostingResponse(BaseModel):
     """호스팅 응답 스키마입니다."""
 
@@ -85,5 +100,9 @@ class HostingResponse(BaseModel):
     hosting_status: HostingStatus
     created_at: datetime
     updated_at: datetime
+    senior: HostingSeniorResponse | None = Field(
+        default=None,
+        description="호스팅에 연결된 어르신 요약 정보",
+    )
 
     model_config = ConfigDict(from_attributes=True)

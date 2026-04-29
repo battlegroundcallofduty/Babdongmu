@@ -66,6 +66,13 @@
       line-height: 1.6;
     }
 
+    .profile-address {
+      margin: 4px 0 0;
+      color: #6B5E53;
+      line-height: 1.6;
+      word-break: keep-all;
+    }
+
     .profile-summary {
       margin-top: 12px;
     }
@@ -373,6 +380,7 @@
         <div class="profile-details">
           <h2 id="senior-name">호스팅</h2>
           <p id="senior-meta" class="profile-meta">-</p>
+          <p id="senior-address" class="profile-address">-</p>
           <p id="senior-summary" class="profile-summary hidden"></p>
         </div>
       </section>
@@ -635,36 +643,90 @@
       return metaMap[status] ?? { label: status ?? '-', className: 'badge-closed' };
     }
 
-    function formatDate(value, options = {}) {
+    function parseApiDateTime(value) {
       if (!value) {
+        return null;
+      }
+
+      if (value instanceof Date) {
+        return value;
+      }
+
+      if (typeof value === 'string') {
+        const normalizedValue = value.includes('T')
+          && !value.endsWith('Z')
+          && !/[+-]\d{2}:\d{2}$/.test(value)
+          ? `${value}Z`
+          : value;
+
+        return new Date(normalizedValue);
+      }
+
+      return new Date(value);
+    }
+
+    function formatKstDate(value, options = {}) {
+      const date = parseApiDateTime(value);
+
+      if (!date || Number.isNaN(date.getTime())) {
         return '-';
       }
 
       return new Intl.DateTimeFormat('ko-KR', {
         timeZone: KST_TIME_ZONE,
         ...options,
-      }).format(new Date(value));
+      }).format(date);
+    }
+
+    function getHostingDurationHours(hostingAt, hostingEnd) {
+      const startDate = parseApiDateTime(hostingAt);
+      const endDate = parseApiDateTime(hostingEnd);
+
+      if (!startDate || Number.isNaN(startDate.getTime())
+        || !endDate || Number.isNaN(endDate.getTime())) {
+        return null;
+      }
+
+      const durationMs = endDate.getTime() - startDate.getTime();
+      const durationHours = durationMs / (60 * 60 * 1000);
+
+      if (!Number.isFinite(durationHours) || durationHours <= 0) {
+        return null;
+      }
+
+      return Number.isInteger(durationHours)
+        ? String(durationHours)
+        : durationHours.toFixed(1);
     }
 
     function formatDateTimeRange(hostingAt, hostingEnd) {
-      const dateText = formatDate(hostingAt, {
+      const dateText = formatKstDate(hostingAt, {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
         weekday: 'short',
       });
-      const startTimeText = formatDate(hostingAt, {
+      const startTimeText = formatKstDate(hostingAt, {
         hour: '2-digit',
         minute: '2-digit',
         hour12: false,
       });
-      const endTimeText = formatDate(hostingEnd, {
+      const endTimeText = formatKstDate(hostingEnd, {
         hour: '2-digit',
         minute: '2-digit',
         hour12: false,
       });
+      const durationHours = getHostingDurationHours(hostingAt, hostingEnd);
 
-      return `${dateText} ${startTimeText} ~ ${endTimeText}`;
+      if (dateText === '-' || startTimeText === '-' || endTimeText === '-') {
+        return '-';
+      }
+
+      if (!durationHours) {
+        return `${dateText} ${startTimeText} ~ ${endTimeText}`;
+      }
+
+      return `${dateText} ${startTimeText} ~ ${endTimeText} (${durationHours}시간 진행)`;
     }
 
     function setText(selector, value) {
@@ -740,29 +802,42 @@
       return 0;
     }
 
+    function getGenderLabel(gender) {
+      const genderMap = {
+        male: '남성',
+        female: '여성',
+        other: '기타',
+      };
+
+      return genderMap[gender] ?? '';
+    }
+
+    function buildAddressText(address) {
+      const baseAddress = [
+        address?.road_address,
+        address?.detail_address,
+      ].filter(Boolean).join(' ').trim();
+
+      const buildingText = address?.building_name
+        || (address?.is_apartment ? '아파트' : '');
+
+      if (!baseAddress) {
+        return buildingText || '-';
+      }
+
+      if (!buildingText) {
+        return baseAddress;
+      }
+
+      return `${baseAddress} (${buildingText})`;
+    }
+
     function buildHostingAddress() {
-      const addressParts = [
-        hostingDetail?.address.road_address,
-        hostingDetail?.address.detail_address,
-      ].filter(Boolean);
+      return buildAddressText(hostingDetail?.address);
+    }
 
-      const buildingParts = [];
-
-      if (hostingDetail?.address.is_apartment) {
-        buildingParts.push('아파트');
-      }
-
-      if (hostingDetail?.address.building_name) {
-        buildingParts.push(hostingDetail.address.building_name);
-      }
-
-      const buildingText = buildingParts.join(' / ');
-
-      if (buildingText) {
-        addressParts.push(buildingText);
-      }
-
-      return addressParts.join(' ').trim() || '-';
+    function getSeniorDisplayData() {
+      return seniorDetail || hostingDetail?.senior || null;
     }
 
     function configurePageByViewMode() {
@@ -811,53 +886,39 @@
       const seniorAvatarElement = document.querySelector('#senior-avatar');
       const seniorNameElement = document.querySelector('#senior-name');
       const seniorMetaElement = document.querySelector('#senior-meta');
+      const seniorAddressElement = document.querySelector('#senior-address');
       const summaryElement = document.querySelector('#senior-summary');
+      const senior = getSeniorDisplayData();
 
-      const hostingAddress = [hostingDetail?.address.road_address, hostingDetail?.address.detail_address]
-        .filter(Boolean)
-        .join(' ');
+      const seniorName = senior?.name ?? '';
+      const fullSeniorName = seniorName
+        ? `${seniorName} 어르신`
+        : `어르신 #${hostingDetail.senior_id}`;
+      const seniorAvatarText = seniorName ? seniorName.charAt(0) : '어';
+      const seniorMetaParts = [];
+      const genderLabel = getGenderLabel(senior?.gender);
+      const profileAddress = buildAddressText(senior?.address || hostingDetail?.address);
 
-      if (isGuardianView()) {
-        const fullSeniorName = seniorDetail?.name
-          ? `${seniorDetail.name} 어르신`
-          : `어르신 #${hostingDetail.senior_id}`;
-        const seniorAvatarText = seniorDetail?.name ? seniorDetail.name.charAt(0) : '어';
-        const seniorMetaParts = [];
-
-        if (typeof seniorDetail?.age === 'number') {
-          seniorMetaParts.push(`${seniorDetail.age}세`);
-        }
-
-        if (hostingAddress) {
-          seniorMetaParts.push(hostingAddress);
-        }
-
-        seniorAvatarElement.textContent = seniorAvatarText;
-        seniorNameElement.textContent = fullSeniorName;
-        seniorMetaElement.textContent = seniorMetaParts.join(' · ') || '-';
-
-        if (seniorDetail?.ai_summary) {
-          summaryElement.textContent = seniorDetail.ai_summary;
-          summaryElement.classList.remove('hidden');
-        } else {
-          summaryElement.textContent = '';
-          summaryElement.classList.add('hidden');
-        }
-
-        return;
+      if (typeof senior?.age === 'number') {
+        seniorMetaParts.push(`${senior.age}세`);
       }
 
-      seniorAvatarElement.textContent = (hostingDetail?.address.sigungu ?? '호').charAt(0);
-      seniorNameElement.textContent = hostingDetail?.address.sigungu
-        ? `${hostingDetail.address.sigungu} 호스팅`
-        : '호스팅 상세';
-      seniorMetaElement.textContent = [
-        hostingAddress,
-        hostingDetail?.address.bname,
-      ].filter(Boolean).join(' · ') || '-';
+      if (genderLabel) {
+        seniorMetaParts.push(genderLabel);
+      }
 
-      summaryElement.textContent = '일정과 주소를 확인한 뒤 신청해 주세요.';
-      summaryElement.classList.remove('hidden');
+      seniorAvatarElement.textContent = seniorAvatarText;
+      seniorNameElement.textContent = fullSeniorName;
+      seniorMetaElement.textContent = seniorMetaParts.join(' · ') || '-';
+      seniorAddressElement.textContent = profileAddress;
+
+      if (senior?.ai_summary) {
+        summaryElement.textContent = senior.ai_summary;
+        summaryElement.classList.remove('hidden');
+      } else {
+        summaryElement.textContent = '';
+        summaryElement.classList.add('hidden');
+      }
     }
 
     function renderActionButtons() {
@@ -924,9 +985,11 @@
       setText('#hosting-menu', hostingDetail.menu);
       setText('#hosting-datetime', formatDateTimeRange(hostingDetail.hosting_at, hostingDetail.hosting_end));
       setText('#hosting-max-people', `${currentRecruitCount}명 / ${hostingDetail.max_people}명`);
-      setText('#hosting-special-note', seniorDetail?.special_note || '-');
+      const senior = getSeniorDisplayData();
+
+      setText('#hosting-special-note', senior?.special_note || '-');
       setText('#hosting-address', buildHostingAddress());
-      setText('#hosting-created-at', formatDate(hostingDetail.created_at, {
+      setText('#hosting-created-at', formatKstDate(hostingDetail.created_at, {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
@@ -953,7 +1016,7 @@
         if (isGuardianView()) {
           seniorDetail = await api(`/seniors/${hostingDetail.senior_id}`);
         } else {
-          seniorDetail = null;
+          seniorDetail = hostingDetail?.senior ?? null;
         }
 
         renderDetail();
