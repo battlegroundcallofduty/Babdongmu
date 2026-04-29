@@ -28,6 +28,15 @@ class MatchResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class VolunteerStatsResponse(BaseModel):
+    """봉사자 마이페이지 통계 응답 스키마."""
+
+    total_volunteer_minutes: int
+    visit_count: int
+    review_count: int
+    senior_count: int
+
+
 class MyMatchResponse(BaseModel):
     """내 매칭 목록 조회 전용 응답 스키마."""
 

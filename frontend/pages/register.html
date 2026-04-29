@@ -8,21 +8,9 @@
   <link rel="stylesheet" href="/css/common.css">
 </head>
 <body>
-  <nav class="nav">
-    <div class="nav-inner">
-      <a href="/" class="nav-logo">
-        <svg class="nav-logo-icon" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="14" fill="#D4763C" opacity="0.12"/><path d="M8 18c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke="#D4763C" stroke-width="2" stroke-linecap="round"/><path d="M6 18h20v1c0 3.3-2.7 6-6 6h-8c-3.3 0-6-2.7-6-6v-1z" fill="#D4763C" opacity="0.2"/><path d="M13 14c-.5-2 .5-4 3-4s3.5 2 3 4" stroke="#5B8C5A" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/></svg>
-        밥동무
-      </a>
-      <ul class="nav-links">
-        <li><a href="/pages/hostings.html">호스팅</a></li>
-        <li><a href="/pages/login.html">로그인</a></li>
-        <li><a href="/pages/register.html" class="active">회원가입</a></li>
-      </ul>
-      <button class="nav-toggle" onclick="toggleNav()" aria-label="메뉴"><span></span><span></span><span></span></button>
-    </div>
-  </nav>
-  <div class="nav-drawer" id="navDrawer" onclick="closeNav(event)"><div class="nav-drawer-content"><a href="/pages/hostings.html">호스팅</a><a href="/pages/login.html">로그인</a><a href="/pages/register.html" class="active">회원가입</a></div></div>
+<div id="nav-placeholder"></div>
+
+  </div>
 
   <main class="register-wrap">
     <div class="register-card slide-up">
@@ -153,8 +141,6 @@
   <script src="/js/base.js"></script>
   <script src="/js/api.js"></script>
   <script>
-    function toggleNav(){const t=document.querySelector('.nav-toggle'),d=document.getElementById('navDrawer');t.classList.toggle('active');d.classList.toggle('open');document.body.style.overflow=d.classList.contains('open')?'hidden':'';}
-    function closeNav(e){if(e.target===e.currentTarget)toggleNav();}
   </script>
   <script type="module" src="/js/register.js"></script>
 </body>
