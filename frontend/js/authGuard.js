@@ -75,6 +75,7 @@ export async function fetchCurrentUser() {
     const me = await api('/users/me');
     setCurrentUser(me);
     sessionStorage.setItem(SESSION_KEY, JSON.stringify({ user: me, at: Date.now() }));
+    window.loadNav?.();
     return me;
   } catch (error) {
     clearAuth();
