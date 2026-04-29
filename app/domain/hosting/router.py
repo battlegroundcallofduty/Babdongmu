@@ -85,11 +85,10 @@ async def get_public_hosting_detail_endpoint(
 ) -> HostingResponse:
     """승인된 봉사자가 조회 가능한 공개 호스팅 상세 정보를 조회합니다."""
 
-    _ = current_volunteer
-
     return await get_public_hosting_detail(
         session=session,
         hosting_id=hosting_id,
+        volunteer_id=current_volunteer.user_id,
     )
 
 

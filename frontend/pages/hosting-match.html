@@ -229,8 +229,37 @@
       return status === 'approved';
     }
 
+    function normalizeArrayResponse(response) {
+      if (Array.isArray(response)) {
+        return response;
+      }
+
+      if (Array.isArray(response?.items)) {
+        return response.items;
+      }
+
+      if (Array.isArray(response?.results)) {
+        return response.results;
+      }
+
+      if (Array.isArray(response?.data)) {
+        return response.data;
+      }
+
+      if (Array.isArray(response?.matches)) {
+        return response.matches;
+      }
+
+      if (Array.isArray(response?.hostings)) {
+        return response.hostings;
+      }
+
+      return [];
+    }
+
     async function loadMyAppliedHostingIds() {
-      const matches = await api(MY_MATCHES_API);
+      const matchesResponse = await api(MY_MATCHES_API);
+      const matches = normalizeArrayResponse(matchesResponse);
 
       appliedHostingIdSet = new Set(
         matches
@@ -341,12 +370,12 @@
     }
 
     async function loadHostings() {
-      const [hostings] = await Promise.all([
+      const [hostingsResponse] = await Promise.all([
         api(VOLUNTEER_HOSTINGS_API),
         loadMyAppliedHostingIds(),
       ]);
 
-      hostingItems = hostings;
+      hostingItems = normalizeArrayResponse(hostingsResponse);
       renderSigunguOptions(document.querySelector('#filter-sigungu'), hostingItems);
       renderHostings();
     }
@@ -364,6 +393,12 @@
     }
 
     /* ---------- 이벤트 ---------- */
+
+    document.querySelector('.nav-toggle')?.addEventListener('click', toggleNav);
+
+    document.querySelector('#navDrawer')?.addEventListener('click', (event) => {
+      closeNav(event);
+    });
 
     document.querySelector('#filter-sigungu')?.addEventListener('change', renderHostings);
     document.querySelector('#filter-status')?.addEventListener('change', renderHostings);

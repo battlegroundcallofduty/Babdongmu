@@ -182,7 +182,10 @@ def build_hosting_response(
 
     response = HostingResponse.model_validate(hosting)
     response.current_people = current_people
-    response.senior = build_hosting_senior_response(senior)
+
+    if senior is not None:
+        response.senior = HostingSeniorResponse.model_validate(senior)
+
     return response
 
 
@@ -271,6 +274,28 @@ async def get_approved_volunteer_ids(
         )
     )
     return list(result.scalars().all())
+
+async def get_visible_match_id_for_volunteer(
+    session: AsyncSession,
+    hosting_id: int,
+    volunteer_id: int,
+) -> int | None:
+    """봉사자가 해당 호스팅을 조회할 수 있는 매칭 ID를 반환합니다."""
+
+    result = await session.execute(
+        select(MatchingInfo.matching_id).where(
+            MatchingInfo.hosting_id == hosting_id,
+            MatchingInfo.vt_id == volunteer_id,
+            MatchingInfo.match_status.in_(
+                [
+                    MatchStatus.APPROVED,
+                    MatchStatus.NOT_VISITED,
+                ]
+            ),
+        )
+    )
+
+    return result.scalar_one_or_none()
 
 
 async def mark_matches_not_visited(
@@ -627,20 +652,25 @@ async def list_hostings_for_volunteer(
 async def get_public_hosting_detail(
     session: AsyncSession,
     hosting_id: int,
+    volunteer_id: int,
 ) -> HostingResponse:
     """봉사자가 조회 가능한 공개 호스팅 상세 정보를 반환합니다."""
 
-    visible_statuses = (
+    public_visible_statuses = (
         HostingStatus.OPEN,
         HostingStatus.FULL,
     )
 
+    applicant_visible_statuses = (
+        HostingStatus.FIXED,
+        HostingStatus.IN_PROGRESS,
+        HostingStatus.CLOSED,
+        HostingStatus.FAILED,
+    )
+
     stmt = (
         select(Hosting)
-        .where(
-            Hosting.hosting_id == hosting_id,
-            Hosting.hosting_status.in_(visible_statuses),
-        )
+        .where(Hosting.hosting_id == hosting_id)
         .options(selectinload(Hosting.address))
     )
 
@@ -653,11 +683,36 @@ async def get_public_hosting_detail(
             detail="조회 가능한 호스팅 정보를 찾을 수 없습니다.",
         )
 
+    is_public_visible = hosting.hosting_status in public_visible_statuses
+    is_applicant_visible = False
+
+    if hosting.hosting_status in applicant_visible_statuses:
+        matching_id = await get_visible_match_id_for_volunteer(
+            session=session,
+            hosting_id=hosting.hosting_id,
+            volunteer_id=volunteer_id,
+        )
+        is_applicant_visible = matching_id is not None
+
+    if not is_public_visible and not is_applicant_visible:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="조회 가능한 호스팅 정보를 찾을 수 없습니다.",
+        )
+
+    senior = None
+    if hosting.senior_id is not None:
+        senior_result = await session.execute(
+            select(Senior)
+            .where(Senior.senior_id == hosting.senior_id)
+            .options(selectinload(Senior.address))
+        )
+        senior = senior_result.scalar_one_or_none()
+
     current_people = await get_current_people_count(
         session=session,
         hosting_id=hosting.hosting_id,
     )
-    senior = await get_senior_with_address_by_id(session, hosting.senior_id)
 
     return build_hosting_response(
         hosting=hosting,
