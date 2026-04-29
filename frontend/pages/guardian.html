@@ -875,7 +875,7 @@
     let isSeniorListExpanded = false;
     let seniorListState = [];
     let confirmModalHandler = null;
-    let isActiveOnly = activeOnlyToggleElement?.checked ?? false;
+    let isActiveOnly = activeOnlyToggleElement?.checked || false;
     let addressState = createEmptyAddressPayload();
     let currentDetailSenior = null;
     let qrObjectUrl = null;
@@ -1071,7 +1071,7 @@
         return calculatedAge;
       }
 
-      return senior.age ?? null;
+      return senior.age || null;
     }
 
     function formatSeniorAge(senior) {
@@ -1143,22 +1143,22 @@
       const statusItems = [
         {
           label: '모집중',
-          count: senior.open_hosting_count ?? 0,
+          count: senior.open_hosting_count || 0,
           className: 'is-open',
         },
         {
           label: '모집완료',
-          count: senior.full_hosting_count ?? 0,
+          count: senior.full_hosting_count || 0,
           className: 'is-full',
         },
         {
           label: '확정',
-          count: senior.fixed_hosting_count ?? 0,
+          count: senior.fixed_hosting_count || 0,
           className: 'is-fixed',
         },
         {
           label: '진행중',
-          count: senior.in_progress_hosting_count ?? 0,
+          count: senior.in_progress_hosting_count || 0,
           className: 'is-progress',
         },
       ].filter((item) => item.count > 0);
@@ -1178,10 +1178,10 @@
 
     function buildHostingStatusText(senior) {
       const statusItems = [
-        ['모집중', senior.open_hosting_count ?? 0],
-        ['모집완료', senior.full_hosting_count ?? 0],
-        ['확정', senior.fixed_hosting_count ?? 0],
-        ['진행중', senior.in_progress_hosting_count ?? 0],
+        ['모집중', senior.open_hosting_count || 0],
+        ['모집완료', senior.full_hosting_count || 0],
+        ['확정', senior.fixed_hosting_count || 0],
+        ['진행중', senior.in_progress_hosting_count || 0],
       ].filter(([, count]) => count > 0);
 
       if (!statusItems.length) {
@@ -1257,8 +1257,8 @@
     }
 
     function syncAddressInputs() {
-      roadAddressInputElement.value = addressState.road_address ?? '';
-      detailAddressInputElement.value = addressState.detail_address ?? '';
+      roadAddressInputElement.value = addressState.road_address || '';
+      detailAddressInputElement.value = addressState.detail_address || '';
     }
 
     function setAddressState(nextAddressState) {
@@ -1408,19 +1408,19 @@
     }
 
     function hasCancellableHostingBeforeDelete(senior) {
-      return (senior.open_hosting_count ?? 0) > 0 || (senior.full_hosting_count ?? 0) > 0;
+      return (senior.open_hosting_count || 0) > 0 || (senior.full_hosting_count || 0) > 0;
     }
 
     function hasAdminContactHostingBeforeDelete(senior) {
-      return (senior.fixed_hosting_count ?? 0) > 0
-        || (senior.in_progress_hosting_count ?? 0) > 0;
+      return (senior.fixed_hosting_count || 0) > 0
+        || (senior.in_progress_hosting_count || 0) > 0;
     }
 
     function hasBlockingHostingBeforeUpdate(senior) {
-      return (senior.open_hosting_count ?? 0) > 0
-        || (senior.full_hosting_count ?? 0) > 0
-        || (senior.fixed_hosting_count ?? 0) > 0
-        || (senior.in_progress_hosting_count ?? 0) > 0;
+      return (senior.open_hosting_count || 0) > 0
+        || (senior.full_hosting_count || 0) > 0
+        || (senior.fixed_hosting_count || 0) > 0
+        || (senior.in_progress_hosting_count || 0) > 0;
     }
 
     function buildSeniorUpdateBlockMessage(senior) {

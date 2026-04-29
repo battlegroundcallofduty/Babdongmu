@@ -733,10 +733,14 @@
           return;
         }
 
-        const seniorId = String(hosting?.senior_id ?? '');
+        if (!hosting.senior_id) {
+          throw new Error(`호스팅 데이터에 senior_id가 없습니다. hosting_id: ${hosting.hosting_id}`);
+        }
+
+        const seniorId = String(hosting.senior_id);
         const hostingAt = getNormalizedHostingStartDate(hosting);
 
-        if (!seniorId || !hostingAt) {
+        if (!hostingAt) {
           return;
         }
 
@@ -764,7 +768,7 @@
       }
       return getSeniorHostingRules(seniorId).find((rule) => {
         return candidateStartDate > rule.blockedStartAt && candidateStartDate < rule.blockedEndAt;
-      }) ?? null;
+      });
     }
 
     function buildKstDateTime(dateValue, timeValue) {
@@ -1088,7 +1092,10 @@
         updateHostingFormAvailability();
         return;
       }
-      document.querySelector('#hosting-guests').value = String(senior.max_people ?? 2);
+      if (!senior.max_people) {
+        throw new Error(`어르신 데이터에 max_people이 없습니다. senior_id: ${senior.senior_id}`);
+      }
+      document.querySelector('#hosting-guests').value = String(senior.max_people);
       updateHostingAvailabilityNotice();
       updateHostingFormAvailability();
     }
@@ -1210,7 +1217,7 @@
 
     function applyQueryParams() {
       const params = new URLSearchParams(window.location.search);
-      selectedSeniorIdFromQuery = params.get('senior_id') ?? '';
+      selectedSeniorIdFromQuery = params.get('senior_id') || '';
       shouldOpenCreateModalFromQuery = params.get('open_create') === 'true';
     }
 

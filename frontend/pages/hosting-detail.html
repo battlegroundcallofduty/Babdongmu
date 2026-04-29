@@ -641,7 +641,7 @@
         CLOSED: { label: '완료', className: 'badge-closed' },
       };
 
-      return metaMap[status] ?? { label: status ?? '-', className: 'badge-closed' };
+      return metaMap[status] ?? { label: status || '-', className: 'badge-closed' };
     }
 
     function parseApiDateTime(value) {
@@ -797,7 +797,10 @@
         || hostingDetail?.hosting_status === 'FIXED'
         || hostingDetail?.hosting_status === 'IN_PROGRESS'
         || hostingDetail?.hosting_status === 'CLOSED') {
-        return hostingDetail?.max_people ?? 0;
+        if (!hostingDetail.max_people) {
+          throw new Error(`호스팅 데이터에 max_people이 없습니다. hosting_id: ${hostingDetail.hosting_id}`);
+        }
+        return hostingDetail.max_people;
       }
 
       return 0;
@@ -810,7 +813,7 @@
         other: '기타',
       };
 
-      return genderMap[gender] ?? '';
+      return genderMap[gender] || '';
     }
 
     function buildAddressText(address) {
@@ -891,7 +894,7 @@
       const summaryElement = document.querySelector('#senior-summary');
       const senior = getSeniorDisplayData();
 
-      const seniorName = senior?.name ?? '';
+      const seniorName = senior?.name || '';
       const fullSeniorName = seniorName
         ? `${seniorName} 어르신`
         : `어르신 #${hostingDetail.senior_id}`;
@@ -1025,7 +1028,7 @@
         if (isGuardianView()) {
           seniorDetail = await api(`/seniors/${hostingDetail.senior_id}`);
         } else {
-          seniorDetail = hostingDetail?.senior ?? null;
+          seniorDetail = hostingDetail?.senior || null;
           try {
             const checkResult = await api(`/matches/my/check?hosting_id=${hostingId}`);
             myMatchId = checkResult.is_applied ? checkResult.matching_id : null;

@@ -218,14 +218,14 @@
     function getHostingIdFromMatch(match) {
       return Number(
         match?.hosting_id
-        ?? match?.hosting?.hosting_id
-        ?? match?.hosting?.id
-        ?? 0
+        || match?.hosting?.hosting_id
+        || match?.hosting?.id
+        || 0
       );
     }
 
     function isActiveAppliedMatch(match) {
-      const status = String(match?.match_status ?? '').toLowerCase();
+      const status = String(match?.match_status || '').toLowerCase();
       return status === 'approved';
     }
 
@@ -277,7 +277,7 @@
 
     function buildMatchCard(hosting) {
       const titleText = buildHostingTitle(hosting);
-      const avatarText = (hosting.address?.sigungu ?? '밥').charAt(0);
+      const avatarText = (hosting.address?.sigungu || '밥').charAt(0);
       const isApplied = isAppliedHosting(hosting);
 
       return buildHostingCard(hosting, {
