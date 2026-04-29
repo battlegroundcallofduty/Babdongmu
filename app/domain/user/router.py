@@ -1,6 +1,7 @@
 """유저 API 엔드포인트."""
 
 import asyncio
+import logging
 import secrets
 from datetime import timedelta
 
@@ -52,6 +53,8 @@ from app.services.r2 import (
     get_presigned_url,
     upload_image,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -315,7 +318,8 @@ async def kakao_callback(
             )
             user_resp.raise_for_status()
             kakao_id = str(user_resp.json()["id"])
-    except (httpx.HTTPError, KeyError):
+    except Exception:
+        logger.exception("카카오 콜백 처리 중 오류")
         return RedirectResponse(url=f"{frontend_base}/pages/login.html?kakao_error=1")
 
     # 3) 기존 유저 → JWT 발급 후 로그인 처리
