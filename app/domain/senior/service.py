@@ -11,6 +11,7 @@ from app.domain.common.models import Address
 from app.domain.hosting.models import Hosting, HostingStatus
 from app.domain.senior.models import Senior
 from app.domain.senior.schemas import (
+    GuardianStatsResponse,
     SeniorCreateRequest,
     SeniorResponse,
     SeniorUpdateRequest,
@@ -24,6 +25,23 @@ BLOCKING_HOSTING_STATUSES_FOR_DEACTIVATION = (
     HostingStatus.FIXED,
     HostingStatus.IN_PROGRESS,
 )
+
+CANCELLABLE_HOSTING_STATUSES_BEFORE_SENIOR_DELETE = {
+    HostingStatus.OPEN,
+    HostingStatus.FULL,
+}
+
+ADMIN_CONTACT_HOSTING_STATUSES = {
+    HostingStatus.FIXED,
+    HostingStatus.IN_PROGRESS,
+}
+
+BLOCKING_HOSTING_STATUSES_FOR_UPDATE = {
+    HostingStatus.OPEN,
+    HostingStatus.FULL,
+    HostingStatus.FIXED,
+    HostingStatus.IN_PROGRESS,
+}
 
 
 def build_senior_response(
@@ -86,24 +104,107 @@ async def get_hosting_counts_by_senior(
     }
 
 
+async def get_blocking_hosting_statuses_for_senior(
+    session: AsyncSession,
+    senior_id: int,
+) -> set[HostingStatus]:
+    """어르신 삭제/비활성화를 막는 호스팅 상태 목록을 조회합니다."""
+
+    stmt = select(Hosting.hosting_status).where(
+        Hosting.senior_id == senior_id,
+        Hosting.hosting_status.in_(BLOCKING_HOSTING_STATUSES_FOR_DEACTIVATION),
+    )
+
+    result = await session.execute(stmt)
+    return set(result.scalars().all())
+
+
+def build_blocking_hosting_message(
+    blocking_statuses: set[HostingStatus],
+    action_label: str,
+) -> str:
+    """차단 상태 조합에 맞는 안내 메시지를 생성합니다."""
+
+    has_cancellable_hosting = bool(
+        blocking_statuses & CANCELLABLE_HOSTING_STATUSES_BEFORE_SENIOR_DELETE
+    )
+    has_admin_contact_hosting = bool(blocking_statuses & ADMIN_CONTACT_HOSTING_STATUSES)
+
+    if has_cancellable_hosting and has_admin_contact_hosting:
+        return (
+            f"{action_label}할 수 없는 호스팅이 연결되어 있습니다. "
+            "모집 중/모집완료 호스팅은 먼저 취소하고, "
+            "확정/진행 중 호스팅은 관리자에게 문의해 주세요."
+        )
+
+    if has_admin_contact_hosting:
+        return (
+            f"확정 또는 진행 중인 호스팅이 있는 어르신은 {action_label}할 수 없습니다. "
+            "변경이 필요하면 관리자에게 문의해 주세요."
+        )
+
+    if has_cancellable_hosting:
+        return (
+            f"진행 전 호스팅이 있는 어르신은 {action_label}할 수 없습니다. "
+            "먼저 해당 호스팅을 취소한 뒤 다시 시도해 주세요."
+        )
+
+    return f"완료되지 않은 호스팅이 있는 어르신은 {action_label}할 수 없습니다."
+
+
+async def ensure_senior_has_no_blocking_hostings(
+    session: AsyncSession,
+    senior_id: int,
+    action_label: str,
+) -> None:
+    """삭제/비활성화를 막는 호스팅이 있으면 예외를 발생시킵니다."""
+
+    blocking_statuses = await get_blocking_hosting_statuses_for_senior(
+        session=session,
+        senior_id=senior_id,
+    )
+
+    if blocking_statuses:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=build_blocking_hosting_message(
+                blocking_statuses=blocking_statuses,
+                action_label=action_label,
+            ),
+        )
+
+
 async def ensure_senior_can_be_deactivated(
     session: AsyncSession,
     senior_id: int,
 ) -> None:
     """완료되지 않은 호스팅이 있으면 어르신 비활성화를 막습니다."""
 
-    stmt = select(Hosting.hosting_id).where(
-        Hosting.senior_id == senior_id,
-        Hosting.hosting_status.in_(BLOCKING_HOSTING_STATUSES_FOR_DEACTIVATION),
+    await ensure_senior_has_no_blocking_hostings(
+        session=session,
+        senior_id=senior_id,
+        action_label="비활성화",
     )
 
-    result = await session.execute(stmt)
-    hosting_id = result.scalar_one_or_none()
 
-    if hosting_id is not None:
+async def ensure_senior_can_be_updated(
+    session: AsyncSession,
+    senior_id: int,
+) -> None:
+    """모집 중/모집완료/확정/진행 중 호스팅이 있으면 어르신 수정을 막습니다."""
+
+    blocking_statuses = await get_blocking_hosting_statuses_for_senior(
+        session=session,
+        senior_id=senior_id,
+    )
+
+    if blocking_statuses & BLOCKING_HOSTING_STATUSES_FOR_UPDATE:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="완료되지 않은 호스팅이 있는 어르신은 비활성화할 수 없습니다.",
+            detail=(
+                "모집 중, 모집완료, 확정 또는 진행 중인 호스팅이 있는 어르신은 수정할 수 없습니다. "
+                "해당 호스팅을 취소하거나 관리자에게 문의해 주세요."
+            ),
         )
 
 
@@ -286,6 +387,8 @@ async def update_senior(
 
     update_data = request.model_dump(exclude_unset=True, exclude={"address"})
 
+    await ensure_senior_can_be_updated(session=session, senior_id=senior.senior_id)
+
     if update_data.get("active_flag") is False:
         await ensure_senior_can_be_deactivated(session=session, senior_id=senior.senior_id)
 
@@ -354,17 +457,11 @@ async def delete_senior(
         senior_id=senior_id,
     )
 
-    result = await session.execute(
-        select(Hosting.hosting_id).where(
-            Hosting.senior_id == senior_id,
-            Hosting.hosting_status.in_(BLOCKING_HOSTING_STATUSES_FOR_DEACTIVATION),
-        )
+    await ensure_senior_has_no_blocking_hostings(
+        session=session,
+        senior_id=senior.senior_id,
+        action_label="삭제",
     )
-    if result.scalar_one_or_none() is not None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="완료되지 않은 호스팅이 있는 어르신은 삭제할 수 없습니다.",
-        )
 
     address_id = senior.address_id
     await session.delete(senior)
@@ -395,3 +492,45 @@ async def get_senior_id_by_qr(
         )
 
     return senior_id
+
+
+async def get_guardian_stats(
+    session: AsyncSession,
+    guardian_id: int,
+) -> GuardianStatsResponse:
+    """보호자 마이페이지 통계를 조회합니다."""
+
+    active_statuses = [
+        HostingStatus.OPEN,
+        HostingStatus.FULL,
+        HostingStatus.FIXED,
+        HostingStatus.IN_PROGRESS,
+    ]
+
+    stmt = (
+        select(
+            func.count(Senior.senior_id.distinct()).label("senior_count"),
+            func.count(Hosting.hosting_id)
+            .filter(Hosting.hosting_status.in_(active_statuses))
+            .label("active_hosting_count"),
+            func.count(Hosting.hosting_id)
+            .filter(Hosting.hosting_status == HostingStatus.FAILED)
+            .label("cancelled_hosting_count"),
+            func.count(Hosting.hosting_id)
+            .filter(Hosting.hosting_status == HostingStatus.CLOSED)
+            .label("completed_hosting_count"),
+        )
+        .select_from(Senior)
+        .outerjoin(Hosting, Hosting.senior_id == Senior.senior_id)
+        .where(Senior.guardian_id == guardian_id, Senior.active_flag.is_(True))
+    )
+
+    result = await session.execute(stmt)
+    row = result.one()
+
+    return GuardianStatsResponse(
+        senior_count=row.senior_count,
+        active_hosting_count=row.active_hosting_count,
+        cancelled_hosting_count=row.cancelled_hosting_count,
+        completed_hosting_count=row.completed_hosting_count,
+    )

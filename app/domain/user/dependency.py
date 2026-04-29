@@ -71,24 +71,15 @@ async def require_guardian(current_user: User = Depends(get_current_user)) -> Us
 
 
 async def require_volunteer(current_user: User = Depends(get_current_user)) -> User:
-    """봉사자 권한 확인(봉사자만 접근 가능)"""
+    """승인된 봉사자 권한 확인(cert_flag approved 필수)"""
     if current_user.user_role != UserRole.VOLUNTEER:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="봉사자만 접근할 수 있습니다.",
         )
-    return current_user
-
-
-async def require_approved_volunteer(
-    current_volunteer=Depends(require_volunteer),
-):
-    """승인된 봉사자만 통과시킵니다."""
-
-    if current_volunteer.cert_flag != CertFlag.APPROVED:
+    if current_user.cert_flag != CertFlag.APPROVED:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="승인된 봉사자만 호스팅을 탐색할 수 있습니다.",
+            detail="승인된 봉사자만 접근할 수 있습니다.",
         )
-
-    return current_volunteer
+    return current_user

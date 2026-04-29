@@ -7,8 +7,7 @@
   <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" rel="stylesheet">
   <link rel="stylesheet" href="/css/common.css">
   <style>
-    .hidden { display: none !important; }
-
+    /* hosting-match 페이지 고유 스타일 */
     .match-page-header {
       display: flex;
       align-items: flex-start;
@@ -34,13 +33,6 @@
       color: #6B5E53;
       font-size: 13px;
       font-weight: 600;
-    }
-
-    .filter-bar {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 12px;
-      margin-bottom: 24px;
     }
 
     .result-summary {
@@ -73,140 +65,8 @@
       line-height: 1.6;
     }
 
-    .hosting-card {
-      display: block;
-      text-decoration: none;
-      color: inherit;
-      height: 100%;
-      cursor: pointer;
-    }
-
-    .hosting-card:focus-visible {
-      outline: 3px solid rgba(212, 118, 60, 0.35);
-      outline-offset: 4px;
-    }
-
-    .hosting-header {
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-      margin-bottom: 16px;
-    }
-
-    .hosting-avatar {
-      width: 44px;
-      height: 44px;
-      border-radius: 999px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #fff;
-      font-size: 20px;
-      font-weight: 700;
-      background: linear-gradient(135deg, #D4763C, #5B8C5A);
-      flex-shrink: 0;
-    }
-
-    .hosting-header-text {
-      min-width: 0;
-      flex: 1;
-    }
-
-    .hosting-name {
-      font-size: 18px;
-      font-weight: 700;
-      line-height: 1.45;
-      color: #2C2420;
-      margin-bottom: 6px;
-      word-break: keep-all;
-    }
-
-    .hosting-address {
-      color: #8C7E73;
-      font-size: 14px;
-      line-height: 1.5;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: normal;
-      word-break: keep-all;
-    }
-
-    .hosting-menu {
-      font-size: 22px;
-      font-weight: 700;
-      line-height: 1.4;
-      color: #D4763C;
-      margin-bottom: 16px;
-      word-break: keep-all;
-    }
-
-    .hosting-status-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .hosting-status-row-after-menu {
-      margin-bottom: 14px;
-    }
-
-    .hosting-status-badge {
-      width: fit-content;
-    }
-
-    .hosting-meta {
-      display: block;
-      margin-bottom: 12px;
-      padding-top: 14px;
-      border-top: 1px solid #F2ECE6;
-    }
-
-    .hosting-meta-row {
-      display: flex;
-      align-items: flex-start;
-      gap: 8px;
-      color: #6B5E53;
-      font-size: 15px;
-      font-weight: 500;
-      line-height: 1.5;
-    }
-
-    .hosting-meta-row + .hosting-meta-row {
-      margin-top: 6px;
-    }
-
-    .hosting-meta-label {
-      min-width: 36px;
-      color: #8C7E73;
-      font-weight: 700;
-      flex-shrink: 0;
-    }
-
-    .hosting-meta-value {
-      min-width: 0;
-      word-break: keep-all;
-    }
-
-    .hosting-helper {
-      color: #8C7E73;
-      font-size: 14px;
-      font-weight: 500;
-      line-height: 1.5;
-      margin-bottom: 16px;
-    }
-
-    .hosting-card-actions {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
+    /* 탐색 페이지에서는 카드 액션이 시각적 표시일 뿐 클릭은 카드 전체로 처리 */
     .hosting-card-actions .btn {
-      flex: 1;
-      min-width: 0;
       pointer-events: none;
     }
 
@@ -240,104 +100,7 @@
       color: #D4763C;
     }
 
-    .modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.45);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-      z-index: 60;
-      box-sizing: border-box;
-    }
-
-    .modal-overlay.open {
-      display: flex;
-    }
-
-    .modal-panel {
-      width: min(100%, 420px);
-      max-height: calc(100vh - 48px);
-      background: #fff;
-      border-radius: 16px;
-      box-shadow: 0 20px 48px rgba(44, 36, 32, 0.18);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      box-sizing: border-box;
-    }
-
-    .modal-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 20px 24px 14px;
-      border-bottom: 1px solid #F2ECE6;
-      flex-shrink: 0;
-    }
-
-    .modal-header h3 {
-      margin: 0;
-      font-size: 20px;
-      line-height: 1.4;
-      color: #2C2420;
-    }
-
-    .modal-close-button {
-      border: 0;
-      background: transparent;
-      font-size: 24px;
-      cursor: pointer;
-      color: #8C7E73;
-      line-height: 1;
-      padding: 0;
-    }
-
-    .modal-body {
-      padding: 18px 24px 24px;
-      overflow-y: auto;
-      scrollbar-gutter: stable;
-    }
-
-    .modal-message {
-      font-size: 15px;
-      line-height: 1.6;
-      color: #6B5E53;
-      white-space: pre-wrap;
-      word-break: keep-all;
-    }
-
-    .modal-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-top: 20px;
-    }
-
-    .result-panel.success .modal-header h3 {
-      color: #2E5D2E;
-    }
-
-    .result-panel.error .modal-header h3 {
-      color: #9A3838;
-    }
-
-    .result-panel.info .modal-header h3 {
-      color: #6B5E53;
-    }
-
-    body.modal-open {
-      overflow: hidden;
-    }
-
     @media (max-width: 768px) {
-      .filter-bar {
-        grid-template-columns: 1fr;
-      }
-
       .result-summary {
         align-items: flex-start;
         flex-direction: column;
@@ -355,54 +118,12 @@
         font-size: 20px;
       }
 
-      .modal-overlay {
-        padding: 16px;
-      }
-
-      .modal-panel {
-        max-height: calc(100vh - 32px);
-      }
-
-      .modal-header {
-        padding: 18px 20px 12px;
-      }
-
-      .modal-body {
-        padding: 16px 20px 20px;
-      }
     }
   </style>
 </head>
 <body>
-  <nav class="nav">
-    <div class="nav-inner">
-      <a href="/" class="nav-logo">
-        <svg class="nav-logo-icon" viewBox="0 0 32 32" fill="none">
-          <circle cx="16" cy="16" r="14" fill="#D4763C" opacity="0.12"/>
-          <path d="M8 18c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke="#D4763C" stroke-width="2" stroke-linecap="round"/>
-          <path d="M6 18h20v1c0 3.3-2.7 6-6 6h-8c-3.3 0-6-2.7-6-6v-1z" fill="#D4763C" opacity="0.2"/>
-          <ellipse cx="16" cy="18" rx="10" ry="2" fill="#D4763C" opacity="0.15"/>
-          <path d="M13 14c-.5-2 .5-4 3-4s3.5 2 3 4" stroke="#5B8C5A" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
-        </svg>
-        밥동무
-      </a>
-      <ul class="nav-links">
-        <li><a href="/pages/hosting-match.html" class="active">호스팅 탐색</a></li>
-        <li><a href="/pages/my-matches.html">내 매칭</a></li>
-        <li><a href="/pages/mypage.html">마이페이지</a></li>
-      </ul>
-      <button class="nav-toggle" type="button" aria-label="메뉴 열기">
-        <span></span><span></span><span></span>
-      </button>
-    </div>
-  </nav>
+<div id="nav-placeholder"></div>
 
-  <div class="nav-drawer" id="navDrawer">
-    <div class="nav-drawer-content">
-      <a href="/pages/hosting-match.html" class="active">호스팅 탐색</a>
-      <a href="/pages/my-matches.html">내 매칭</a>
-      <a href="/pages/mypage.html">마이페이지</a>
-    </div>
   </div>
 
   <main class="container">
@@ -464,290 +185,28 @@
     </div>
   </main>
 
-  <div class="modal-overlay" id="result-modal" role="dialog" aria-modal="true" aria-labelledby="result-modal-title">
-    <div id="result-modal-panel" class="modal-panel result-panel info">
-      <div class="modal-header">
-        <h3 id="result-modal-title">안내</h3>
-        <button id="close-result-modal-button" type="button" class="modal-close-button" aria-label="닫기">×</button>
-      </div>
-      <div class="modal-body">
-        <div id="result-modal-message" class="modal-message"></div>
-        <div class="modal-actions">
-          <button id="result-modal-confirm-button" type="button" class="btn btn-primary btn-sm">확인</button>
-        </div>
-      </div>
-    </div>
-  </div>
 
   <div id="footer-placeholder"></div>
 
   <script src="/js/api.js"></script>
+  <script src="/js/modal.js"></script>
   <script type="module">
     import { requireRoles } from '/js/authGuard.js';
+    import {
+      buildHostingCard,
+      formatHostingPeopleText,
+      renderSigunguOptions,
+    } from '/js/hosting-shared.js';
 
-    const KST_TIME_ZONE = 'Asia/Seoul';
     const VOLUNTEER_HOSTINGS_API = '/hostings/public';
+    const MY_MATCHES_API = '/matches/my?is_completed=false&page=1';
 
     let hostingItems = [];
-    let resultModalResolver = null;
-
-    function toggleNav() {
-      const toggleElement = document.querySelector('.nav-toggle');
-      const drawerElement = document.querySelector('#navDrawer');
-      toggleElement.classList.toggle('active');
-      drawerElement.classList.toggle('open');
-      document.body.style.overflow = drawerElement.classList.contains('open') ? 'hidden' : '';
-    }
-
-    function closeNav(event) {
-      if (event.target === event.currentTarget) {
-        toggleNav();
-      }
-    }
-
-    window.toggleNav = toggleNav;
-    window.closeNav = closeNav;
-
-    function isAnyModalOpen() {
-      return document.querySelector('#result-modal').classList.contains('open');
-    }
-
-    function syncBodyScrollLock() {
-      if (isAnyModalOpen()) {
-        document.body.classList.add('modal-open');
-      } else {
-        document.body.classList.remove('modal-open');
-      }
-    }
-
-    function getResultModalTitle(type) {
-      if (type === 'success') {
-        return '완료';
-      }
-      if (type === 'error') {
-        return '오류';
-      }
-      return '안내';
-    }
-
-    function showResultModal(message, type = 'info') {
-      return new Promise((resolve) => {
-        const resultModalElement = document.querySelector('#result-modal');
-        const resultModalPanelElement = document.querySelector('#result-modal-panel');
-        const resultModalTitleElement = document.querySelector('#result-modal-title');
-        const resultModalMessageElement = document.querySelector('#result-modal-message');
-
-        resultModalPanelElement.className = `modal-panel result-panel ${type}`;
-        resultModalTitleElement.textContent = getResultModalTitle(type);
-        resultModalMessageElement.textContent = message;
-
-        resultModalElement.classList.add('open');
-        resultModalResolver = resolve;
-        syncBodyScrollLock();
-      });
-    }
-
-    function closeResultModal() {
-      const resultModalElement = document.querySelector('#result-modal');
-      resultModalElement.classList.remove('open');
-
-      if (resultModalResolver) {
-        const resolve = resultModalResolver;
-        resultModalResolver = null;
-        resolve();
-      }
-
-      syncBodyScrollLock();
-    }
-
-    function escapeHtml(value) {
-      return String(value ?? '')
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;')
-        .replaceAll("'", '&#39;');
-    }
-
-    function parseApiDateTime(value) {
-      if (!value) {
-        return null;
-      }
-
-      if (value instanceof Date) {
-        return value;
-      }
-
-      if (typeof value === 'string') {
-        const normalizedValue = value.includes('T')
-          && !value.endsWith('Z')
-          && !/[+-]\d{2}:\d{2}$/.test(value)
-          ? `${value}Z`
-          : value;
-
-        return new Date(normalizedValue);
-      }
-
-      return new Date(value);
-    }
-
-    function getStatusMeta(status) {
-      const metaMap = {
-        'OPEN': { label: '신청가능', className: 'badge-open' },
-        'FULL': { label: '모집완료', className: 'badge-full' },
-        'FIXED': { label: '확정', className: 'badge-full' },
-        'FAILED': { label: '취소됨', className: 'badge-failed' },
-        'IN_PROGRESS': { label: '진행중', className: 'badge-progress' },
-        'CLOSED': { label: '완료', className: 'badge-closed' },
-      };
-
-      return metaMap[status] ?? { label: status ?? '-', className: 'badge-closed' };
-    }
-
-    function formatDateTimeRange(hostingAt, hostingEnd) {
-      const startDate = parseApiDateTime(hostingAt);
-      const endDate = parseApiDateTime(hostingEnd);
-
-      if (!startDate || Number.isNaN(startDate.getTime()) || !endDate || Number.isNaN(endDate.getTime())) {
-        return '-';
-      }
-
-      const dateText = new Intl.DateTimeFormat('ko-KR', {
-        timeZone: KST_TIME_ZONE,
-        month: 'long',
-        day: 'numeric',
-        weekday: 'short',
-      }).format(startDate);
-
-      const startTimeText = new Intl.DateTimeFormat('ko-KR', {
-        timeZone: KST_TIME_ZONE,
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-      }).format(startDate);
-
-      const endTimeText = new Intl.DateTimeFormat('ko-KR', {
-        timeZone: KST_TIME_ZONE,
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-      }).format(endDate);
-
-      return `${dateText} · ${startTimeText} ~ ${endTimeText}`;
-    }
-
-    function formatHostingDate(hostingAt) {
-      const startDate = parseApiDateTime(hostingAt);
-
-      if (!startDate || Number.isNaN(startDate.getTime())) {
-        return '-';
-      }
-
-      return new Intl.DateTimeFormat('ko-KR', {
-        timeZone: KST_TIME_ZONE,
-        month: 'long',
-        day: 'numeric',
-        weekday: 'short',
-      }).format(startDate);
-    }
-
-    function formatHostingTimeRange(hostingAt, hostingEnd) {
-      const startDate = parseApiDateTime(hostingAt);
-      const endDate = parseApiDateTime(hostingEnd);
-
-      if (!startDate || Number.isNaN(startDate.getTime()) || !endDate || Number.isNaN(endDate.getTime())) {
-        return '-';
-      }
-
-      const startTimeText = new Intl.DateTimeFormat('ko-KR', {
-        timeZone: KST_TIME_ZONE,
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-      }).format(startDate);
-
-      const endTimeText = new Intl.DateTimeFormat('ko-KR', {
-        timeZone: KST_TIME_ZONE,
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-      }).format(endDate);
-
-      return `${startTimeText} ~ ${endTimeText}`;
-    }
-
-    function getHostingDurationHours(hostingAt, hostingEnd) {
-      const startDate = parseApiDateTime(hostingAt);
-      const endDate = parseApiDateTime(hostingEnd);
-
-      if (!startDate || Number.isNaN(startDate.getTime()) || !endDate || Number.isNaN(endDate.getTime())) {
-        return null;
-      }
-
-      const durationMs = endDate.getTime() - startDate.getTime();
-      const durationHours = durationMs / (60 * 60 * 1000);
-
-      if (!Number.isFinite(durationHours) || durationHours <= 0) {
-        return null;
-      }
-
-      return Number.isInteger(durationHours)
-        ? String(durationHours)
-        : durationHours.toFixed(1);
-    }
-
-    function formatDateTimeRangeWithDuration(hostingAt, hostingEnd) {
-      const dateTimeRangeText = formatDateTimeRange(hostingAt, hostingEnd);
-      const durationHours = getHostingDurationHours(hostingAt, hostingEnd);
-
-      if (dateTimeRangeText === '-' || !durationHours) {
-        return dateTimeRangeText;
-      }
-
-      return `${dateTimeRangeText} (${durationHours}시간 진행)`;
-    }
-
-    function formatHostingTimeRangeWithDuration(hostingAt, hostingEnd) {
-      const timeRangeText = formatHostingTimeRange(hostingAt, hostingEnd);
-      const durationHours = getHostingDurationHours(hostingAt, hostingEnd);
-
-      if (timeRangeText === '-' || !durationHours) {
-        return timeRangeText;
-      }
-
-      return `${timeRangeText} (${durationHours}시간 진행)`;
-    }
-
-    function buildHostingAddressText(hosting) {
-      const baseAddress = [hosting?.address.road_address, hosting?.address.detail_address]
-        .filter(Boolean)
-        .join(' ')
-        .trim();
-
-      if (!baseAddress) {
-        return hosting?.address.building_name ?? '';
-      }
-
-      if (!hosting?.address.building_name) {
-        return baseAddress;
-      }
-
-      return `${baseAddress} (${hosting.address.building_name})`;
-    }
-
-    function getCurrentPeopleCount(hosting) {
-      return Number(hosting?.current_people ?? 0);
-    }
-
-    function formatHostingPeopleText(hosting) {
-      const currentPeople = getCurrentPeopleCount(hosting);
-      const maxPeople = Number(hosting?.max_people ?? 0);
-
-      return `${currentPeople}/${maxPeople}명`;
-    }
+    let appliedHostingIdSet = new Set();
+    /* ---------- 페이지 고유 헬퍼 ---------- */
 
     function buildHostingTitle(hosting) {
-      const regionParts = [hosting?.address.sigungu, hosting?.address.bname].filter(Boolean);
+      const regionParts = [hosting?.address?.sigungu, hosting?.address?.bname].filter(Boolean);
       return regionParts.length > 0 ? `${regionParts.join(' · ')} 호스팅` : '호스팅';
     }
 
@@ -755,117 +214,105 @@
       window.location.href = `/pages/hosting-detail.html?id=${hostingId}&view=volunteer`;
     }
 
-    function buildHostingCard(hosting) {
-      const statusMeta = getStatusMeta(hosting.hosting_status);
-      const titleText = buildHostingTitle(hosting);
-      const avatarText = (hosting.sigungu ?? '밥').charAt(0);
-      const addressText = buildHostingAddressText(hosting);
-      const helperText = formatHostingPeopleText(hosting);
-
-      const cardElement = document.createElement('article');
-      cardElement.className = 'card hosting-card slide-up';
-      cardElement.dataset.sigungu = hosting.address.sigungu ?? '';
-      cardElement.dataset.status = hosting.hosting_status ?? '';
-      cardElement.dataset.keyword = [
-        hosting.menu,
-        hosting.address.sigungu,
-        hosting.address.bname,
-        hosting.address.road_address,
-        hosting.address.detail_address,
-        hosting.address.building_name,
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase();
-      cardElement.tabIndex = 0;
-      cardElement.setAttribute('role', 'link');
-      cardElement.setAttribute('aria-label', `${titleText} 상세 보기`);
-      cardElement.addEventListener('click', () => {
-        goToHostingDetail(hosting.hosting_id);
-      });
-      cardElement.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          goToHostingDetail(hosting.hosting_id);
-        }
-      });
-
-      cardElement.innerHTML = `
-        <div class="card-body">
-          <div class="hosting-header">
-            <div class="hosting-avatar">${escapeHtml(avatarText)}</div>
-            <div class="hosting-header-text">
-              <div class="hosting-name">${escapeHtml(titleText)}</div>
-              <div class="hosting-address" title="${escapeHtml(addressText || '-')}">${escapeHtml(addressText || '-')}</div>
-            </div>
-          </div>
-
-          <div class="hosting-menu">${escapeHtml(hosting.menu || '-')}</div>
-
-          <div class="hosting-status-row hosting-status-row-after-menu">
-            <span class="badge hosting-status-badge ${statusMeta.className}">
-              ${escapeHtml(statusMeta.label)}
-            </span>
-          </div>
-
-          <div class="hosting-meta">
-            <div class="hosting-meta-row">
-              <span class="hosting-meta-label">날짜</span>
-              <span class="hosting-meta-value">${escapeHtml(formatHostingDate(hosting.hosting_at))}</span>
-            </div>
-            <div class="hosting-meta-row">
-              <span class="hosting-meta-label">시간</span>
-              <span class="hosting-meta-value">${escapeHtml(formatHostingTimeRangeWithDuration(hosting.hosting_at, hosting.hosting_end))}</span>
-            </div>
-          </div>
-
-          <div class="hosting-helper">모집 인원 ${escapeHtml(helperText)}</div>
-
-          <div class="hosting-card-actions">
-            <span class="btn btn-primary">상세 보기</span>
-          </div>
-        </div>
-      `;
-
-      return cardElement;
-    }
-
-    function renderSigunguOptions() {
-      const sigunguSelectElement = document.querySelector('#filter-sigungu');
-      const previousValue = sigunguSelectElement.value;
-
-      const sigunguSet = new Set(
-        hostingItems
-          .map((hosting) => hosting.address.sigungu ?? '')
-          .filter(Boolean)
+    function getHostingIdFromMatch(match) {
+      return Number(
+        match?.hosting_id
+        ?? match?.hosting?.hosting_id
+        ?? match?.hosting?.id
+        ?? 0
       );
-
-      sigunguSelectElement.innerHTML = '<option value="">전체 시군구</option>';
-
-      [...sigunguSet]
-        .sort((left, right) => left.localeCompare(right, 'ko'))
-        .forEach((sigungu) => {
-          sigunguSelectElement.appendChild(new Option(sigungu, sigungu));
-        });
-
-      sigunguSelectElement.value = [...sigunguSet].includes(previousValue) ? previousValue : '';
     }
+
+    function isActiveAppliedMatch(match) {
+      const status = String(match?.match_status ?? '').toLowerCase();
+      return status === 'approved';
+    }
+
+    function normalizeArrayResponse(response) {
+      if (Array.isArray(response)) {
+        return response;
+      }
+
+      if (Array.isArray(response?.items)) {
+        return response.items;
+      }
+
+      if (Array.isArray(response?.results)) {
+        return response.results;
+      }
+
+      if (Array.isArray(response?.data)) {
+        return response.data;
+      }
+
+      if (Array.isArray(response?.matches)) {
+        return response.matches;
+      }
+
+      if (Array.isArray(response?.hostings)) {
+        return response.hostings;
+      }
+
+      return [];
+    }
+
+    async function loadMyAppliedHostingIds() {
+      const matchesResponse = await api(MY_MATCHES_API);
+      const matches = normalizeArrayResponse(matchesResponse);
+
+      appliedHostingIdSet = new Set(
+        matches
+          .filter(isActiveAppliedMatch)
+          .map(getHostingIdFromMatch)
+          .filter((hostingId) => hostingId > 0)
+      );
+    }
+
+    function isAppliedHosting(hosting) {
+      return appliedHostingIdSet.has(Number(hosting?.hosting_id));
+    }
+
+    /* ---------- 카드 빌더 (공통 빌더에 옵션 주입) ---------- */
+
+    function buildMatchCard(hosting) {
+      const titleText = buildHostingTitle(hosting);
+      const avatarText = (hosting.address?.sigungu ?? '밥').charAt(0);
+      const isApplied = isAppliedHosting(hosting);
+
+      return buildHostingCard(hosting, {
+        title: titleText,
+        avatarText,
+        ariaLabel: `${titleText} 상세 보기`,
+        helperText: isApplied
+          ? `내가 신청한 호스팅 · 모집 인원 ${formatHostingPeopleText(hosting)}`
+          : `모집 인원 ${formatHostingPeopleText(hosting)}`,
+        actionsHtml: isApplied
+          ? '<span class="btn btn-secondary">내 신청 내역 보기</span>'
+          : '<span class="btn btn-primary">상세 보기</span>',
+        extraBadgesHtml: isApplied
+          ? '<span class="badge badge-my-applied">내가 신청한 호스팅</span>'
+          : '',
+        onActivate: (h) => goToHostingDetail(h.hosting_id),
+      });
+    }
+
+    /* ---------- 정렬 / 렌더 ---------- */
 
     function sortHostings(items) {
       const selectedSort = document.querySelector('#filter-sort').value;
-      const clonedItems = [...items];
+      const cloned = [...items];
 
       if (selectedSort === 'latest') {
-        clonedItems.sort((left, right) => new Date(right.created_at) - new Date(left.created_at));
-        return clonedItems;
+        cloned.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        return cloned;
       }
 
-      clonedItems.sort((left, right) => new Date(left.hosting_at) - new Date(right.hosting_at));
-      return clonedItems;
+      cloned.sort((a, b) => new Date(a.hosting_at) - new Date(b.hosting_at));
+      return cloned;
     }
 
     function renderHostings() {
-      const hostingListElement = document.querySelector('#hosting-list');
+      const listElement = document.querySelector('#hosting-list');
       const emptyStateElement = document.querySelector('#empty-state');
       const emptyTitleElement = document.querySelector('#empty-title');
       const emptyDescriptionElement = document.querySelector('#empty-description');
@@ -875,19 +322,19 @@
       const selectedStatus = document.querySelector('#filter-status').value;
       const keyword = document.querySelector('#filter-keyword').value.trim().toLowerCase();
 
-      hostingListElement.innerHTML = '';
+      listElement.innerHTML = '';
 
-      const filteredItems = hostingItems.filter((hosting) => {
-        const matchesSigungu = !selectedSigungu || hosting.address.sigungu === selectedSigungu;
+      const filtered = hostingItems.filter((hosting) => {
+        const matchesSigungu = !selectedSigungu || hosting.address?.sigungu === selectedSigungu;
         const matchesStatus = !selectedStatus || hosting.hosting_status === selectedStatus;
 
         const keywordTarget = [
           hosting.menu,
-          hosting.address.sigungu,
-          hosting.address.bname,
-          hosting.address.road_address,
-          hosting.address.detail_address,
-          hosting.address.building_name,
+          hosting.address?.sigungu,
+          hosting.address?.bname,
+          hosting.address?.road_address,
+          hosting.address?.detail_address,
+          hosting.address?.building_name,
         ]
           .filter(Boolean)
           .join(' ')
@@ -898,8 +345,8 @@
         return matchesSigungu && matchesStatus && matchesKeyword;
       });
 
-      const sortedItems = sortHostings(filteredItems);
-      resultCountElement.textContent = `${sortedItems.length}건`;
+      const sorted = sortHostings(filtered);
+      resultCountElement.textContent = `${sorted.length}건`;
 
       if (hostingItems.length === 0) {
         emptyStateElement.classList.remove('hidden');
@@ -908,7 +355,7 @@
         return;
       }
 
-      if (sortedItems.length === 0) {
+      if (sorted.length === 0) {
         emptyStateElement.classList.remove('hidden');
         emptyTitleElement.textContent = '조건에 맞는 호스팅이 없어요';
         emptyDescriptionElement.textContent = '지역, 상태, 검색어를 바꿔보세요.';
@@ -916,15 +363,19 @@
       }
 
       emptyStateElement.classList.add('hidden');
-
-      sortedItems.forEach((hosting) => {
-        hostingListElement.appendChild(buildHostingCard(hosting));
+      sorted.forEach((hosting) => {
+        listElement.appendChild(buildMatchCard(hosting));
       });
     }
 
     async function loadHostings() {
-      hostingItems = await api(VOLUNTEER_HOSTINGS_API);
-      renderSigunguOptions();
+      const [hostingsResponse] = await Promise.all([
+        api(VOLUNTEER_HOSTINGS_API),
+        loadMyAppliedHostingIds(),
+      ]);
+
+      hostingItems = normalizeArrayResponse(hostingsResponse);
+      renderSigunguOptions(document.querySelector('#filter-sigungu'), hostingItems);
       renderHostings();
     }
 
@@ -940,24 +391,13 @@
       }
     }
 
+    /* ---------- 이벤트 ---------- */
+
     document.querySelector('#filter-sigungu')?.addEventListener('change', renderHostings);
     document.querySelector('#filter-status')?.addEventListener('change', renderHostings);
     document.querySelector('#filter-sort')?.addEventListener('change', renderHostings);
     document.querySelector('#filter-keyword')?.addEventListener('input', renderHostings);
 
-    document.querySelector('#result-modal-confirm-button')?.addEventListener('click', () => {
-      closeResultModal();
-    });
-
-    document.querySelector('#close-result-modal-button')?.addEventListener('click', () => {
-      closeResultModal();
-    });
-
-    document.querySelector('#result-modal')?.addEventListener('click', (event) => {
-      if (event.target === event.currentTarget) {
-        closeResultModal();
-      }
-    });
 
     document.addEventListener('keydown', (event) => {
       if (event.key !== 'Escape') {
@@ -974,7 +414,6 @@
       if (!currentUser) {
         return;
       }
-
       await initializePage();
     }
 

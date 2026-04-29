@@ -1,5 +1,7 @@
 const STORAGE_KEY = 'currentUser';
 const ACCESS_TOKEN_KEY = 'access_token';
+const SESSION_KEY = 'cachedUser';
+const SESSION_TTL = 5 * 60 * 1000;
 
 function removeCachedUser() {
   window.localStorage.removeItem(STORAGE_KEY);
@@ -40,6 +42,7 @@ export function clearCurrentUser() {
 export function clearAuth() {
   removeCachedUser();
   removeAccessToken();
+  sessionStorage.removeItem(SESSION_KEY);
 }
 
 export function isLoggedIn() {
@@ -56,9 +59,22 @@ export async function fetchCurrentUser() {
     return null;
   }
 
+  const cached = sessionStorage.getItem(SESSION_KEY);
+  if (cached) {
+    try {
+      const { user, at } = JSON.parse(cached);
+      if (Date.now() - at < SESSION_TTL) {
+        return user;
+      }
+    } catch {
+      sessionStorage.removeItem(SESSION_KEY);
+    }
+  }
+
   try {
     const me = await api('/users/me');
     setCurrentUser(me);
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify({ user: me, at: Date.now() }));
     return me;
   } catch (error) {
     clearAuth();
@@ -75,6 +91,11 @@ export async function requireAuth() {
 
   if (!currentUser) {
     redirectToLogin();
+    return null;
+  }
+
+  if (currentUser.user_role !== 'admin' && currentUser.cert_flag !== 'approved') {
+    window.location.replace('/pages/mypage.html');
     return null;
   }
 
@@ -102,7 +123,7 @@ export function redirectByRole(userRole) {
 
 export async function requireRoles(allowedRoles = []) {
   const currentUser = await requireAuth();
-    
+
   if (!currentUser) {
     return null;
   }
@@ -122,7 +143,7 @@ export async function validateHostingDetailAccess(viewMode) {
   }
 
   if (viewMode === 'guardian') {
-    return ['guardian', 'admin'].includes(currentUser.user_role);
+    return currentUser.user_role === 'guardian';
   }
 
   if (viewMode === 'volunteer') {

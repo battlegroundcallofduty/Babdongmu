@@ -53,6 +53,8 @@ function saveToken(token) {
  */
 function logout() {
   localStorage.removeItem('access_token');
+  localStorage.removeItem('currentUser');
+  sessionStorage.removeItem('cachedUser');
   window.location.href = '/pages/login.html';
 }
 

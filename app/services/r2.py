@@ -6,10 +6,10 @@ import uuid
 from io import BytesIO
 
 import boto3
-from PIL import Image, UnidentifiedImageError
 from botocore.client import BaseClient
 from botocore.exceptions import BotoCoreError, ClientError
 from fastapi import HTTPException, UploadFile
+from PIL import Image, UnidentifiedImageError
 
 from app.config import settings
 

@@ -113,3 +113,12 @@ class SeniorResponse(BaseModel):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class GuardianStatsResponse(BaseModel):
+    """보호자 마이페이지 통계 응답 스키마."""
+
+    senior_count: int
+    active_hosting_count: int
+    cancelled_hosting_count: int
+    completed_hosting_count: int

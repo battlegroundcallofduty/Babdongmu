@@ -1,12 +1,14 @@
 """호스팅 요청/응답 스키마."""
 
-from datetime import datetime, time, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from zoneinfo import ZoneInfo
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, computed_field, model_validator
 
 from app.domain.common.schemas import AddressResponse
 from app.domain.hosting.models import HostingStatus
+from app.domain.senior.models import GenderEnum
+from app.domain.senior.schemas import calculate_age_from_birth_date
 
 KST = ZoneInfo("Asia/Seoul")
 MIN_HOSTING_LEAD_TIME = timedelta(hours=24)
@@ -71,6 +73,28 @@ class HostingCreateRequest(BaseModel):
         return self
 
 
+class HostingSeniorResponse(BaseModel):
+    """호스팅 상세에 포함되는 어르신 요약 응답입니다."""
+
+    senior_id: int
+    name: str
+    gender: GenderEnum
+    birth_date: date
+    address: AddressResponse
+    special_note: str | None
+    ai_summary: str | None
+    max_people: int
+
+    @computed_field
+    @property
+    def age(self) -> int:
+        """생년월일 기준 현재 만 나이."""
+
+        return calculate_age_from_birth_date(self.birth_date)
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class HostingResponse(BaseModel):
     """호스팅 응답 스키마입니다."""
 
@@ -85,5 +109,6 @@ class HostingResponse(BaseModel):
     hosting_status: HostingStatus
     created_at: datetime
     updated_at: datetime
+    senior: HostingSeniorResponse | None = None
 
     model_config = ConfigDict(from_attributes=True)

@@ -7,9 +7,9 @@ https://babdongmu.duckdns.org/
 ## 기술 스택
 
 - **Framework**: FastAPI (Python 3.11)
-- **Database**: MongoDB + Motor (async driver)
+- **Database**: SQLite (로컬) / PostgreSQL (프로덕션), SQLAlchemy 2.x async + Alembic
 - **Auth**: JWT (PyJWT + bcrypt)
-- **Infra**: Docker, AWS EC2, GitHub Actions
+- **Infra**: Docker, AWS EC2, Caddy, GitHub Actions
 
 ## 로컬 실행
 
@@ -29,7 +29,14 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-### 2-B. Docker로 실행
+### 2-B. uv로 실행
+
+```bash
+uv sync
+uv run uvicorn app.main:app --reload
+```
+
+### 2-C. Docker로 실행
 
 ```bash
 docker compose up --build
@@ -87,45 +94,63 @@ app/                             # 백엔드 (FastAPI)
 ├── main.py                      # FastAPI 앱 진입점
 ├── config.py                    # 환경변수 설정
 ├── database.py                  # MongoDB 연결 관리
+├── scheduler.py                 # 호스팅 상태 자동 전환 스케줄러
 ├── core/
 │   └── security.py              # JWT + 비밀번호 해싱
 ├── api/v1/
 │   └── router.py                # API 라우터 통합
 ├── domain/
+│   ├── common/
+│   │   └── models.py                # Address 공유 모델
 │   ├── user/                    # 유저 (봉사자/보호자/관리자)
 │   │   ├── models.py                # 유저 문서 스키마
-│   │   ├── schema.py                # 요청/응답 DTO
+│   │   ├── schemas.py                # 요청/응답 DTO
 │   │   ├── router.py                # 인증 API 엔드포인트
 │   │   ├── service.py               # 비즈니스 로직
 │   │   └── dependency.py            # 인증 의존성
 │   ├── senior/                  # 어르신
 │   │   ├── models.py                # 어르신 문서 스키마
-│   │   ├── schema.py                # 요청/응답 DTO
+│   │   ├── schemas.py                # 요청/응답 DTO
 │   │   ├── router.py                # 어르신 API 엔드포인트
 │   │   └── service.py               # 비즈니스 로직
 │   ├── hosting/                 # 호스팅
 │   │   ├── models.py                # 호스팅 문서 스키마
-│   │   ├── schema.py                # 요청/응답 DTO
+│   │   ├── schemas.py                # 요청/응답 DTO
 │   │   ├── router.py                # 호스팅 API 엔드포인트
 │   │   └── service.py               # 비즈니스 로직
 │   ├── match/                   # 매칭
 │   │   ├── models.py                # 매칭 문서 스키마
-│   │   ├── schema.py                # 요청/응답 DTO
+│   │   ├── schemas.py                # 요청/응답 DTO
 │   │   ├── router.py                # 매칭 API 엔드포인트
 │   │   └── service.py               # 비즈니스 로직
-│   └── review/                  # 후기
-│       ├── models.py                # 후기 문서 스키마
-│       ├── schema.py                # 요청/응답 DTO
-│       ├── router.py                # 후기 API 엔드포인트
-│       └── service.py               # 비즈니스 로직
+│   ├── review/                  # 후기
+│   │   ├── models.py                # 후기 문서 스키마
+│   │   ├── schemas.py                # 요청/응답 DTO
+│   │   ├── router.py                # 후기 API 엔드포인트
+│   │   └── service.py               # 비즈니스 로직
+│   ├── admin/                   # 관리자
+│   │   ├── router.py                # 관리자 API 엔드포인트
+│   │   └── service.py               # 비즈니스 로직
+│   └── ai/                      # Gemini AI 소개글
+│       └── router.py                # AI 소개글 생성 엔드포인트
 └── services/
-    └── sms.py                       # CoolSMS 발송 유틸리티
+    ├── sms.py                       # Solapi SMS 발송 유틸리티
+    ├── ai.py                        # Gemini 소개글 생성
+    ├── qr.py                        # QR 코드 생성
+    └── r2.py                        # Cloudflare R2 파일 업로드
 frontend/                        # 프론트엔드 (HTML/CSS/JS)
 ├── index.html                   # 랜딩 페이지
 ├── css/
 │   └── common.css               # 공통 스타일 (DESIGN.md 기반)
 ├── js/
-│   └── api.js                   # API 공통 헬퍼
+│   ├── api.js                   # API 공통 헬퍼
+│   ├── authGuard.js             # 인증/권한 가드
+│   ├── base.js                  # 공통 초기화 (네비게이션 등)
+│   ├── addressMapper.js         # 카카오 주소 데이터 매핑
+│   ├── login.js                 # 로그인
+│   ├── register.js              # 회원가입
+│   ├── mypage.js                # 마이페이지
+│   └── admin.js                 # 관리자 대시보드
 └── pages/
     ├── login.html               # 로그인
     ├── register.html            # 회원가입
@@ -135,7 +160,9 @@ frontend/                        # 프론트엔드 (HTML/CSS/JS)
     ├── my-matches.html          # 내 매칭
     ├── mypage.html              # 마이페이지
     ├── guardian.html            # 보호자 관리
-    └── admin.html               # 관리자 대시보드
+    ├── admin.html               # 관리자 대시보드
+    ├── review-detail.html       # 후기 상세
+    └── check.html               # QR 체크인/체크아웃
 tests/                           # 테스트
 ├── conftest.py                  # TestClient fixture
 └── test_user.py                 # 유저 인증 테스트
@@ -221,7 +248,7 @@ git restore --staged app/config.py
 | 공통 파일 | 역할 |
 |-----------|------|
 | `app/config.py` | 환경변수 설정 |
-| `app/database.py` | MongoDB 연결 관리 |
+| `app/database.py` | DB 연결 관리 |
 | `app/main.py` | FastAPI 앱 진입점 |
 | `app/api/v1/router.py` | API 라우터 통합 |
 | `requirements.txt` | 패키지 의존성 |
