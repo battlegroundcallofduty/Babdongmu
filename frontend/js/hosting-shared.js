@@ -213,61 +213,6 @@ const SHARED_CSS = `
   color: #D4763C;
 }
 
-/* ---------- 알림 모달 (info / success / error) ---------- */
-.alert-modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  z-index: 60;
-  box-sizing: border-box;
-}
-
-.alert-modal-overlay.open {
-  display: flex;
-}
-
-.alert-modal {
-  width: min(100%, 420px);
-  background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 20px 48px rgba(44, 36, 32, 0.18);
-  padding: 24px;
-}
-
-.alert-modal-title {
-  font-size: 20px;
-  font-weight: 700;
-  line-height: 1.4;
-  color: #2C2420;
-  margin-bottom: 8px;
-}
-
-.alert-modal-message {
-  font-size: 15px;
-  line-height: 1.6;
-  color: #6B5E53;
-  margin-bottom: 20px;
-  white-space: pre-wrap;
-  word-break: keep-all;
-}
-
-.alert-modal-actions {
-  display: flex;
-  justify-content: flex-end;
-}
-
-.alert-modal.success .alert-modal-title { color: #2E5D2E; }
-.alert-modal.error .alert-modal-title { color: #9A3838; }
-.alert-modal.info .alert-modal-title { color: #6B5E53; }
-
-body.modal-open {
-  overflow: hidden;
-}
-
 /* ---------- 반응형 ---------- */
 @media (max-width: 768px) {
   .filter-bar {
@@ -284,10 +229,6 @@ body.modal-open {
 
   .hosting-menu {
     font-size: 20px;
-  }
-
-  .alert-modal {
-    padding: 20px;
   }
 }
 `;
@@ -315,28 +256,7 @@ injectSharedStyles();
 export const KST_TIME_ZONE = 'Asia/Seoul';
 
 /* ================================================================
- * 2. 네비게이션 토글
- * ================================================================ */
-
-export function toggleNav() {
-  const toggleElement = document.querySelector('.nav-toggle');
-  const drawerElement = document.querySelector('#navDrawer');
-  if (!toggleElement || !drawerElement) {
-    return;
-  }
-  toggleElement.classList.toggle('active');
-  drawerElement.classList.toggle('open');
-  document.body.style.overflow = drawerElement.classList.contains('open') ? 'hidden' : '';
-}
-
-export function closeNav(event) {
-  if (event.target === event.currentTarget) {
-    toggleNav();
-  }
-}
-
-/* ================================================================
- * 3. 문자열 / 날짜 유틸
+ * 2. 문자열 / 날짜 유틸
  * ================================================================ */
 
 export function escapeHtml(value) {
@@ -669,86 +589,3 @@ export function renderSigunguOptions(selectElement, hostingItems) {
   selectElement.value = [...sigunguSet].includes(previousValue) ? previousValue : '';
 }
 
-/* ================================================================
- * 9. 알림 모달 (info / success / error)
- *    공통 마크업: <div class="alert-modal-overlay" id="alert-modal"> ... </div>
- *    필요 ID: alert-modal, alert-modal-panel, alert-modal-title,
- *             alert-modal-message, alert-modal-confirm
- * ================================================================ */
-
-let alertModalResolver = null;
-
-function getAlertModalTitle(type) {
-  if (type === 'success') return '완료';
-  if (type === 'error') return '오류';
-  return '안내';
-}
-
-export function showAlertModal(message, type = 'info') {
-  return new Promise((resolve) => {
-    const overlay = document.querySelector('#alert-modal');
-    const panel = document.querySelector('#alert-modal-panel');
-    const titleElement = document.querySelector('#alert-modal-title');
-    const messageElement = document.querySelector('#alert-modal-message');
-
-    if (!overlay || !panel || !titleElement || !messageElement) {
-      console.warn('alert-modal 마크업이 없어 모달을 표시할 수 없어요.');
-      resolve();
-      return;
-    }
-
-    panel.className = `alert-modal ${type}`;
-    titleElement.textContent = getAlertModalTitle(type);
-    messageElement.textContent = message;
-    overlay.classList.add('open');
-    document.body.classList.add('modal-open');
-    alertModalResolver = resolve;
-  });
-}
-
-export function closeAlertModal() {
-  const overlay = document.querySelector('#alert-modal');
-  if (!overlay) {
-    return;
-  }
-  overlay.classList.remove('open');
-  document.body.classList.remove('modal-open');
-
-  if (alertModalResolver) {
-    const resolve = alertModalResolver;
-    alertModalResolver = null;
-    resolve();
-  }
-}
-
-export function isAlertModalOpen() {
-  return document.querySelector('#alert-modal')?.classList.contains('open') ?? false;
-}
-
-/**
- * 알림 모달의 기본 이벤트 (확인 버튼, 바깥 클릭, ESC) 바인딩
- * @param {object} [options]
- * @param {boolean} [options.closeOnBackdrop=true] 바깥 클릭 시 닫기
- * @param {boolean} [options.closeOnEscape=true]   ESC 시 닫기
- */
-export function bindAlertModalEvents(options = {}) {
-  const { closeOnBackdrop = true, closeOnEscape = true } = options;
-
-  document.querySelector('#alert-modal-confirm')?.addEventListener('click', closeAlertModal);
-
-  if (closeOnBackdrop) {
-    document.querySelector('#alert-modal')?.addEventListener('click', (event) => {
-      if (event.target === event.currentTarget) {
-        closeAlertModal();
-      }
-    });
-  }
-
-  if (closeOnEscape) {
-    document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape' && isAlertModalOpen()) {
-        closeAlertModal();
-      }
-    });
-  }
-}

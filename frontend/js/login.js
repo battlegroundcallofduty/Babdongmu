@@ -62,8 +62,9 @@ document.querySelector('#login-form')?.addEventListener('submit', async (e) => {
 
     console.log('login response:', data);
     
-    // access token 저장
+    // access token 저장, 이전 세션 캐시 클리어
     saveToken(data.access_token);
+    sessionStorage.removeItem('cachedUser');
     
     // 현재 로그인 사용자 정보 조회
     const user = await api('/users/me');
@@ -80,6 +81,12 @@ document.querySelector('#login-form')?.addEventListener('submit', async (e) => {
         user_role: normalizedRole,
       }),
     );
+
+    // cert_flag 미승인(guardian/volunteer)은 마이페이지로 — 서류 제출 필요
+    if (normalizedRole !== 'admin' && user.cert_flag !== 'approved') {
+      window.location.replace('/pages/mypage.html');
+      return;
+    }
 
     // 역할별 페이지 이동
     // 로그인 페이지를 히스토리에 남기지 않아서 뒤로가기 동작이 덜 꼬일 수 있음(replace)
