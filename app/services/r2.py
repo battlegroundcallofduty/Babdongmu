@@ -174,7 +174,6 @@ async def delete_image(image_url: str) -> None:
             return
         key = image_url[len(prefix):]
 
-    logger = logging.getLogger(__name__)
     try:
         client = _get_client()
         client.delete_object(Bucket=bucket, Key=key)
