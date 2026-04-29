@@ -186,10 +186,39 @@ async def delete_document(document_id: int, db: AsyncSession) -> None:
 
 
 # ── 카카오 ─────────
-async def get_or_create_kakao_user(kakao_id: str, email: str, name: str, db: AsyncSession) -> User:
-    """카카오 로그인/회원가입 통합: kakao_id로 유저를 조회하고, 없으면 생성"""
-    # email.lower() 추가 예정
-    pass
+async def get_user_by_kakao_id(kakao_id: str, db: AsyncSession) -> User | None:
+    """카카오 콜백용: kakao_id로 기존 유저만 조회 (신규면 None 반환)"""
+    statement = (
+        select(User)
+        .where(User.kakao_id == kakao_id)
+        .options(selectinload(User.address))
+    )  # selectinload: 유저+주소 한번에 조회
+    result = await db.execute(statement)
+    return result.scalar_one_or_none()
+
+
+async def create_kakao_user(
+    kakao_id: str,
+    name: str,
+    user_role: UserRole,
+    address_data: AddressCreate,
+    db: AsyncSession,
+) -> User:
+    """카카오 전용 회원가입: register.html 제출 완료 후 호출"""
+    address = Address(**address_data.model_dump())
+    db.add(address)
+    await db.flush()  # 주소 테이블에서 address_id 확보
+
+    user = User(
+        kakao_id=kakao_id,
+        name=name,
+        address_id=address.address_id,
+        user_role=user_role,
+    )
+    db.add(user)
+    await db.commit()
+    # 일반 유저와 반환값 형태 동일(이메일, 비번, 폰번은 null)
+    return await get_user_with_address(user.user_id, db)
 
 
 # ── SMS 인증 ────────
