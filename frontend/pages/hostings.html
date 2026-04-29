@@ -23,6 +23,66 @@
       justify-content: flex-end;
     }
 
+
+    .status-summary-section {
+      margin-bottom: 20px;
+    }
+
+    .status-summary-title {
+      margin: 0 0 10px;
+      color: #2C2420;
+      font-size: 16px;
+      font-weight: 800;
+    }
+
+    .status-tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .status-tab {
+      border: 1px solid #E8E0D8;
+      background: #fff;
+      color: #6B5E53;
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+    }
+
+    .status-tab:hover {
+      border-color: #D4763C;
+      color: #D4763C;
+    }
+
+    .status-tab.active {
+      background: #D4763C;
+      border-color: #D4763C;
+      color: #fff;
+    }
+
+    .status-tab-count {
+      margin-left: 4px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .status-tab.is-muted {
+      background: #F8F5F1;
+    }
+
+    .status-tab.is-muted.active {
+      background: #6B5E53;
+      border-color: #6B5E53;
+      color: #fff;
+    }
+
+    .filter-bar {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
     /* 관리 페이지에서는 meta-value를 한 줄로 자르고 helper도 ellipsis 적용 */
     .hosting-meta-value {
       overflow: hidden;
@@ -157,6 +217,20 @@
       .modal-body {
         padding: 16px 20px 20px;
       }
+
+
+      .status-tabs {
+        gap: 6px;
+      }
+
+      .status-tab {
+        padding: 7px 10px;
+        font-size: 13px;
+      }
+
+      .filter-bar {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
@@ -178,23 +252,18 @@
       </div>
     </div>
 
-    <div class="filter-bar slide-up stagger-1">
+    <section class="status-summary-section slide-up stagger-1" aria-label="호스팅 상태 요약">
+      <h2 class="status-summary-title">상태별 호스팅</h2>
+      <div id="status-tabs" class="status-tabs"></div>
+    </section>
+
+    <div class="filter-bar slide-up stagger-2">
       <select id="filter-senior" class="form-input">
         <option value="">전체 어르신</option>
       </select>
 
       <select id="filter-sigungu" class="form-input">
         <option value="">전체 시군구</option>
-      </select>
-
-      <select id="filter-status" class="form-input">
-        <option value="">전체 상태</option>
-        <option value="OPEN">신청가능</option>
-        <option value="FULL">모집완료</option>
-        <option value="FIXED">확정</option>
-        <option value="IN_PROGRESS">진행중</option>
-        <option value="CLOSED">완료</option>
-        <option value="FAILED">취소</option>
       </select>
 
       <input id="filter-keyword" class="form-input" type="text" placeholder="메뉴 또는 주소 검색">
@@ -309,11 +378,49 @@
     const MAX_HOSTING_START_HOUR = 20;
     const MAX_HOSTING_END_HOUR = 22;
 
+    const DEFAULT_STATUS_GROUP = 'ACTIVE';
+
+    const HOSTING_STATUS_GROUPS = {
+      ACTIVE: {
+        label: '관리중',
+        statuses: ['OPEN', 'FULL', 'FIXED', 'IN_PROGRESS'],
+      },
+      OPEN: {
+        label: '모집중',
+        statuses: ['OPEN'],
+      },
+      FULL: {
+        label: '모집완료',
+        statuses: ['FULL'],
+      },
+      FIXED: {
+        label: '확정',
+        statuses: ['FIXED'],
+      },
+      IN_PROGRESS: {
+        label: '진행중',
+        statuses: ['IN_PROGRESS'],
+      },
+      CLOSED: {
+        label: '완료',
+        statuses: ['CLOSED'],
+      },
+      FAILED: {
+        label: '취소',
+        statuses: ['FAILED'],
+      },
+      ALL: {
+        label: '전체',
+        statuses: ['OPEN', 'FULL', 'FIXED', 'IN_PROGRESS', 'CLOSED', 'FAILED'],
+      },
+    };
+
     let seniorsCache = [];
     let hostingItems = [];
     let selectedSeniorIdFromQuery = '';
     let shouldOpenCreateModalFromQuery = false;
     let seniorHostingRuleMap = new Map();
+    let selectedStatusGroup = DEFAULT_STATUS_GROUP;
 
     function isHostingModalOpen() {
       return document.querySelector('#hosting-modal').classList.contains('open');
@@ -380,6 +487,85 @@
       ) ? nextValue : '';
     }
 
+    function getStatusGroupCount(statusGroupKey) {
+      const statusGroup = HOSTING_STATUS_GROUPS[statusGroupKey];
+
+      if (!statusGroup) {
+        return 0;
+      }
+
+      return hostingItems.filter((hosting) => {
+        return statusGroup.statuses.includes(hosting.hosting_status);
+      }).length;
+    }
+
+    function renderStatusTabs() {
+      const statusTabsElement = document.querySelector('#status-tabs');
+
+      if (!statusTabsElement) {
+        return;
+      }
+
+      statusTabsElement.innerHTML = Object.entries(HOSTING_STATUS_GROUPS)
+        .map(([key, group]) => {
+          const count = getStatusGroupCount(key);
+          const isActive = selectedStatusGroup === key;
+          const mutedClass = ['CLOSED', 'FAILED', 'ALL'].includes(key) ? 'is-muted' : '';
+
+          return `
+            <button
+              type="button"
+              class="status-tab ${mutedClass} ${isActive ? 'active' : ''}"
+              data-status-group="${key}"
+              aria-pressed="${isActive ? 'true' : 'false'}"
+            >
+              ${group.label}
+              <span class="status-tab-count">${count}</span>
+            </button>
+          `;
+        })
+        .join('');
+    }
+
+    function getSelectedStatusGroup() {
+      return HOSTING_STATUS_GROUPS[selectedStatusGroup]
+        ?? HOSTING_STATUS_GROUPS[DEFAULT_STATUS_GROUP];
+    }
+
+    function sortHostingsByStatusGroup(items) {
+      const cloned = [...items];
+
+      if (['CLOSED', 'FAILED', 'ALL'].includes(selectedStatusGroup)) {
+        return cloned.sort((a, b) => {
+          const leftDate = parseApiDateTime(a.hosting_at);
+          const rightDate = parseApiDateTime(b.hosting_at);
+          return (rightDate?.getTime() ?? 0) - (leftDate?.getTime() ?? 0);
+        });
+      }
+
+      return cloned.sort((a, b) => {
+        const leftDate = parseApiDateTime(a.hosting_at);
+        const rightDate = parseApiDateTime(b.hosting_at);
+        return (leftDate?.getTime() ?? 0) - (rightDate?.getTime() ?? 0);
+      });
+    }
+
+    function getEmptyDescriptionByStatusGroup() {
+      if (selectedStatusGroup === 'ACTIVE') {
+        return '현재 관리가 필요한 호스팅이 없어요. 완료/취소 이력은 상태 탭에서 확인할 수 있어요.';
+      }
+
+      if (selectedStatusGroup === 'CLOSED') {
+        return '완료된 호스팅 이력이 아직 없어요.';
+      }
+
+      if (selectedStatusGroup === 'FAILED') {
+        return '취소된 호스팅 이력이 아직 없어요.';
+      }
+
+      return '어르신, 지역, 검색어를 바꾸면 다른 호스팅을 볼 수 있어요.';
+    }
+
     /* ---------- 렌더 ---------- */
 
     function renderHostings() {
@@ -390,15 +576,17 @@
 
       const selectedSeniorId = document.querySelector('#filter-senior').value;
       const selectedSigungu = document.querySelector('#filter-sigungu').value;
-      const selectedStatus = document.querySelector('#filter-status').value;
       const keyword = document.querySelector('#filter-keyword').value.trim().toLowerCase();
+      const selectedStatusGroupData = getSelectedStatusGroup();
+
+      renderStatusTabs();
 
       listElement.innerHTML = '';
 
       const filtered = hostingItems.filter((hosting) => {
         const matchesSenior = !selectedSeniorId || String(hosting.senior_id) === selectedSeniorId;
         const matchesSigungu = !selectedSigungu || hosting.address?.sigungu === selectedSigungu;
-        const matchesStatus = !selectedStatus || hosting.hosting_status === selectedStatus;
+        const matchesStatus = selectedStatusGroupData.statuses.includes(hosting.hosting_status);
 
         const seniorName = seniorsCache.find(
           (senior) => String(senior.senior_id) === String(hosting.senior_id)
@@ -422,6 +610,8 @@
         return matchesSenior && matchesSigungu && matchesStatus && matchesKeyword;
       });
 
+      const sorted = sortHostingsByStatusGroup(filtered);
+
       if (hostingItems.length === 0) {
         emptyStateElement.classList.remove('hidden');
         emptyTitleElement.textContent = '등록된 호스팅이 없어요';
@@ -429,15 +619,15 @@
         return;
       }
 
-      if (filtered.length === 0) {
+      if (sorted.length === 0) {
         emptyStateElement.classList.remove('hidden');
         emptyTitleElement.textContent = '조건에 맞는 호스팅이 없어요';
-        emptyDescriptionElement.textContent = '어르신, 상태, 지역 필터를 바꾸면 다른 호스팅을 볼 수 있어요.';
+        emptyDescriptionElement.textContent = getEmptyDescriptionByStatusGroup();
         return;
       }
 
       emptyStateElement.classList.add('hidden');
-      filtered.forEach((hosting) => {
+      sorted.forEach((hosting) => {
         listElement.appendChild(buildManageCard(hosting));
       });
     }
@@ -1023,8 +1213,25 @@
 
     document.querySelector('#filter-senior')?.addEventListener('change', renderHostings);
     document.querySelector('#filter-sigungu')?.addEventListener('change', renderHostings);
-    document.querySelector('#filter-status')?.addEventListener('change', renderHostings);
     document.querySelector('#filter-keyword')?.addEventListener('input', renderHostings);
+
+
+    document.querySelector('#status-tabs')?.addEventListener('click', (event) => {
+      const statusTabButton = event.target.closest('[data-status-group]');
+
+      if (!statusTabButton) {
+        return;
+      }
+
+      const nextStatusGroup = statusTabButton.dataset.statusGroup;
+
+      if (!HOSTING_STATUS_GROUPS[nextStatusGroup]) {
+        return;
+      }
+
+      selectedStatusGroup = nextStatusGroup;
+      renderHostings();
+    });
 
     document.querySelector('#open-hosting-modal')?.addEventListener('click', () => {
       selectedSeniorIdFromQuery = '';
