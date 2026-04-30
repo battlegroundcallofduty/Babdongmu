@@ -85,17 +85,12 @@
   <script src="/js/footer.js"></script>
   <script type="module">
     import { requireRoles } from '/js/authGuard.js';
+    import { escapeHtml } from '/js/hosting-shared.js';
 
     const PAGE_SIZE = 10;
     let currentTab = 'scheduled';
     let currentPage = 1;
     let selectedFiles = [];
-
-    function escapeHtml(str) {
-      const div = document.createElement('div');
-      div.textContent = String(str);
-      return div.innerHTML;
-    }
 
     // 날짜 포맷: "4월 15일 (화) · 점심"
     function formatDate(datetimeStr) {
@@ -134,7 +129,7 @@
 
         let action;
         if (match.match_status === 'not_visited') {
-          action = `<span style="display:inline-block; padding:4px 12px; border-radius:20px; background:var(--error); color:#fff; font-size:13px; font-weight:600;">미방문</span>`;
+          action = `<span class="badge badge-not-visited">미방문</span>`;
         } else if (match.has_review) {
           action = `<a href="/pages/review-detail.html?review_id=${match.review_id}" class="btn btn-ghost btn-sm">후기 완료</a>`;
         } else {
@@ -162,8 +157,8 @@
         const menu = escapeHtml(match.menu);
         const isInProgress = new Date(match.hosting_at) <= new Date();
         const badge = isInProgress
-          ? `<span style="display:inline-block; padding:4px 12px; border-radius:20px; background:#EEF3FF; color:#4269B4; font-size:13px; font-weight:600;">진행중</span>`
-          : `<span style="display:inline-block; padding:4px 12px; border-radius:20px; background:#EDF5ED; color:#3A6B39; font-size:13px; font-weight:600;">예정</span>`;
+          ? `<span class="badge badge-status-in-progress">진행중</span>`
+          : `<span class="badge badge-status-scheduled">예정</span>`;
 
         return `
           <div class="card match-card mb-md">

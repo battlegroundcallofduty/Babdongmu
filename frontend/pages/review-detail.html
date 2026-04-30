@@ -95,6 +95,7 @@
   <script src="/js/footer.js"></script>
   <script type="module">
     import { requireRoles } from '/js/authGuard.js';
+    import { escapeHtml } from '/js/hosting-shared.js';
 
     const params = new URLSearchParams(window.location.search);
     const reviewId = params.get('review_id');
@@ -106,7 +107,7 @@
       try {
         currentReview = await api(`/reviews/${reviewId}`);
 
-        document.querySelector('#review-contents').textContent = currentReview.contents;
+        document.querySelector('#review-contents').innerHTML = escapeHtml(currentReview.contents);
 
         const date = new Date(currentReview.created_at);
         document.querySelector('#review-date').textContent =
