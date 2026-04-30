@@ -61,11 +61,12 @@
     });
   }
 
-function _syncBodyLock() {
-  const anyOpen =
-    document.querySelectorAll('.modal-overlay.open').length > 0;
-  document.body.classList.toggle('modal-open', !!anyOpen);
-}
+  function _syncBodyLock() {
+    const anyOpen =
+      document.querySelectorAll('.modal-overlay.open').length > 0;
+    document.body.classList.toggle('modal-open', !!anyOpen);
+  }
+  
   function _titleFor(type) {
     if (type === 'success') return '완료';
     if (type === 'error') return '오류';
