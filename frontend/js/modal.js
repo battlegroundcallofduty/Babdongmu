@@ -106,16 +106,12 @@
     _syncBodyLock();
   };
 
-  window.openConfirmModal = function ({ title, message, confirmText = '확인', cancelText = '취소', onConfirm = null, showConfirmButton = true }) {
+  window.openConfirmModal = function ({ title, message, confirmText = '확인', cancelText = '취소', onConfirm = null }) {
     _inject();
     document.getElementById('confirm-modal-title').textContent = title;
     document.getElementById('confirm-modal-message').textContent = message;
     document.getElementById('confirm-modal-confirm-btn').textContent = confirmText;
     document.getElementById('confirm-modal-cancel-btn').textContent = cancelText;
-
-    const confirmBtn = document.getElementById('confirm-modal-confirm-btn');
-    confirmBtn.style.display = showConfirmButton ? '' : 'none';
-
     _confirmHandler = onConfirm;
     document.getElementById('confirm-modal').classList.add('open');
     _syncBodyLock();
