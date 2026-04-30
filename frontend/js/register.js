@@ -351,12 +351,9 @@ document.querySelector('#register-form')?.addEventListener('submit', async (e) =
       // TODO: R2에만 올라가고 DB 연결 안 된 파일(orphan)은 백엔드 스케줄러에서 주기적으로 정리 예정
       // 503: R2 서버 문제 → 안내 문구로 표시
       // 400: 형식 오류/크기 초과 → 백엔드 메시지(유저가 수정할수있도록)
-      const uploadErrText = err.message === 'Failed to fetch'
-        ? '네트워크 연결을 확인해주세요.'
-        : err.message;
       const msg = err.status === 503
         ? '서류 업로드에 실패했습니다.\n가입은 완료됐으니 로그인 후 마이페이지에서 다시 업로드해주세요.'
-        : `서류 업로드 오류: ${uploadErrText}\n가입은 완료됐으니 로그인 후 마이페이지에서 다시 업로드해주세요.`;
+        : `서류 업로드 오류: ${err.message}\n가입은 완료됐으니 로그인 후 마이페이지에서 다시 업로드해주세요.`;
       await showResultModal(msg, 'info');
       window.location.href = '/pages/login.html';
     } else {

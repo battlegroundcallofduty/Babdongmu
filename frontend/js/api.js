@@ -25,6 +25,8 @@ async function api(path, options = {}) {
   const response = await fetch(`${API_BASE}${path}`, {
     ...options,
     headers,
+  }).catch(() => {
+    throw Object.assign(new Error('네트워크 연결을 확인해주세요.'), { status: 0 });
   });
 
   if (!response.ok) { // 문자열로 오든, 배열로 오든 문자열값 보여주도록 수정
