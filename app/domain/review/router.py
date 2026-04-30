@@ -1,6 +1,6 @@
 """후기 API 엔드포인트."""
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -21,6 +21,7 @@ def _require_volunteer(current_user: User) -> None:
 
 @router.post("", response_model=ReviewResponse)
 async def create_review(
+    background_tasks: BackgroundTasks,
     match_id: int = Form(...),
     contents: str = Form(..., min_length=1, max_length=500),
     images: list[UploadFile] = File(default=[]),
@@ -40,13 +41,15 @@ async def create_review(
             url = await upload_image(image, folder="reviews", bucket=BucketType.PUBLIC)
             image_urls.append(url)
 
-    return await service.create_review(
+    response = await service.create_review(
         db=db,
         match_id=match_id,
         vt_id=current_user.user_id,
         contents=contents,
         image_urls=image_urls,
     )
+    background_tasks.add_task(service.run_ai_summary_bg, match_id)
+    return response
 
 
 @router.get("/senior/{senior_id}", response_model=list[ReviewResponse])
@@ -73,17 +76,20 @@ async def get_review(
 async def update_review(
     review_id: int,
     request: ReviewUpdateRequest,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> ReviewResponse:
     """후기를 수정합니다."""
     _require_volunteer(current_user)
-    return await service.update_review(
+    response = await service.update_review(
         db=db,
         review_id=review_id,
         vt_id=current_user.user_id,
         contents=request.contents,
     )
+    background_tasks.add_task(service.run_ai_summary_bg, response.matching_id)
+    return response
 
 
 @router.post("/{review_id}/images", response_model=ReviewResponse)

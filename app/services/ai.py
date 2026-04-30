@@ -41,11 +41,19 @@ async def generate_senior_summary(senior_name: str, reviews: list[str]) -> str:
     )
 
     client = genai.Client(api_key=settings.GEMINI_API_KEY)
-    response = await client.aio.models.generate_content(
-        model=settings.GEMINI_MODEL,
-        contents=prompt,
-    )
-    return response.text.strip()
+    models = [settings.GEMINI_MODEL, settings.GEMINI_MODEL_FALLBACK]
+    last_error: Exception | None = None
+    for model in models:
+        try:
+            response = await client.aio.models.generate_content(
+                model=model,
+                contents=prompt,
+            )
+            return response.text.strip()
+        except Exception as e:
+            last_error = e
+
+    raise last_error
 
 
 async def update_senior_ai_summary(senior_id: int, db: AsyncSession) -> str | None:

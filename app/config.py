@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     # Gemini (AI 요약 기능)
     GEMINI_API_KEY: str = ""
     GEMINI_MODEL: str = "gemini-3.1-flash-lite-preview"
+    GEMINI_MODEL_FALLBACK: str = "gemini-2.5-flash"
 
     # Cloudflare R2 (이미지 저장)
     R2_ENDPOINT: str = ""
