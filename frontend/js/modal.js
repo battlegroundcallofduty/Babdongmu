@@ -61,13 +61,11 @@
     });
   }
 
-  function _syncBodyLock() {
-    const anyOpen =
-      document.getElementById('result-modal')?.classList.contains('open') ||
-      document.getElementById('confirm-modal')?.classList.contains('open');
-    document.body.classList.toggle('modal-open', !!anyOpen);
-  }
-
+function _syncBodyLock() {
+  const anyOpen =
+    document.querySelectorAll('.modal-overlay.open').length > 0;
+  document.body.classList.toggle('modal-open', !!anyOpen);
+}
   function _titleFor(type) {
     if (type === 'success') return '완료';
     if (type === 'error') return '오류';
@@ -107,12 +105,16 @@
     _syncBodyLock();
   };
 
-  window.openConfirmModal = function ({ title, message, confirmText = '확인', cancelText = '취소', onConfirm = null }) {
+  window.openConfirmModal = function ({ title, message, confirmText = '확인', cancelText = '취소', onConfirm = null, showConfirmButton = true }) {
     _inject();
     document.getElementById('confirm-modal-title').textContent = title;
     document.getElementById('confirm-modal-message').textContent = message;
     document.getElementById('confirm-modal-confirm-btn').textContent = confirmText;
     document.getElementById('confirm-modal-cancel-btn').textContent = cancelText;
+
+    const confirmBtn = document.getElementById('confirm-modal-confirm-btn');
+    confirmBtn.style.display = showConfirmButton ? '' : 'none';
+
     _confirmHandler = onConfirm;
     document.getElementById('confirm-modal').classList.add('open');
     _syncBodyLock();
@@ -124,4 +126,6 @@
     _confirmHandler = null;
     _syncBodyLock();
   };
+
+  window.syncBodyLock = _syncBodyLock;
 })();
