@@ -254,6 +254,16 @@
       gap: 16px;
     }
 
+    #result-modal,
+    #confirm-modal {
+      display: none;
+    }
+
+    #result-modal.open,
+    #confirm-modal.open {
+      display: flex;
+    }
+
     .birth-date-selects {
       display: flex;
       gap: 8px;
@@ -1258,6 +1268,7 @@
       document.querySelector('#detail-senior-id').value = senior.senior_id;
       document.querySelector('#detail-senior-name').value = `${senior.name} 어르신`;
       document.querySelector('#detail-senior-birth-date').value = formatBirthDate(senior.birth_date);
+      document.querySelector('#detail-senior-age').value = formatSeniorAge(senior);
       document.querySelector('#detail-senior-gender').value = getGenderLabel(senior.gender);
       document.querySelector('#detail-senior-max-people').value = `${senior.max_people}명`;
       document.querySelector('#detail-senior-road-address').value = senior.address.road_address || '-';
@@ -1693,12 +1704,7 @@
         : '';
 
       if (updateBlockMessage) {
-        openConfirmModal({
-          title: '수정할 수 없어요',
-          message: updateBlockMessage,
-          cancelText: '확인',
-          showConfirmButton: false,
-        });
+        await showResultModal(updateBlockMessage, 'error');
         return;
       }
 
@@ -1863,12 +1869,7 @@
         }
 
         if (action === 'edit' && isUpdateBlocked) {
-          openConfirmModal({
-            title: '수정할 수 없어요',
-            message: updateBlockMessage,
-            cancelText: '확인',
-            showConfirmButton: false,
-          });
+          await showResultModal(updateBlockMessage, 'error');
           return;
         }
 
@@ -1877,12 +1878,7 @@
           const latestUpdateBlockMessage = buildSeniorUpdateBlockMessage(senior);
 
           if (latestUpdateBlockMessage) {
-            openConfirmModal({
-              title: '수정할 수 없어요',
-              message: latestUpdateBlockMessage,
-              cancelText: '확인',
-              showConfirmButton: false,
-            });
+            await showResultModal(latestUpdateBlockMessage, 'error');
             return;
           }
 
@@ -1899,7 +1895,10 @@
 
         if (action === 'create-hosting') {
           const isHostingBlocked = actionButton?.dataset.hostingBlocked === 'true';
-          if (isHostingBlocked) return;
+          if (isHostingBlocked) {
+            await showResultModal('비활성 상태의 어르신은 호스팅을 등록할 수 없어요.\n활성 상태로 변경한 후 다시 시도해 주세요.', 'error');
+            return;
+          }
           window.location.href = buildCreateHostingUrl(seniorId);
           return;
         }
@@ -1955,7 +1954,7 @@
       }
 
       if (!isApprovedGuardian(currentUser)) {
-        await showResultModal('보호자 인증 승인 후 어르신 관리 페이지를 사용할 수 있습니다.', true);
+        await showResultModal('보호자 인증 승인 후 어르신 관리 페이지를 사용할 수 있습니다.', 'info');
         window.location.href = '/pages/mypage.html';
         return;
       }
