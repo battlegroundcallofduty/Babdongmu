@@ -128,7 +128,7 @@
         const titleEncoded = encodeURIComponent(`${match.senior_name} 어르신 · ${match.menu}`);
 
         let action;
-        if (match.match_status === 'NOT_VISITED') {
+        if (match.match_status === 'not_visited') {
           action = `<span class="badge badge-not-visited">미방문</span>`;
         } else if (match.has_review) {
           action = `<a href="/pages/review-detail.html?review_id=${match.review_id}" class="btn btn-ghost btn-sm">후기 완료</a>`;
