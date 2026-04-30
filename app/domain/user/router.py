@@ -1,6 +1,7 @@
 """유저 API 엔드포인트."""
 
 import asyncio
+import logging
 import secrets
 from datetime import timedelta
 
@@ -16,7 +17,7 @@ from app.domain.match.schemas import VolunteerStatsResponse
 from app.domain.match.service import get_volunteer_stats
 from app.domain.senior.schemas import GuardianStatsResponse
 from app.domain.senior.service import get_guardian_stats, list_seniors_by_guardian
-from app.domain.user.dependency import get_current_user
+from app.domain.user.dependency import get_current_user, require_guardian, require_volunteer
 from app.domain.user.models import DocumentType, User, UserRole
 from app.domain.user.schemas import (
     DocumentResponse,
@@ -55,6 +56,8 @@ from app.services.r2 import (
     get_presigned_url,
     upload_image,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -111,20 +114,22 @@ async def get_me(current_user: User = Depends(get_current_user)):
     return current_user
 
 
-@router.get("/me/stats", response_model=VolunteerStatsResponse | GuardianStatsResponse)
-async def get_my_stats(
-    current_user: User = Depends(get_current_user),
+@router.get("/me/stats/volunteer", response_model=VolunteerStatsResponse)
+async def get_my_volunteer_stats(
+    current_user: User = Depends(require_volunteer),
     db: AsyncSession = Depends(get_db),
-) -> VolunteerStatsResponse | GuardianStatsResponse:
-    """역할별 마이페이지 통계 반환 (봉사자/보호자)."""
-    if current_user.user_role == UserRole.VOLUNTEER:
-        return await get_volunteer_stats(db=db, vt_id=current_user.user_id)
-    if current_user.user_role == UserRole.GUARDIAN:
-        return await get_guardian_stats(session=db, guardian_id=current_user.user_id)
-    raise HTTPException(
-        status_code=status.HTTP_403_FORBIDDEN,
-        detail="통계를 제공하지 않는 역할입니다.",
-    )
+) -> VolunteerStatsResponse:
+    """봉사자 마이페이지 통계 반환."""
+    return await get_volunteer_stats(db=db, vt_id=current_user.user_id)
+
+
+@router.get("/me/stats/guardian", response_model=GuardianStatsResponse)
+async def get_my_guardian_stats(
+    current_user: User = Depends(require_guardian),
+    db: AsyncSession = Depends(get_db),
+) -> GuardianStatsResponse:
+    """보호자 마이페이지 통계 반환."""
+    return await get_guardian_stats(session=db, guardian_id=current_user.user_id)
 
 
 # ── 마이페이지 ───────────────────
@@ -269,7 +274,7 @@ async def get_document_url(
 @router.get("/kakao/login")
 async def kakao_login(request: Request):
     """카카오 로그인 페이지로 redirect"""
-    state = secrets.token_urlsafe(32)  # 32자 난수 생성
+    state = secrets.token_urlsafe(32)  # 32바이트 난수 생성
     kakao_auth_url = (
         f"https://kauth.kakao.com/oauth/authorize"
         f"?client_id={settings.KAKAO_CLIENT_ID}"
@@ -334,14 +339,15 @@ async def kakao_callback(
             )
             user_resp.raise_for_status()
             kakao_id = str(user_resp.json()["id"])
-    except (httpx.HTTPError, KeyError):
+    except Exception:
+        logger.exception("카카오 콜백 처리 중 오류")
         return RedirectResponse(url=f"{frontend_base}/pages/login.html?kakao_error=1")
 
     # 3) 기존 유저 → JWT 발급 후 로그인 처리
     user = await get_user_by_kakao_id(kakao_id, db)
     if user is not None:
         access_token = create_access_token({"sub": str(user.user_id)})
-        return RedirectResponse(url=f"{frontend_base}/pages/login.html?kakao_token={access_token}")
+        return RedirectResponse(url=f"{frontend_base}/pages/login.html#kakao_token={access_token}")
 
     # 4) 신규 유저 → setup_token(10분) 발급 후 카카오 전용 가입 페이지로
     setup_token = create_access_token(

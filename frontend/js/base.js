@@ -68,13 +68,12 @@ function _buildNavItems(links, asListItems) {
 }
 
 function loadNav() {
-  const placeholder = document.getElementById('nav-placeholder');
-  if (!placeholder) return;
-
   const role = _getNavRole();
   const links = _NAV_LINKS[role] ?? _NAV_LINKS_PUBLIC;
 
-  placeholder.outerHTML = `<nav class="nav">
+  const placeholder = document.getElementById('nav-placeholder');
+  if (placeholder) {
+    placeholder.outerHTML = `<nav class="nav">
   <div class="nav-inner">
     <a href="/" class="nav-logo">${_NAV_LOGO_SVG}밥동무</a>
     <ul class="nav-links">${_buildNavItems(links, true)}</ul>
@@ -86,6 +85,14 @@ function loadNav() {
 <div class="nav-drawer" id="navDrawer" onclick="closeNav(event)">
   <div class="nav-drawer-content">${_buildNavItems(links, false)}</div>
 </div>`;
+    return;
+  }
+
+  // 재렌더링 — 서버 응답 후 역할이 달라졌을 때 링크만 갱신
+  const navLinks = document.querySelector('.nav-links');
+  const drawerContent = document.querySelector('.nav-drawer-content');
+  if (navLinks) navLinks.innerHTML = _buildNavItems(links, true);
+  if (drawerContent) drawerContent.innerHTML = _buildNavItems(links, false);
 }
 
 function toggleNav() {
