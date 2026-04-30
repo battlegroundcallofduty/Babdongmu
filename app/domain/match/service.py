@@ -317,7 +317,9 @@ async def get_volunteer_stats(db: AsyncSession, vt_id: int) -> VolunteerStatsRes
             func.coalesce(func.sum(MatchingInfo.actual_volunteer_time), 0)
             .label("total_volunteer_minutes"),
             func.count().filter(MatchingInfo.check_in_time.is_not(None)).label("visit_count"),
-            func.count(MatchingInfo.senior_id.distinct()).label("senior_count"),
+            func.count(MatchingInfo.senior_id.distinct()).filter(
+                MatchingInfo.check_in_time.is_not(None)
+            ).label("senior_count"),
         ).where(MatchingInfo.vt_id == vt_id)
     )).one()
 

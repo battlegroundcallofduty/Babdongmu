@@ -75,6 +75,7 @@ export async function fetchCurrentUser() {
     const me = await api('/users/me');
     setCurrentUser(me);
     sessionStorage.setItem(SESSION_KEY, JSON.stringify({ user: me, at: Date.now() }));
+    window.loadNav?.();
     return me;
   } catch (error) {
     clearAuth();
@@ -95,6 +96,9 @@ export async function requireAuth() {
   }
 
   if (currentUser.user_role !== 'admin' && currentUser.cert_flag !== 'approved') {
+    if (typeof showResultModal === 'function') {
+      await showResultModal('서비스 이용을 위해 관리자 승인이 필요합니다.\n마이페이지에서 서류 제출 여부를 확인해주세요.', 'info');
+    }
     window.location.replace('/pages/mypage.html');
     return null;
   }

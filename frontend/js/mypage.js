@@ -148,7 +148,7 @@ function setStats(entries) {
 
 async function loadStats(role) {
   try {
-    const s = await api('/users/me/stats');
+    const s = await api(`/users/me/stats/${role}`);
     if (role === 'volunteer') {
       setStats([
         { id: 1, value: `${(s.total_volunteer_minutes / 60).toFixed(1)}h`, label: '누적 봉사시간' },

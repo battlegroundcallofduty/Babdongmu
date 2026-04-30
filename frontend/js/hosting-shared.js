@@ -138,7 +138,7 @@ const SHARED_CSS = `
   align-items: flex-start;
   gap: 8px;
   min-width: 0;
-  color: #6B5E53;
+  color: #2C2420;
   font-size: 15px;
   font-weight: 500;
   line-height: 1.5;
@@ -197,7 +197,7 @@ const SHARED_CSS = `
 .badge-full { background: #FDF5E6; color: #8B6914; }
 .badge-failed { background: #FDECEC; color: #B44646; }
 .badge-progress { background: #EEF3FF; color: #4269B4; }
-.badge-closed { background: #F0EBE6; color: #6B5E53; }
+.badge-closed { background: #F0EBE6; color: #2C2420; }
 .badge-my-applied { background: #F3EDF8; color: #6D4A8A; }
 
 /* ---------- 빈 상태 ---------- */

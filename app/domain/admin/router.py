@@ -119,6 +119,7 @@ async def list_pending_documents(
                 "user_name": user.name,
                 "user_email": user.email,
                 "user_role": user.user_role.value,
+                "is_social_login": user.kakao_id is not None,
                 "created_at": _fmt(user.created_at),
                 "documents": [],
             }

@@ -85,7 +85,7 @@ let registerAddressData = null;
 
 document.querySelector('#btn-search-address')?.addEventListener('click', () => {
   if (!window.daum?.Postcode) {
-    alert('주소 검색을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
+    showResultModal('주소 검색을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.', 'error');
     return;
   }
 
@@ -111,7 +111,7 @@ function normalizePhone(raw) {
 document.querySelector('#btn-send-code')?.addEventListener('click', async () => {
   const phone = normalizePhone(document.querySelector('#phone').value);
   if (!phone) {
-    alert('올바른 전화번호를 입력해주세요. (예: 01012345678)');
+    showResultModal('올바른 전화번호를 입력해주세요. (예: 01012345678)', 'error');
     return;
   }
 
@@ -130,7 +130,7 @@ document.querySelector('#btn-send-code')?.addEventListener('click', async () => 
     phoneVerified = false;
     btn.textContent = '재발송';
   } catch (err) {
-    alert(err.message || 'SMS 발송에 실패했습니다. 잠시 후 다시 시도해주세요.');
+    showResultModal(err.message || 'SMS 발송에 실패했습니다. 잠시 후 다시 시도해주세요.', 'error');
     btn.textContent = '인증하기';
   } finally {
     btn.disabled = false;
@@ -272,8 +272,21 @@ document.querySelector('#register-form')?.addEventListener('submit', async (e) =
     : document.querySelector('#doc-family').files[0];
 
   if (!idFile || !extraFile) {
-    const ok = confirm('서류를 모두 제출하지 않아도 가입은 가능하지만, 관리자의 승인이 반려될 수 있습니다. 계속하시겠습니까?');
-    if (!ok) return;
+    const confirmed = await new Promise((resolve) => {
+      let resolved = false;
+      const done = (value) => { if (!resolved) { resolved = true; resolve(value); } };
+      openConfirmModal({
+        title: '서류 미제출 확인',
+        message: '서류를 모두 제출하지 않아도 가입은 가능하지만,\n관리자의 승인이 반려될 수 있습니다. 계속하시겠습니까?',
+        confirmText: '계속 진행',
+        cancelText: '돌아가기',
+        onConfirm: () => done(true),
+      });
+      document.getElementById('confirm-modal-cancel-btn')?.addEventListener('click', () => done(false), { once: true });
+      document.getElementById('confirm-modal-close-btn')?.addEventListener('click', () => done(false), { once: true });
+      document.getElementById('confirm-modal')?.addEventListener('click', (e) => { if (e.target === e.currentTarget) done(false); }, { once: true });
+    });
+    if (!confirmed) return;
   }
 
   const submitBtn = document.querySelector('#register-form button[type="submit"]');
@@ -341,7 +354,7 @@ document.querySelector('#register-form')?.addEventListener('submit', async (e) =
       const msg = err.status === 503
         ? '서류 업로드에 실패했습니다.\n가입은 완료됐으니 로그인 후 마이페이지에서 다시 업로드해주세요.'
         : `서류 업로드 오류: ${err.message}\n가입은 완료됐으니 로그인 후 마이페이지에서 다시 업로드해주세요.`;
-      alert(msg);
+      await showResultModal(msg, 'info');
       window.location.href = '/pages/login.html';
     } else {
       errorMsg.textContent = err.message;
