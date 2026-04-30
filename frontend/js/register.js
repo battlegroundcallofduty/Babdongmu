@@ -17,8 +17,6 @@ if (isKakao) {
   ['#email', '#password', '#password-confirm'].forEach(id => {
     document.querySelector(id)?.closest('.form-group')?.classList.add('hidden');
   });
-  document.querySelector('#phone')?.closest('.form-group')?.classList.add('hidden');
-  document.getElementById('verify-group')?.classList.add('hidden');
 }
 
 // 보호자 서류 종류 셀렉트 변경 시 파일 업로드 라벨 동기화
@@ -250,11 +248,12 @@ document.querySelector('#register-form')?.addEventListener('submit', async (e) =
       return;
     }
 
-    if (!phoneVerified) {
-      errorMsg.textContent = '전화번호 인증을 완료해주세요.';
-      errorMsg.classList.remove('hidden');
-      return;
-    }
+  }
+
+  if (!phoneVerified) {
+    errorMsg.textContent = '전화번호 인증을 완료해주세요.';
+    errorMsg.classList.remove('hidden');
+    return;
   }
 
   if (!document.querySelector('#district').value) {
@@ -305,6 +304,7 @@ document.querySelector('#register-form')?.addEventListener('submit', async (e) =
         body: JSON.stringify({
           setup_token: setupToken,
           name: document.querySelector('#name').value,
+          phone_number: normalizePhone(document.querySelector('#phone').value),
           user_role: role,
           address: registerAddressData,
         }),
