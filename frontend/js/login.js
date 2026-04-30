@@ -92,6 +92,13 @@ document.querySelector('#login-form')?.addEventListener('submit', async (e) => {
       return;
     }
 
+    // redirect 파라미터 있으면 원래 페이지로 복귀 (QR 체크인 등)
+    const redirectUrl = params.get('redirect');
+    if (redirectUrl) {
+      window.location.replace(decodeURIComponent(redirectUrl));
+      return;
+    }
+
     // 역할별 페이지 이동
     // 로그인 페이지를 히스토리에 남기지 않아서 뒤로가기 동작이 덜 꼬일 수 있음(replace)
     if (normalizedRole === 'admin') {
