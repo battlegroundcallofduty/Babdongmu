@@ -503,6 +503,9 @@ h3 { font-size: 18px; line-height: 1.4; }
 .badge-done { background: #F0EBE6; color: #6B5E53; }
 .badge-pending { background: #FDF5E6; color: #8B6914; }
 .badge-cancelled { background: #FDEDED; color: #8B2C2C; }
+.badge-status-scheduled { background: #EDF5ED; color: #3A6B39; }
+.badge-status-in-progress { background: #EEF3FF; color: #4269B4; }
+.badge-not-visited { background: var(--error); color: #fff; }
 .badge-kakao {
   display: inline-block;
   font-size: 0.65rem;
