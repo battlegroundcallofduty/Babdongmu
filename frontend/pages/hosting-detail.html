@@ -496,16 +496,6 @@
       return 0;
     }
 
-    function getGenderLabel(gender) {
-      const genderMap = {
-        male: '남성',
-        female: '여성',
-        other: '기타',
-      };
-
-      return genderMap[gender] || '';
-    }
-
     function buildAddressText(address) {
       const baseAddress = [
         address?.road_address,
