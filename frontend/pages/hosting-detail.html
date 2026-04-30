@@ -664,10 +664,12 @@
       sectionElement.classList.remove('hidden');
 
       if (!reviews || reviews.length === 0) {
+        listElement.innerHTML = '';
         emptyElement.classList.remove('hidden');
         return;
       }
 
+      emptyElement.classList.add('hidden');
       listElement.innerHTML = reviews.map((review) => {
         const dateText = formatKstDate(review.created_at, {
           year: 'numeric',
@@ -676,7 +678,7 @@
         });
 
         const imagesHtml = review.images && review.images.length > 0
-          ? `<div class="review-images">${review.images.map((img) => `<img src="${img.image_url}" alt="후기 이미지" loading="lazy">`).join('')}</div>`
+          ? `<div class="review-images">${review.images.map((img) => `<img src="${escapeHtml(img.image_url)}" alt="후기 이미지" loading="lazy">`).join('')}</div>`
           : '';
 
         return `
