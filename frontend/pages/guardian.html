@@ -192,7 +192,6 @@
       }
     }
 
-
     .btn-disabled {
       background: #F0EBE6;
       border-color: #D8CEC4;
@@ -239,6 +238,16 @@
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 16px;
+    }
+
+    .birth-date-selects {
+      display: flex;
+      gap: 8px;
+    }
+
+    .birth-date-selects .form-input {
+      flex: 1;
+      min-width: 0;
     }
 
     .form-input-readonly,
@@ -689,8 +698,12 @@
             </div>
 
             <div class="form-group">
-              <label class="form-label" for="senior-birth-date">생년월일</label>
-              <input class="form-input" type="date" id="senior-birth-date" required>
+              <label class="form-label">생년월일</label>
+              <div class="birth-date-selects">
+                <select class="form-input" id="senior-birth-year" required></select>
+                <select class="form-input" id="senior-birth-month" required></select>
+                <select class="form-input" id="senior-birth-day" required></select>
+              </div>
             </div>
 
             <div class="form-group">
@@ -903,7 +916,9 @@
     const submitButtonElement = document.querySelector('#submit-button');
     const cancelEditButtonElement = document.querySelector('#cancel-edit-button');
 
-    const birthDateInputElement = document.querySelector('#senior-birth-date');
+    const birthYearSelectElement = document.querySelector('#senior-birth-year');
+    const birthMonthSelectElement = document.querySelector('#senior-birth-month');
+    const birthDaySelectElement = document.querySelector('#senior-birth-day');
     const seniorAgeInputElement = document.querySelector('#senior-age');
 
     const roadAddressInputElement = document.querySelector('#senior-road-address');
@@ -999,6 +1014,68 @@
     }
 
 
+    function populateBirthDateSelects() {
+      const currentYear = new Date().getFullYear();
+      const defaultYear = currentYear - 65;
+
+      birthYearSelectElement.innerHTML = '<option value="">연도</option>';
+      for (let y = defaultYear; y >= 1900; y--) {
+        const opt = document.createElement('option');
+        opt.value = y;
+        opt.textContent = `${y}년`;
+        birthYearSelectElement.appendChild(opt);
+      }
+      birthYearSelectElement.value = defaultYear;
+
+      birthMonthSelectElement.innerHTML = '<option value="">월</option>';
+      for (let m = 1; m <= 12; m++) {
+        const opt = document.createElement('option');
+        opt.value = String(m).padStart(2, '0');
+        opt.textContent = `${m}월`;
+        birthMonthSelectElement.appendChild(opt);
+      }
+      birthMonthSelectElement.value = '01';
+
+      updateDayOptions();
+      birthDaySelectElement.value = '01';
+    }
+
+    function updateDayOptions() {
+      const year = parseInt(birthYearSelectElement.value) || new Date().getFullYear() - 65;
+      const month = parseInt(birthMonthSelectElement.value) || 1;
+      const daysInMonth = new Date(year, month, 0).getDate();
+      const prevDay = birthDaySelectElement.value;
+
+      birthDaySelectElement.innerHTML = '<option value="">일</option>';
+      for (let d = 1; d <= daysInMonth; d++) {
+        const opt = document.createElement('option');
+        opt.value = String(d).padStart(2, '0');
+        opt.textContent = `${d}일`;
+        birthDaySelectElement.appendChild(opt);
+      }
+
+      if (prevDay && parseInt(prevDay) <= daysInMonth) {
+        birthDaySelectElement.value = prevDay;
+      }
+    }
+
+    function getBirthDateValue() {
+      const y = birthYearSelectElement.value;
+      const m = birthMonthSelectElement.value;
+      const d = birthDaySelectElement.value;
+      if (!y || !m || !d) return '';
+      return `${y}-${m}-${d}`;
+    }
+
+    function setBirthDateValue(dateStr) {
+      if (!dateStr) return;
+      const [y, m, d] = dateStr.split('-');
+      birthYearSelectElement.value = y || '';
+      birthMonthSelectElement.value = m || '';
+      updateDayOptions();
+      birthDaySelectElement.value = d || '';
+    }
+
     function calculateAgeFromBirthDate(birthDateValue) {
       if (!birthDateValue) {
         return null;
@@ -1037,7 +1114,7 @@
     }
 
     function updateAgePreview() {
-      const age = calculateAgeFromBirthDate(birthDateInputElement.value);
+      const age = calculateAgeFromBirthDate(getBirthDateValue());
 
       if (age === null) {
         seniorAgeInputElement.value = '-';
@@ -1268,6 +1345,7 @@
       document.querySelector('#senior-id').value = '';
       document.querySelector('#senior-active-flag').value = 'true';
       document.querySelector('#senior-max-people').value = '2';
+      populateBirthDateSelects();
       updateAgePreview();
       setAddressState(createEmptyAddressPayload());
       setCreateMode();
@@ -1276,7 +1354,7 @@
     function fillForm(senior) {
       document.querySelector('#senior-id').value = senior.senior_id;
       document.querySelector('#senior-name').value = senior.name;
-      document.querySelector('#senior-birth-date').value = senior.birth_date || '';
+      setBirthDateValue(senior.birth_date || '');
       updateAgePreview();
       document.querySelector('#senior-gender').value = senior.gender;
       document.querySelector('#senior-max-people').value = senior.max_people;
@@ -1371,6 +1449,10 @@
       const editButtonClass = isUpdateBlocked
         ? 'btn btn-ghost btn-sm btn-disabled'
         : 'btn btn-ghost btn-sm';
+      const isHostingBlocked = !senior.active_flag;
+      const hostingButtonClass = isHostingBlocked
+        ? 'btn btn-primary btn-sm btn-disabled'
+        : 'btn btn-primary btn-sm';
 
       return `
         <div
@@ -1415,9 +1497,12 @@
               <div class="card-actions-left">
                 <button
                   type="button"
-                  class="btn btn-primary btn-sm"
+                  class="${hostingButtonClass}"
                   data-action="create-hosting"
                   data-senior-id="${senior.senior_id}"
+                  data-hosting-blocked="${isHostingBlocked ? 'true' : 'false'}"
+                  aria-disabled="${isHostingBlocked ? 'true' : 'false'}"
+                  title="${isHostingBlocked ? '비활성 상태의 어르신은 호스팅을 등록할 수 없어요.' : '호스팅 등록'}"
                 >
                   호스팅 등록
                 </button>
@@ -1539,7 +1624,7 @@
       return {
         name: document.querySelector('#senior-name').value.trim(),
         gender: document.querySelector('#senior-gender').value,
-        birth_date: document.querySelector('#senior-birth-date').value,
+        birth_date: getBirthDateValue(),
         address: { ...addressState },
         special_note: document.querySelector('#senior-note').value.trim() || null,
         active_flag: document.querySelector('#senior-active-flag').value === 'true',
@@ -1650,11 +1735,17 @@
       addressState = mergeDetailAddress(addressState, event.target.value);
     });
 
-    birthDateInputElement?.addEventListener('change', () => {
+    birthYearSelectElement?.addEventListener('change', () => {
+      updateDayOptions();
       updateAgePreview();
     });
 
-    birthDateInputElement?.addEventListener('input', () => {
+    birthMonthSelectElement?.addEventListener('change', () => {
+      updateDayOptions();
+      updateAgePreview();
+    });
+
+    birthDaySelectElement?.addEventListener('change', () => {
       updateAgePreview();
     });
 
@@ -1774,6 +1865,8 @@
         }
 
         if (action === 'create-hosting') {
+          const isHostingBlocked = actionButton?.dataset.hostingBlocked === 'true';
+          if (isHostingBlocked) return;
           window.location.href = buildCreateHostingUrl(seniorId);
           return;
         }
