@@ -159,6 +159,7 @@
       </select>
 
       <select id="filter-sort" class="form-input">
+        <option value="nearest">가까운 지역순</option>
         <option value="soonest">가까운 일정순</option>
         <option value="latest">최근 등록순</option>
       </select>
@@ -195,7 +196,6 @@
     import {
       buildHostingCard,
       formatHostingPeopleText,
-      renderSigunguOptions,
     } from '/js/hosting-shared.js';
 
     const VOLUNTEER_HOSTINGS_API = '/hostings/public';
@@ -203,6 +203,55 @@
 
     let hostingItems = [];
     let appliedHostingIdSet = new Set();
+    let volunteerSigunguCode = null;
+
+    /* ---------- 법정동 코드 기반 근접도 ---------- */
+
+    function getSigunguProximity(userCode, targetCode) {
+      if (!userCode || !targetCode) return 3;
+      const u = String(userCode);
+      const t = String(targetCode);
+      if (u === t) return 0;
+      if (u.substring(0, 2) === t.substring(0, 2)) return 1;
+      return 2;
+    }
+
+    function renderSigunguOptionsWithProximity(selectElement, items, userCode) {
+      if (!selectElement) return;
+      const previousValue = selectElement.value;
+
+      const sigunguMap = new Map();
+      items.forEach((hosting) => {
+        const sigungu = hosting.address?.sigungu;
+        const code = hosting.address?.sigungu_code;
+        if (sigungu && !sigunguMap.has(sigungu)) {
+          sigunguMap.set(sigungu, code ?? null);
+        }
+      });
+
+      selectElement.innerHTML = '<option value="">전체 시군구</option>';
+
+      const sorted = [...sigunguMap.entries()].sort((a, b) => {
+        const proxA = getSigunguProximity(userCode, a[1]);
+        const proxB = getSigunguProximity(userCode, b[1]);
+        if (proxA !== proxB) return proxA - proxB;
+        return a[0].localeCompare(b[0], 'ko');
+      });
+
+      sorted.forEach(([sigungu, code]) => {
+        const prox = getSigunguProximity(userCode, code);
+        let label = sigungu;
+        if (userCode) {
+          if (prox === 0) label += ' (내 지역구)';
+          else if (prox === 1) label += ' (같은 시도)';
+        }
+        selectElement.appendChild(new Option(label, sigungu));
+      });
+
+      const validValues = [...sigunguMap.keys()];
+      selectElement.value = validValues.includes(previousValue) ? previousValue : '';
+    }
+
     /* ---------- 페이지 고유 헬퍼 ---------- */
 
     function buildHostingTitle(hosting) {
@@ -307,6 +356,16 @@
         return cloned;
       }
 
+      if (selectedSort === 'nearest') {
+        cloned.sort((a, b) => {
+          const proxA = getSigunguProximity(volunteerSigunguCode, a.address?.sigungu_code);
+          const proxB = getSigunguProximity(volunteerSigunguCode, b.address?.sigungu_code);
+          if (proxA !== proxB) return proxA - proxB;
+          return new Date(a.hosting_at) - new Date(b.hosting_at);
+        });
+        return cloned;
+      }
+
       cloned.sort((a, b) => new Date(a.hosting_at) - new Date(b.hosting_at));
       return cloned;
     }
@@ -375,7 +434,7 @@
       ]);
 
       hostingItems = normalizeArrayResponse(hostingsResponse);
-      renderSigunguOptions(document.querySelector('#filter-sigungu'), hostingItems);
+      renderSigunguOptionsWithProximity(document.querySelector('#filter-sigungu'), hostingItems, volunteerSigunguCode);
       renderHostings();
     }
 
@@ -414,6 +473,7 @@
       if (!currentUser) {
         return;
       }
+      volunteerSigunguCode = currentUser.address?.sigungu_code ?? null;
       await initializePage();
     }
 

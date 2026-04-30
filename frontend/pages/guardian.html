@@ -53,6 +53,11 @@
 
     .detail-row {
       min-width: 0;
+      align-items: flex-start;
+    }
+
+    .detail-label {
+      padding-top: 1px;
     }
 
     .detail-value {
@@ -98,7 +103,14 @@
 
       .card-actions-left .btn,
       .card-actions-right .btn {
-        flex: 1;
+        min-width: 0;
+        width: 100%;
+      }
+
+      .card-actions-right {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
       }
     }
 
@@ -328,6 +340,11 @@
     }
 
     @media (max-width: 768px) {
+      .section-header {
+        flex-wrap: wrap;
+        row-gap: 8px;
+      }
+
       .senior-header-actions {
         width: 100%;
         justify-content: space-between;
@@ -412,6 +429,157 @@
       min-height: 200px;
       color: var(--muted);
       font-size: 14px;
+    }
+
+
+    /* ---------- 어르신 카드 모바일 뷰포트 보정 ---------- */
+    @media (max-width: 480px) {
+      .container {
+        width: 100%;
+        max-width: 100%;
+        padding-left: 16px;
+        padding-right: 16px;
+        box-sizing: border-box;
+        overflow-x: hidden;
+      }
+
+      #senior-list {
+        grid-template-columns: 1fr;
+        width: 100%;
+        max-width: 100%;
+      }
+
+      #senior-list .card {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+      }
+
+      #senior-list .card-body {
+        width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+      }
+
+      .hosting-header {
+        min-width: 0;
+      }
+
+      .hosting-avatar {
+        width: 40px;
+        height: 40px;
+        flex: 0 0 40px;
+        font-size: 18px;
+      }
+
+      .detail-row {
+        display: grid;
+        grid-template-columns: 76px minmax(0, 1fr);
+        gap: 8px;
+        width: 100%;
+        min-width: 0;
+      }
+
+      .detail-label {
+        min-width: 0;
+        white-space: nowrap;
+      }
+
+      .detail-value {
+        min-width: 0;
+        overflow: hidden;
+      }
+
+      .address-text {
+        display: -webkit-box;
+        width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: normal;
+        word-break: keep-all;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+      }
+
+      .hosting-status-summary {
+        width: 100%;
+        min-width: 0;
+        overflow: hidden;
+      }
+
+      .hosting-status-chip {
+        max-width: 100%;
+        min-width: 0;
+        flex-shrink: 1;
+      }
+
+      .hosting-status-empty {
+        display: block;
+        width: 100%;
+        min-width: 0;
+      }
+
+      .card-actions {
+        width: 100%;
+        gap: 8px;
+      }
+
+      .card-actions-left,
+      .card-actions-right {
+        width: 100%;
+        min-width: 0;
+      }
+
+      .card-actions-left {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+      .card-actions-right {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      .card-actions-left .btn,
+      .card-actions-right .btn {
+        width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+      }
+
+      .senior-header-actions {
+        width: 100%;
+        gap: 10px;
+      }
+
+      .senior-filter-toggle {
+        min-width: 0;
+      }
+
+      #show-register-form {
+        flex-shrink: 0;
+      }
+
+      .modal-overlay {
+        padding: 16px 12px;
+      }
+
+      .modal-panel {
+        max-height: calc(100vh - 32px);
+        padding: 18px;
+        box-sizing: border-box;
+      }
+
+      .address-search-row {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .address-search-row .btn {
+        width: 100%;
+      }
     }
   </style>
 </head>
@@ -752,7 +920,7 @@
 
     let isSeniorListExpanded = false;
     let seniorListState = [];
-    let isActiveOnly = activeOnlyToggleElement?.checked ?? false;
+    let isActiveOnly = activeOnlyToggleElement?.checked || false;
     let addressState = createEmptyAddressPayload();
     let currentDetailSenior = null;
     let qrObjectUrl = null;
@@ -855,18 +1023,8 @@
       return age;
     }
 
-    function getSeniorAge(senior) {
-      const calculatedAge = calculateAgeFromBirthDate(senior.birth_date);
-
-      if (calculatedAge !== null) {
-        return calculatedAge;
-      }
-
-      return senior.age ?? null;
-    }
-
     function formatSeniorAge(senior) {
-      const age = getSeniorAge(senior);
+      const age = typeof senior.age === 'number' ? senior.age : null;
       return age === null ? '-' : `${age}세`;
     }
 
@@ -934,22 +1092,22 @@
       const statusItems = [
         {
           label: '모집중',
-          count: senior.open_hosting_count ?? 0,
+          count: senior.open_hosting_count || 0,
           className: 'is-open',
         },
         {
           label: '모집완료',
-          count: senior.full_hosting_count ?? 0,
+          count: senior.full_hosting_count || 0,
           className: 'is-full',
         },
         {
           label: '확정',
-          count: senior.fixed_hosting_count ?? 0,
+          count: senior.fixed_hosting_count || 0,
           className: 'is-fixed',
         },
         {
           label: '진행중',
-          count: senior.in_progress_hosting_count ?? 0,
+          count: senior.in_progress_hosting_count || 0,
           className: 'is-progress',
         },
       ].filter((item) => item.count > 0);
@@ -969,10 +1127,10 @@
 
     function buildHostingStatusText(senior) {
       const statusItems = [
-        ['모집중', senior.open_hosting_count ?? 0],
-        ['모집완료', senior.full_hosting_count ?? 0],
-        ['확정', senior.fixed_hosting_count ?? 0],
-        ['진행중', senior.in_progress_hosting_count ?? 0],
+        ['모집중', senior.open_hosting_count || 0],
+        ['모집완료', senior.full_hosting_count || 0],
+        ['확정', senior.fixed_hosting_count || 0],
+        ['진행중', senior.in_progress_hosting_count || 0],
       ].filter(([, count]) => count > 0);
 
       if (!statusItems.length) {
@@ -1047,8 +1205,8 @@
     }
 
     function syncAddressInputs() {
-      roadAddressInputElement.value = addressState.road_address ?? '';
-      detailAddressInputElement.value = addressState.detail_address ?? '';
+      roadAddressInputElement.value = addressState.road_address || '';
+      detailAddressInputElement.value = addressState.detail_address || '';
     }
 
     function setAddressState(nextAddressState) {
@@ -1156,19 +1314,19 @@
 
 
     function hasCancellableHostingBeforeDelete(senior) {
-      return (senior.open_hosting_count ?? 0) > 0 || (senior.full_hosting_count ?? 0) > 0;
+      return (senior.open_hosting_count || 0) > 0 || (senior.full_hosting_count || 0) > 0;
     }
 
     function hasAdminContactHostingBeforeDelete(senior) {
-      return (senior.fixed_hosting_count ?? 0) > 0
-        || (senior.in_progress_hosting_count ?? 0) > 0;
+      return (senior.fixed_hosting_count || 0) > 0
+        || (senior.in_progress_hosting_count || 0) > 0;
     }
 
     function hasBlockingHostingBeforeUpdate(senior) {
-      return (senior.open_hosting_count ?? 0) > 0
-        || (senior.full_hosting_count ?? 0) > 0
-        || (senior.fixed_hosting_count ?? 0) > 0
-        || (senior.in_progress_hosting_count ?? 0) > 0;
+      return (senior.open_hosting_count || 0) > 0
+        || (senior.full_hosting_count || 0) > 0
+        || (senior.fixed_hosting_count || 0) > 0
+        || (senior.in_progress_hosting_count || 0) > 0;
     }
 
     function buildSeniorUpdateBlockMessage(senior) {
