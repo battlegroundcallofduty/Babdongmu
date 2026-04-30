@@ -1,5 +1,6 @@
 """어르신 CRUD 로직."""
 
+import asyncio
 import uuid
 
 from fastapi import HTTPException, status
@@ -9,6 +10,8 @@ from sqlalchemy.orm import selectinload
 
 from app.domain.common.models import Address
 from app.domain.hosting.models import Hosting, HostingStatus
+from app.domain.match.models import MatchingInfo
+from app.domain.review.models import Review, ReviewImg
 from app.domain.senior.models import Senior
 from app.domain.senior.schemas import (
     GuardianStatsResponse,
@@ -16,6 +19,7 @@ from app.domain.senior.schemas import (
     SeniorResponse,
     SeniorUpdateRequest,
 )
+from app.services.r2 import delete_image
 
 HostingCountMap = dict[str, int]
 
@@ -461,6 +465,18 @@ async def delete_senior(
         session=session,
         senior_id=senior.senior_id,
         action_label="삭제",
+    )
+
+    # R2 후기 이미지 먼저 삭제 (senior 삭제 후 CASCADE로 DB는 사라지지만 R2 파일은 안 사라짐)
+    img_result = await session.execute(
+        select(ReviewImg)
+        .join(Review, ReviewImg.review_id == Review.review_id)
+        .join(MatchingInfo, Review.matching_id == MatchingInfo.matching_id)
+        .where(MatchingInfo.senior_id == senior_id)
+    )
+    review_imgs = img_result.scalars().all()
+    await asyncio.gather(
+        *[delete_image(img.image_url) for img in review_imgs], return_exceptions=True
     )
 
     address_id = senior.address_id
