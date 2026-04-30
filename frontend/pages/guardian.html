@@ -913,6 +913,7 @@
       mapKakaoAddressToPayload,
       mergeDetailAddress,
     } from '/js/addressMapper.js';
+    import { getGenderLabel, escapeHtml } from '/js/hosting-shared.js';
 
     const seniorListElement = document.querySelector('#senior-list');
     const seniorEmptyElement = document.querySelector('#senior-empty');
@@ -1006,15 +1007,6 @@
       }
     }
 
-    function escapeHtml(value) {
-      return String(value)
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;')
-        .replaceAll("'", '&#39;');
-    }
-
     function isAnyModalOpen() {
       return !registerFormModalElement.classList.contains('hidden')
         || !seniorDetailModalElement.classList.contains('hidden');
@@ -1039,16 +1031,6 @@
         return '<span class="badge badge-open">활성</span>';
       }
       return '<span class="badge badge-done">비활성</span>';
-    }
-
-    function getGenderLabel(gender) {
-      if (gender === 'male') {
-        return '남성';
-      }
-      if (gender === 'female') {
-        return '여성';
-      }
-      return '기타';
     }
 
     function normalizeCertFlag(certFlag) {
@@ -1276,7 +1258,6 @@
       document.querySelector('#detail-senior-id').value = senior.senior_id;
       document.querySelector('#detail-senior-name').value = `${senior.name} 어르신`;
       document.querySelector('#detail-senior-birth-date').value = formatBirthDate(senior.birth_date);
-      document.querySelector('#detail-senior-age').value = formatSeniorAge(senior);
       document.querySelector('#detail-senior-gender').value = getGenderLabel(senior.gender);
       document.querySelector('#detail-senior-max-people').value = `${senior.max_people}명`;
       document.querySelector('#detail-senior-road-address').value = senior.address.road_address || '-';
