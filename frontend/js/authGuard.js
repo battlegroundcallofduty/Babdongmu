@@ -156,3 +156,7 @@ export async function validateHostingDetailAccess(viewMode) {
 
   return false;
 }
+
+export function syncUserCache(user) {
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify({ user, at: Date.now() }));
+}
