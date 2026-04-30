@@ -33,7 +33,9 @@ async function api(path, options = {}) {
     const message = Array.isArray(detail)
       ? detail.map(d => d.msg.replace(/^Value error,\s*/i, '')).join(', ')
       : (detail || '요청에 실패했어요.');
-    throw new Error(message);
+    const err = new Error(message);
+    err.status = response.status;
+    throw err;
   }
 
   // 204(요청은 성공했는데 돌려줄 데이터가 없을때)처럼 body가 없는 응답은 null 반환

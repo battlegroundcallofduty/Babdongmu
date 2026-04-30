@@ -241,7 +241,8 @@ document.getElementById('docs-list')?.addEventListener('click', async (e) => {
         await api(`/users/me/documents/${docId}`, { method: 'DELETE' });
         await loadDocuments();
       } catch (err) {
-        await showResultModal(err.message, 'error');
+        const msg = err.message === 'Failed to fetch' ? '네트워크 연결을 확인해주세요.' : err.message;
+        await showResultModal(msg, 'error');
       }
     },
   });
@@ -262,7 +263,8 @@ document.getElementById('docs-list')?.addEventListener('change', async (e) => {
     await refreshCertBadge();  // currentCertFlag 먼저 갱신
     await loadDocuments();     // 갱신된 cert 상태로 서류 슬롯 렌더링
   } catch (err) {
-    await showResultModal(`업로드 실패: ${err.message}`, 'error');
+    const msg = err.message === 'Failed to fetch' ? '네트워크 연결을 확인해주세요.' : `업로드 실패: ${err.message}`;
+    await showResultModal(msg, 'error');
   }
 });
 
