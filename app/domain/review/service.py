@@ -120,7 +120,7 @@ async def list_reviews_by_senior(
         select(Review)
         .join(MatchingInfo, Review.matching_id == MatchingInfo.matching_id)
         .where(MatchingInfo.senior_id == senior_id)
-        .order_by(Review.created_at.desc())
+        .order_by(Review.created_at.desc(), Review.review_id.desc())
     )
     reviews = result.scalars().all()
 

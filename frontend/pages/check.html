@@ -97,7 +97,7 @@
   <script src="/js/base.js"></script>
   <script src="/js/api.js"></script>
   <script type="module">
-    import { requireRoles } from '/js/authGuard.js';
+    import { requireRoles, isLoggedIn } from '/js/authGuard.js';
 
     const params = new URLSearchParams(window.location.search);
     const qrUuid = params.get('qr_uuid');
@@ -105,6 +105,49 @@
 
     function getCurrentTime() {
       return new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
+    }
+
+    function formatTime(isoString) {
+      return new Date(isoString).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
+    }
+
+    async function restoreMatchState() {
+      try {
+        const today = new Date().toLocaleDateString('ko-KR');
+        const findTodayMatch = (items) =>
+          (items || []).find(m =>
+            m.senior_id === seniorId &&
+            new Date(m.hosting_at).toLocaleDateString('ko-KR') === today
+          );
+
+        // 체크인만 된 경우 (예정 탭)
+        const scheduled = await api('/matches/my?is_completed=false&page=1&size=50');
+        const scheduledMatch = findTodayMatch(scheduled.items);
+        if (scheduledMatch?.check_in_time) {
+          const btn = document.querySelector('#checkin-btn');
+          btn.textContent = `체크인 완료 · ${formatTime(scheduledMatch.check_in_time)}`;
+          btn.disabled = true;
+          return;
+        }
+
+        // 체크인/아웃 모두 된 경우 (완료 탭)
+        const completed = await api('/matches/my?is_completed=true&page=1&size=10');
+        const completedMatch = findTodayMatch(completed.items);
+        if (completedMatch) {
+          if (completedMatch.check_in_time) {
+            const checkinBtn = document.querySelector('#checkin-btn');
+            checkinBtn.textContent = `체크인 완료 · ${formatTime(completedMatch.check_in_time)}`;
+            checkinBtn.disabled = true;
+          }
+          if (completedMatch.check_out_time) {
+            const checkoutBtn = document.querySelector('#checkout-btn');
+            checkoutBtn.textContent = `체크아웃 완료 · ${formatTime(completedMatch.check_out_time)}`;
+            checkoutBtn.disabled = true;
+          }
+        }
+      } catch {
+        // 상태 복원 실패해도 기본 UI 유지
+      }
     }
 
     async function initPage() {
@@ -117,6 +160,7 @@
       try {
         const data = await api(`/seniors/qr/${qrUuid}`);
         seniorId = data.senior_id;
+        await restoreMatchState();
       } catch (e) {
         document.querySelector('#checkin-btn').disabled = true;
         document.querySelector('#checkout-btn').disabled = true;
@@ -168,10 +212,13 @@
     document.querySelector('#checkout-btn').addEventListener('click', handleCheckOut);
 
     async function bootstrap() {
-      // authGuard.js - requireRoles 에서 로그인 여부 & 역할 확인까지 수행
+      if (!isLoggedIn()) {
+        const redirect = encodeURIComponent(window.location.href);
+        window.location.replace(`/pages/login.html?redirect=${redirect}`);
+        return;
+      }
       const currentUser = await requireRoles(['volunteer']);
       if (!currentUser) return;
-      // 초기 로드
       await initPage();
     }
 

@@ -419,6 +419,18 @@
       text-align: center;
     }
 
+    .qr-modal-panel .modal-header {
+      align-items: flex-start;
+      text-align: left;
+    }
+
+    .qr-modal-senior-name {
+      margin: 0 0 2px;
+      font-size: 13px;
+      color: var(--muted, #8C7E73);
+      font-weight: 600;
+    }
+
     #qr-modal-image {
       width: 100%;
       border-radius: 8px;
@@ -873,7 +885,10 @@
     <div id="qr-modal" class="modal-overlay">
       <div class="modal-panel qr-modal-panel" role="dialog" aria-modal="true" aria-labelledby="qr-modal-title">
         <div class="modal-header">
-          <h3 id="qr-modal-title">QR 코드</h3>
+          <div>
+            <p id="qr-modal-senior-name" class="qr-modal-senior-name"></p>
+            <h3 id="qr-modal-title">QR 코드</h3>
+          </div>
           <button id="close-qr-modal-button" type="button" class="modal-close-button" aria-label="닫기">×</button>
         </div>
         <div id="qr-loading" class="qr-loading">불러오는 중...</div>
@@ -946,7 +961,8 @@
       const link = document.querySelector('#qr-download-link');
       const loading = document.querySelector('#qr-loading');
 
-      document.querySelector('#qr-modal-title').textContent = `${seniorName} 어르신 QR 코드`;
+      document.querySelector('#qr-modal-senior-name').textContent = `${seniorName} 어르신`;
+      document.querySelector('#qr-modal-title').textContent = 'QR 코드';
       img.src = '';
       link.href = '#';
       loading.style.display = 'flex';
