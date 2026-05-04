@@ -388,10 +388,12 @@ async def kakao_setup(body: KakaoSetupRequest, db: AsyncSession = Depends(get_db
     user = await create_kakao_user(
         kakao_id=kakao_id,
         name=body.name,
+        phone_number=body.phone_number,
         user_role=body.user_role,
         address_data=body.address,
         db=db,
     )
+    await delete_phone_verifications(body.phone_number, db)
     access_token = create_access_token({"sub": str(user.user_id)})
     return RegisterResponse(user=user, access_token=access_token)
 

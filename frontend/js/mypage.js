@@ -306,7 +306,6 @@ document.getElementById('docs-list')?.addEventListener('change', async (e) => {
     if (me.is_social_login) {
       document.querySelector('.detail-section:has(#password-form)')?.remove();
       document.getElementById('row-email')?.classList.add('hidden');
-      document.getElementById('row-phone')?.classList.add('hidden');
       document.getElementById('profile-name').innerHTML =
         `${me.name} <span class="badge-kakao">카카오</span>`;
     }
