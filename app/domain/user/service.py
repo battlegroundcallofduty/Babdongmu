@@ -200,6 +200,7 @@ async def get_user_by_kakao_id(kakao_id: str, db: AsyncSession) -> User | None:
 async def create_kakao_user(
     kakao_id: str,
     name: str,
+    phone_number: str,
     user_role: UserRole,
     address_data: AddressCreate,
     db: AsyncSession,
@@ -212,12 +213,13 @@ async def create_kakao_user(
     user = User(
         kakao_id=kakao_id,
         name=name,
+        phone_number=phone_number,
         address_id=address.address_id,
         user_role=user_role,
     )
     db.add(user)
     await db.commit()
-    # 일반 유저와 반환값 형태 동일(이메일, 비번, 폰번은 null)
+    # 일반 유저와 반환값 형태 동일(이메일, 비번은 null)
     return await get_user_with_address(user.user_id, db)
 
 

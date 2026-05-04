@@ -487,7 +487,10 @@
         || hostingDetail?.hosting_status === 'FIXED'
         || hostingDetail?.hosting_status === 'IN_PROGRESS'
         || hostingDetail?.hosting_status === 'CLOSED') {
-        return hostingDetail?.max_people || 0;
+        if (!hostingDetail.max_people) {
+          throw new Error(`호스팅 데이터에 max_people이 없습니다. hosting_id: ${hostingDetail.hosting_id}`);
+        }
+        return hostingDetail.max_people;
       }
 
       return 0;

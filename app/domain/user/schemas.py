@@ -80,6 +80,7 @@ class KakaoSetupRequest(BaseModel):
 
     setup_token: str
     name: str = Field(min_length=1)
+    phone_number: str = Field(min_length=1)
     user_role: UserRole
     address: AddressCreate
 

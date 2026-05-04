@@ -53,6 +53,11 @@
 
     .detail-row {
       min-width: 0;
+      align-items: flex-start;
+    }
+
+    .detail-label {
+      padding-top: 1px;
     }
 
     .detail-value {
@@ -98,27 +103,20 @@
 
       .card-actions-left .btn,
       .card-actions-right .btn {
-        flex: 1;
+        min-width: 0;
+        width: 100%;
+      }
+
+      .card-actions-right {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
       }
     }
 
     .senior-list-actions {
       text-align: center;
       margin-bottom: 24px;
-    }
-
-    .modal-overlay {
-      position: fixed;
-      inset: 0;
-      z-index: 1000;
-      align-items: center;
-      justify-content: center;
-      padding: 24px 16px;
-      background: rgba(44, 36, 32, 0.45);
-    }
-
-    .modal-overlay:not(.hidden) {
-      display: flex;
     }
 
     .modal-panel {
@@ -194,7 +192,6 @@
       }
     }
 
-
     .btn-disabled {
       background: #F0EBE6;
       border-color: #D8CEC4;
@@ -241,6 +238,16 @@
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 16px;
+    }
+
+    .birth-date-selects {
+      display: flex;
+      gap: 8px;
+    }
+
+    .birth-date-selects .form-input {
+      flex: 1;
+      min-width: 0;
     }
 
     .form-input-readonly,
@@ -342,6 +349,11 @@
     }
 
     @media (max-width: 768px) {
+      .section-header {
+        flex-wrap: wrap;
+        row-gap: 8px;
+      }
+
       .senior-header-actions {
         width: 100%;
         justify-content: space-between;
@@ -439,6 +451,157 @@
       color: var(--muted);
       font-size: 14px;
     }
+
+
+    /* ---------- 어르신 카드 모바일 뷰포트 보정 ---------- */
+    @media (max-width: 480px) {
+      .container {
+        width: 100%;
+        max-width: 100%;
+        padding-left: 16px;
+        padding-right: 16px;
+        box-sizing: border-box;
+        overflow-x: hidden;
+      }
+
+      #senior-list {
+        grid-template-columns: 1fr;
+        width: 100%;
+        max-width: 100%;
+      }
+
+      #senior-list .card {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+      }
+
+      #senior-list .card-body {
+        width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+      }
+
+      .hosting-header {
+        min-width: 0;
+      }
+
+      .hosting-avatar {
+        width: 40px;
+        height: 40px;
+        flex: 0 0 40px;
+        font-size: 18px;
+      }
+
+      .detail-row {
+        display: grid;
+        grid-template-columns: 76px minmax(0, 1fr);
+        gap: 8px;
+        width: 100%;
+        min-width: 0;
+      }
+
+      .detail-label {
+        min-width: 0;
+        white-space: nowrap;
+      }
+
+      .detail-value {
+        min-width: 0;
+        overflow: hidden;
+      }
+
+      .address-text {
+        display: -webkit-box;
+        width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: normal;
+        word-break: keep-all;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+      }
+
+      .hosting-status-summary {
+        width: 100%;
+        min-width: 0;
+        overflow: hidden;
+      }
+
+      .hosting-status-chip {
+        max-width: 100%;
+        min-width: 0;
+        flex-shrink: 1;
+      }
+
+      .hosting-status-empty {
+        display: block;
+        width: 100%;
+        min-width: 0;
+      }
+
+      .card-actions {
+        width: 100%;
+        gap: 8px;
+      }
+
+      .card-actions-left,
+      .card-actions-right {
+        width: 100%;
+        min-width: 0;
+      }
+
+      .card-actions-left {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+      .card-actions-right {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      .card-actions-left .btn,
+      .card-actions-right .btn {
+        width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+      }
+
+      .senior-header-actions {
+        width: 100%;
+        gap: 10px;
+      }
+
+      .senior-filter-toggle {
+        min-width: 0;
+      }
+
+      #show-register-form {
+        flex-shrink: 0;
+      }
+
+      .modal-overlay {
+        padding: 16px 12px;
+      }
+
+      .modal-panel {
+        max-height: calc(100vh - 32px);
+        padding: 18px;
+        box-sizing: border-box;
+      }
+
+      .address-search-row {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .address-search-row .btn {
+        width: 100%;
+      }
+    }
   </style>
 </head>
 <body>
@@ -517,7 +680,7 @@
       </div>
     </div>
 
-    <div id="register-form-modal" class="modal-overlay hidden">
+    <div id="register-form-modal" class="modal-overlay">
       <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="form-title">
         <div class="modal-header">
           <h3 id="form-title">어르신 등록</h3>
@@ -547,8 +710,12 @@
             </div>
 
             <div class="form-group">
-              <label class="form-label" for="senior-birth-date">생년월일</label>
-              <input class="form-input" type="date" id="senior-birth-date" required>
+              <label class="form-label">생년월일</label>
+              <div class="birth-date-selects">
+                <select class="form-input" id="senior-birth-year" required></select>
+                <select class="form-input" id="senior-birth-month" required></select>
+                <select class="form-input" id="senior-birth-day" required></select>
+              </div>
             </div>
 
             <div class="form-group">
@@ -630,7 +797,7 @@
       </div>
     </div>
 
-    <div id="senior-detail-modal" class="modal-overlay hidden">
+    <div id="senior-detail-modal" class="modal-overlay">
       <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="senior-detail-title">
         <div class="modal-header">
           <h3 id="senior-detail-title">어르신 상세</h3>
@@ -715,7 +882,7 @@
     </div>
 
 
-    <div id="qr-modal" class="modal-overlay hidden">
+    <div id="qr-modal" class="modal-overlay">
       <div class="modal-panel qr-modal-panel" role="dialog" aria-modal="true" aria-labelledby="qr-modal-title">
         <div class="modal-header">
           <div>
@@ -764,7 +931,9 @@
     const submitButtonElement = document.querySelector('#submit-button');
     const cancelEditButtonElement = document.querySelector('#cancel-edit-button');
 
-    const birthDateInputElement = document.querySelector('#senior-birth-date');
+    const birthYearSelectElement = document.querySelector('#senior-birth-year');
+    const birthMonthSelectElement = document.querySelector('#senior-birth-month');
+    const birthDaySelectElement = document.querySelector('#senior-birth-day');
     const seniorAgeInputElement = document.querySelector('#senior-age');
 
     const roadAddressInputElement = document.querySelector('#senior-road-address');
@@ -781,7 +950,7 @@
 
     let isSeniorListExpanded = false;
     let seniorListState = [];
-    let isActiveOnly = activeOnlyToggleElement?.checked ?? false;
+    let isActiveOnly = activeOnlyToggleElement?.checked || false;
     let addressState = createEmptyAddressPayload();
     let currentDetailSenior = null;
     let qrObjectUrl = null;
@@ -798,8 +967,8 @@
       link.href = '#';
       loading.style.display = 'flex';
       img.style.display = 'none';
-      modal.classList.remove('hidden');
-      document.body.classList.add('modal-open');
+      modal.classList.add('open');
+      window.syncBodyLock();
 
       try {
         const token = localStorage.getItem('access_token');
@@ -824,33 +993,14 @@
     }
 
     function closeQrModal() {
-      document.querySelector('#qr-modal').classList.add('hidden');
+      document.querySelector('#qr-modal').classList.remove('open');
       if (qrObjectUrl) {
         URL.revokeObjectURL(qrObjectUrl);
         qrObjectUrl = null;
       }
       document.querySelector('#qr-modal-image').src = '';
       document.querySelector('#qr-download-link').href = '#';
-      if (
-        registerFormModalElement.classList.contains('hidden') &&
-        !document.getElementById('confirm-modal')?.classList.contains('open') &&
-        document.querySelector('#senior-detail-modal').classList.contains('hidden')
-      ) {
-        document.body.classList.remove('modal-open');
-      }
-    }
-
-    function isAnyModalOpen() {
-      return !registerFormModalElement.classList.contains('hidden')
-        || !seniorDetailModalElement.classList.contains('hidden');
-    }
-
-    function syncBodyScrollLock() {
-      if (isAnyModalOpen()) {
-        document.body.classList.add('modal-open');
-      } else {
-        document.body.classList.remove('modal-open');
-      }
+      window.syncBodyLock();
     }
 
     function hideMessage() {
@@ -880,6 +1030,68 @@
     }
 
 
+    function populateBirthDateSelects() {
+      const currentYear = new Date().getFullYear();
+      const defaultYear = currentYear - 65;
+
+      birthYearSelectElement.innerHTML = '<option value="">연도</option>';
+      for (let y = defaultYear; y >= 1900; y--) {
+        const opt = document.createElement('option');
+        opt.value = y;
+        opt.textContent = `${y}년`;
+        birthYearSelectElement.appendChild(opt);
+      }
+      birthYearSelectElement.value = defaultYear;
+
+      birthMonthSelectElement.innerHTML = '<option value="">월</option>';
+      for (let m = 1; m <= 12; m++) {
+        const opt = document.createElement('option');
+        opt.value = String(m).padStart(2, '0');
+        opt.textContent = `${m}월`;
+        birthMonthSelectElement.appendChild(opt);
+      }
+      birthMonthSelectElement.value = '01';
+
+      updateDayOptions();
+      birthDaySelectElement.value = '01';
+    }
+
+    function updateDayOptions() {
+      const year = parseInt(birthYearSelectElement.value) || new Date().getFullYear() - 65;
+      const month = parseInt(birthMonthSelectElement.value) || 1;
+      const daysInMonth = new Date(year, month, 0).getDate();
+      const prevDay = birthDaySelectElement.value;
+
+      birthDaySelectElement.innerHTML = '<option value="">일</option>';
+      for (let d = 1; d <= daysInMonth; d++) {
+        const opt = document.createElement('option');
+        opt.value = String(d).padStart(2, '0');
+        opt.textContent = `${d}일`;
+        birthDaySelectElement.appendChild(opt);
+      }
+
+      if (prevDay && parseInt(prevDay) <= daysInMonth) {
+        birthDaySelectElement.value = prevDay;
+      }
+    }
+
+    function getBirthDateValue() {
+      const y = birthYearSelectElement.value;
+      const m = birthMonthSelectElement.value;
+      const d = birthDaySelectElement.value;
+      if (!y || !m || !d) return '';
+      return `${y}-${m}-${d}`;
+    }
+
+    function setBirthDateValue(dateStr) {
+      if (!dateStr) return;
+      const [y, m, d] = dateStr.split('-');
+      birthYearSelectElement.value = y || '';
+      birthMonthSelectElement.value = m || '';
+      updateDayOptions();
+      birthDaySelectElement.value = d || '';
+    }
+
     function calculateAgeFromBirthDate(birthDateValue) {
       if (!birthDateValue) {
         return null;
@@ -904,18 +1116,8 @@
       return age;
     }
 
-    function getSeniorAge(senior) {
-      const calculatedAge = calculateAgeFromBirthDate(senior.birth_date);
-
-      if (calculatedAge !== null) {
-        return calculatedAge;
-      }
-
-      return senior.age ?? null;
-    }
-
     function formatSeniorAge(senior) {
-      const age = getSeniorAge(senior);
+      const age = typeof senior.age === 'number' ? senior.age : null;
       return age === null ? '-' : `${age}세`;
     }
 
@@ -928,7 +1130,7 @@
     }
 
     function updateAgePreview() {
-      const age = calculateAgeFromBirthDate(birthDateInputElement.value);
+      const age = calculateAgeFromBirthDate(getBirthDateValue());
 
       if (age === null) {
         seniorAgeInputElement.value = '-';
@@ -983,22 +1185,22 @@
       const statusItems = [
         {
           label: '모집중',
-          count: senior.open_hosting_count ?? 0,
+          count: senior.open_hosting_count || 0,
           className: 'is-open',
         },
         {
           label: '모집완료',
-          count: senior.full_hosting_count ?? 0,
+          count: senior.full_hosting_count || 0,
           className: 'is-full',
         },
         {
           label: '확정',
-          count: senior.fixed_hosting_count ?? 0,
+          count: senior.fixed_hosting_count || 0,
           className: 'is-fixed',
         },
         {
           label: '진행중',
-          count: senior.in_progress_hosting_count ?? 0,
+          count: senior.in_progress_hosting_count || 0,
           className: 'is-progress',
         },
       ].filter((item) => item.count > 0);
@@ -1018,10 +1220,10 @@
 
     function buildHostingStatusText(senior) {
       const statusItems = [
-        ['모집중', senior.open_hosting_count ?? 0],
-        ['모집완료', senior.full_hosting_count ?? 0],
-        ['확정', senior.fixed_hosting_count ?? 0],
-        ['진행중', senior.in_progress_hosting_count ?? 0],
+        ['모집중', senior.open_hosting_count || 0],
+        ['모집완료', senior.full_hosting_count || 0],
+        ['확정', senior.fixed_hosting_count || 0],
+        ['진행중', senior.in_progress_hosting_count || 0],
       ].filter(([, count]) => count > 0);
 
       if (!statusItems.length) {
@@ -1039,6 +1241,7 @@
       document.querySelector('#detail-senior-id').value = senior.senior_id;
       document.querySelector('#detail-senior-name').value = `${senior.name} 어르신`;
       document.querySelector('#detail-senior-birth-date').value = formatBirthDate(senior.birth_date);
+      document.querySelector('#detail-senior-age').value = formatSeniorAge(senior);
       document.querySelector('#detail-senior-gender').value = getGenderLabel(senior.gender);
       document.querySelector('#detail-senior-max-people').value = `${senior.max_people}명`;
       document.querySelector('#detail-senior-road-address').value = senior.address.road_address || '-';
@@ -1061,14 +1264,14 @@
 
     function openSeniorDetailModal(senior) {
       fillDetailModal(senior);
-      seniorDetailModalElement.classList.remove('hidden');
-      syncBodyScrollLock();
+      seniorDetailModalElement.classList.add('open');
+      window.syncBodyLock();
     }
 
     function closeSeniorDetailModal() {
-      seniorDetailModalElement.classList.add('hidden');
+      seniorDetailModalElement.classList.remove('open');
       currentDetailSenior = null;
-      syncBodyScrollLock();
+      window.syncBodyLock();
     }
 
     async function openSeniorEditFromDetail() {
@@ -1096,8 +1299,8 @@
     }
 
     function syncAddressInputs() {
-      roadAddressInputElement.value = addressState.road_address ?? '';
-      detailAddressInputElement.value = addressState.detail_address ?? '';
+      roadAddressInputElement.value = addressState.road_address || '';
+      detailAddressInputElement.value = addressState.detail_address || '';
     }
 
     function setAddressState(nextAddressState) {
@@ -1159,6 +1362,7 @@
       document.querySelector('#senior-id').value = '';
       document.querySelector('#senior-active-flag').value = 'true';
       document.querySelector('#senior-max-people').value = '2';
+      populateBirthDateSelects();
       updateAgePreview();
       setAddressState(createEmptyAddressPayload());
       setCreateMode();
@@ -1167,7 +1371,7 @@
     function fillForm(senior) {
       document.querySelector('#senior-id').value = senior.senior_id;
       document.querySelector('#senior-name').value = senior.name;
-      document.querySelector('#senior-birth-date').value = senior.birth_date || '';
+      setBirthDateValue(senior.birth_date || '');
       updateAgePreview();
       document.querySelector('#senior-gender').value = senior.gender;
       document.querySelector('#senior-max-people').value = senior.max_people;
@@ -1193,44 +1397,44 @@
     }
 
     function openForm() {
-      registerFormModalElement.classList.remove('hidden');
-      syncBodyScrollLock();
+      registerFormModalElement.classList.add('open'); 
+      window.syncBodyLock();
     }
 
     function closeForm() {
-      registerFormModalElement.classList.add('hidden');
+      registerFormModalElement.classList.remove('open');
       resetForm();
-      syncBodyScrollLock();
+      window.syncBodyLock();
     }
 
 
     function hasCancellableHostingBeforeDelete(senior) {
-      return (senior.open_hosting_count ?? 0) > 0 || (senior.full_hosting_count ?? 0) > 0;
+      return (senior.open_hosting_count || 0) > 0 || (senior.full_hosting_count || 0) > 0;
     }
 
     function hasAdminContactHostingBeforeDelete(senior) {
-      return (senior.fixed_hosting_count ?? 0) > 0
-        || (senior.in_progress_hosting_count ?? 0) > 0;
+      return (senior.fixed_hosting_count || 0) > 0
+        || (senior.in_progress_hosting_count || 0) > 0;
     }
 
     function hasBlockingHostingBeforeUpdate(senior) {
-      return (senior.open_hosting_count ?? 0) > 0
-        || (senior.full_hosting_count ?? 0) > 0
-        || (senior.fixed_hosting_count ?? 0) > 0
-        || (senior.in_progress_hosting_count ?? 0) > 0;
+      return (senior.open_hosting_count || 0) > 0
+        || (senior.full_hosting_count || 0) > 0
+        || (senior.fixed_hosting_count || 0) > 0
+        || (senior.in_progress_hosting_count || 0) > 0;
     }
 
     function buildSeniorUpdateBlockMessage(senior) {
       if (hasBlockingHostingBeforeUpdate(senior)) {
-        return '진행 중인 호스팅이 있는 어르신은 수정할 수 없어요. 해당 호스팅을 취소하고 다시 시도하세요.';
+        return '진행 중인 호스팅이 있는 어르신은 수정할 수 없어요.\n해당 호스팅을 취소하고 다시 시도하세요.';
       }
 
       return '';
     }
 
     function buildSeniorDeleteBlockMessage(senior) {
-      const hasCancellableHosting = hasCancellableHostingBeforeDelete(senior);
-      const hasAdminContactHosting = hasAdminContactHostingBeforeDelete(senior);
+      const hasCancellableHosting = hasCancellableHostingBeforeDelete(senior); 
+      const hasAdminContactHosting = hasAdminContactHostingBeforeDelete(senior); 
 
       if (senior.active_flag) {
         return '활성 상태의 어르신은 삭제할 수 없어요. 먼저 수정에서 비활성 상태로 변경해 주세요.';
@@ -1262,6 +1466,10 @@
       const editButtonClass = isUpdateBlocked
         ? 'btn btn-ghost btn-sm btn-disabled'
         : 'btn btn-ghost btn-sm';
+      const isHostingBlocked = !senior.active_flag;
+      const hostingButtonClass = isHostingBlocked
+        ? 'btn btn-primary btn-sm btn-disabled'
+        : 'btn btn-primary btn-sm';
 
       return `
         <div
@@ -1306,9 +1514,12 @@
               <div class="card-actions-left">
                 <button
                   type="button"
-                  class="btn btn-primary btn-sm"
+                  class="${hostingButtonClass}"
                   data-action="create-hosting"
                   data-senior-id="${senior.senior_id}"
+                  data-hosting-blocked="${isHostingBlocked ? 'true' : 'false'}"
+                  aria-disabled="${isHostingBlocked ? 'true' : 'false'}"
+                  title="${isHostingBlocked ? '비활성 상태의 어르신은 호스팅을 등록할 수 없어요.' : '호스팅 등록'}"
                 >
                   호스팅 등록
                 </button>
@@ -1430,7 +1641,7 @@
       return {
         name: document.querySelector('#senior-name').value.trim(),
         gender: document.querySelector('#senior-gender').value,
-        birth_date: document.querySelector('#senior-birth-date').value,
+        birth_date: getBirthDateValue(),
         address: { ...addressState },
         special_note: document.querySelector('#senior-note').value.trim() || null,
         active_flag: document.querySelector('#senior-active-flag').value === 'true',
@@ -1466,12 +1677,7 @@
         : '';
 
       if (updateBlockMessage) {
-        openConfirmModal({
-          title: '수정할 수 없어요',
-          message: updateBlockMessage,
-          cancelText: '확인',
-          showConfirmButton: false,
-        });
+        await showResultModal(updateBlockMessage, 'error');
         return;
       }
 
@@ -1541,11 +1747,17 @@
       addressState = mergeDetailAddress(addressState, event.target.value);
     });
 
-    birthDateInputElement?.addEventListener('change', () => {
+    birthYearSelectElement?.addEventListener('change', () => {
+      updateDayOptions();
       updateAgePreview();
     });
 
-    birthDateInputElement?.addEventListener('input', () => {
+    birthMonthSelectElement?.addEventListener('change', () => {
+      updateDayOptions();
+      updateAgePreview();
+    });
+
+    birthDaySelectElement?.addEventListener('change', () => {
       updateAgePreview();
     });
 
@@ -1630,12 +1842,7 @@
         }
 
         if (action === 'edit' && isUpdateBlocked) {
-          openConfirmModal({
-            title: '수정할 수 없어요',
-            message: updateBlockMessage,
-            cancelText: '확인',
-            showConfirmButton: false,
-          });
+          await showResultModal(updateBlockMessage, 'error');
           return;
         }
 
@@ -1644,12 +1851,7 @@
           const latestUpdateBlockMessage = buildSeniorUpdateBlockMessage(senior);
 
           if (latestUpdateBlockMessage) {
-            openConfirmModal({
-              title: '수정할 수 없어요',
-              message: latestUpdateBlockMessage,
-              cancelText: '확인',
-              showConfirmButton: false,
-            });
+            await showResultModal(latestUpdateBlockMessage, 'error');
             return;
           }
 
@@ -1665,6 +1867,11 @@
         }
 
         if (action === 'create-hosting') {
+          const isHostingBlocked = actionButton?.dataset.hostingBlocked === 'true';
+          if (isHostingBlocked) {
+            await showResultModal('비활성 상태의 어르신은 호스팅을 등록할 수 없어요.\n활성 상태로 변경한 후 다시 시도해 주세요.', 'error');
+            return;
+          }
           window.location.href = buildCreateHostingUrl(seniorId);
           return;
         }
@@ -1720,7 +1927,7 @@
       }
 
       if (!isApprovedGuardian(currentUser)) {
-        await showResultModal('보호자 인증 승인 후 어르신 관리 페이지를 사용할 수 있습니다.', true);
+        await showResultModal('보호자 인증 승인 후 어르신 관리 페이지를 사용할 수 있습니다.', 'info');
         window.location.href = '/pages/mypage.html';
         return;
       }

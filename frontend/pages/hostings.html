@@ -98,20 +98,9 @@
 
     /* ---------- 호스팅 등록 모달 (페이지 고유) ---------- */
     .modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.4);
-      display: none;
-      align-items: center;
-      justify-content: center;
       padding: 88px 24px 32px;
-      z-index: 30;
       overflow: hidden;
       box-sizing: border-box;
-    }
-
-    .modal-overlay.open {
-      display: flex;
     }
 
     .modal {
@@ -693,10 +682,14 @@
           return;
         }
 
-        const seniorId = String(hosting?.senior_id ?? '');
+        if (!hosting.senior_id) {
+          throw new Error(`호스팅 데이터에 senior_id가 없습니다. hosting_id: ${hosting.hosting_id}`);
+        }
+
+        const seniorId = String(hosting.senior_id);
         const hostingAt = getNormalizedHostingStartDate(hosting);
 
-        if (!seniorId || !hostingAt) {
+        if (!hostingAt) {
           return;
         }
 
@@ -724,7 +717,7 @@
       }
       return getSeniorHostingRules(seniorId).find((rule) => {
         return candidateStartDate > rule.blockedStartAt && candidateStartDate < rule.blockedEndAt;
-      }) ?? null;
+      });
     }
 
     function buildKstDateTime(dateValue, timeValue) {
@@ -1048,7 +1041,10 @@
         updateHostingFormAvailability();
         return;
       }
-      document.querySelector('#hosting-guests').value = String(senior.max_people ?? 2);
+      if (!senior.max_people) {
+        throw new Error(`어르신 데이터에 max_people이 없습니다. senior_id: ${senior.senior_id}`);
+      }
+      document.querySelector('#hosting-guests').value = String(senior.max_people);
       updateHostingAvailabilityNotice();
       updateHostingFormAvailability();
     }
@@ -1151,12 +1147,12 @@
 
     function openHostingModal() {
       document.querySelector('#hosting-modal').classList.add('open');
-      document.body.style.overflow = 'hidden';
+      window.syncBodyLock();
     }
 
     function closeHostingModal() {
       document.querySelector('#hosting-modal').classList.remove('open');
-      document.body.style.overflow = '';
+      window.syncBodyLock();
     }
 
     function clearCreateQueryParams() {
@@ -1170,7 +1166,7 @@
 
     function applyQueryParams() {
       const params = new URLSearchParams(window.location.search);
-      selectedSeniorIdFromQuery = params.get('senior_id') ?? '';
+      selectedSeniorIdFromQuery = params.get('senior_id') || '';
       shouldOpenCreateModalFromQuery = params.get('open_create') === 'true';
     }
 
