@@ -53,6 +53,8 @@ async def generate_senior_summary(senior_name: str, reviews: list[str]) -> str:
         except Exception as e:
             last_error = e
 
+    if last_error is None:
+        raise RuntimeError("AI 모델 설정이 비어있습니다.")
     raise last_error
 
 
