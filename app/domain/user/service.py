@@ -350,6 +350,10 @@ async def delete_orphan_r2_documents(db: AsyncSession) -> int:
     from app.config import settings
     from app.services.r2 import delete_r2_key, list_r2_keys
 
+    # 로컬 개발환경에서는 팀원마다 DB가 달라 다른 팀원 파일을 고아로 오인할 수 있음
+    if settings.DEBUG:
+        return 0
+
     # db에서 모든 document_url을 set(해시 때문에 조회 빠름)으로 가져옴
     result = await db.execute(select(Document.document_url))
     db_urls = set(result.scalars().all())

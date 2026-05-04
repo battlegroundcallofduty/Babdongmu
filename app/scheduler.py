@@ -54,6 +54,10 @@ async def _delete_orphan_review_images(session: AsyncSession) -> int:
     """R2 공개버킷 안의 리뷰이미지 파일 중 db에 없는 파일 삭제(삭제된 수 반환)"""
     from app.services.r2 import delete_r2_key, list_r2_keys
 
+    # 로컬 개발환경에서는 팀원마다 DB가 달라 다른 팀원 파일을 고아로 오인할 수 있음
+    if settings.DEBUG:
+        return 0
+
     result = await session.execute(select(ReviewImg.image_url))
     db_urls = set(result.scalars().all())
 
@@ -75,7 +79,7 @@ async def _delete_orphan_review_images(session: AsyncSession) -> int:
 async def cleanup_scheduler_loop() -> None:
     """고아 데이터 정리 스케줄러를 하루에 한 번 실행합니다."""
 
-    logger.info("정리 스케줄러를 시작합니다.")
+    logger.info("정리 스케줄러를 시작합니다. 실행주기=하루 1회")
 
     try:
         while True:
