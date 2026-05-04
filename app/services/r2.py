@@ -180,3 +180,27 @@ async def delete_image(image_url: str) -> None:
         logger.info("R2 삭제 완료: bucket=%s key=%s", bucket, key)
     except (BotoCoreError, ClientError) as e:
         logger.error("R2 삭제 실패: %s", e)  # R2 삭제 실패해도 DB 삭제는 진행
+
+
+def list_r2_keys(bucket: str, prefix: str) -> list[str]:
+    """R2 버킷의 특정 prefix 아래 모든 Key 목록을 반환합니다."""
+    client = _get_client()
+    # R2는 한번에 1000개까지만 반환. 1000개 넘으면 자동으로 다음 페이지 넘어감.
+    paginator = client.get_paginator("list_objects_v2")
+    keys = []
+    for page in paginator.paginate(Bucket=bucket, Prefix=prefix):
+        for obj in page.get("Contents", []):
+            keys.append(obj["Key"])
+    return keys
+
+
+def delete_r2_key(bucket: str, key: str) -> bool:
+    """R2 버킷에서 Key로 직접 삭제합니다. 성공 시 True, 실패 시 False 반환."""
+    client = _get_client()
+    try:
+        client.delete_object(Bucket=bucket, Key=key)
+        logger.info("R2 삭제 완료: bucket=%s key=%s", bucket, key)
+        return True
+    except (BotoCoreError, ClientError) as e:
+        logger.error("R2 삭제 실패: bucket=%s key=%s err=%s", bucket, key, e)
+        return False

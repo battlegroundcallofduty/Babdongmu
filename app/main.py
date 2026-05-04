@@ -8,7 +8,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.api.v1.router import api_router
 from app.database import close_db, init_db
-from app.scheduler import hosting_scheduler_loop
+from app.scheduler import cleanup_scheduler_loop, hosting_scheduler_loop
 
 logging.basicConfig(
     level=logging.INFO,
@@ -25,6 +25,7 @@ async def lifespan(app: FastAPI):
 
     # 2. 스케줄러 시작
     scheduler_task = asyncio.create_task(hosting_scheduler_loop())
+    cleanup_task = asyncio.create_task(cleanup_scheduler_loop())
 
     try:
         yield
@@ -32,9 +33,15 @@ async def lifespan(app: FastAPI):
     finally:
         # 3. 스케줄러 종료
         scheduler_task.cancel()
+        cleanup_task.cancel()
 
         try:
             await scheduler_task
+        except asyncio.CancelledError:
+            pass
+
+        try:
+            await cleanup_task
         except asyncio.CancelledError:
             pass
 
