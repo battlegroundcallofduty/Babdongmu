@@ -185,6 +185,7 @@ async def delete_image(image_url: str) -> None:
 def list_r2_keys(bucket: str, prefix: str) -> list[str]:
     """R2 버킷의 특정 prefix 아래 모든 Key 목록을 반환합니다."""
     client = _get_client()
+    # prefix: 리뷰사진은 reviews/, 회원서류는 documents/ (각자 라우터파일에서 확인가능)
     # R2는 한번에 1000개까지만 반환. 1000개 넘으면 자동으로 다음 페이지 넘어감.
     paginator = client.get_paginator("list_objects_v2")
     keys = []
