@@ -101,7 +101,9 @@ document.querySelector('#login-form')?.addEventListener('submit', async (e) => {
           window.location.replace(decoded);
           return;
         }
-      } catch {}
+      } catch (e) {
+        console.warn('redirect 파라미터가 유효하지 않은 URL입니다:', e);
+      }
     }
 
     // 역할별 페이지 이동
