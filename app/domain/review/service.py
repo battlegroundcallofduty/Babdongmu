@@ -8,10 +8,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
 
+from app.database import AsyncSessionLocal
 from app.domain.match.models import MatchingInfo, MatchStatus
 from app.domain.review.models import Review, ReviewImg
 from app.domain.review.schemas import ReviewImageResponse, ReviewResponse
-from app.services.ai import MIN_REVIEW_COUNT, update_senior_ai_summary
+from app.services.ai import update_senior_ai_summary
 from app.services.r2 import delete_image
 
 
@@ -29,6 +30,19 @@ async def _get_images(db: AsyncSession, review_id: int) -> list[ReviewImg]:
     """후기 이미지 목록을 조회합니다."""
     result = await db.execute(select(ReviewImg).where(ReviewImg.review_id == review_id))
     return list(result.scalars().all())
+
+
+async def run_ai_summary_bg(match_id: int) -> None:
+    """AI 소개글 갱신 백그라운드 태스크 — 독립 세션으로 실행."""
+    async with AsyncSessionLocal() as db:
+        match = await db.get(MatchingInfo, match_id)
+        if match is None:
+            return
+        senior_id = match.senior_id
+        try:
+            await update_senior_ai_summary(senior_id, db)
+        except Exception as e:
+            logger.warning("AI 소개글 생성 실패: senior_id=%s error=%s", senior_id, e)
 
 
 async def create_review(
@@ -83,22 +97,6 @@ async def create_review(
         "후기 작성 완료: review_id=%s match_id=%s vt_id=%s",
         review.review_id, match_id, vt_id,
     )
-
-    # 후기 3건 이상 시 AI 소개글 자동 생성
-    review_count_result = await db.execute(
-        select(Review).where(Review.matching_id.in_(
-            select(MatchingInfo.matching_id).where(MatchingInfo.senior_id == match.senior_id)
-        ))
-    )
-    review_count = len(review_count_result.scalars().all())
-    if review_count >= MIN_REVIEW_COUNT:
-        try:
-            await update_senior_ai_summary(match.senior_id, db)
-        except Exception as e:
-            logger.warning(
-                "AI 소개글 생성 실패: senior_id=%s error=%s",
-                match.senior_id, e,
-            )  # AI 생성 실패해도 후기 작성은 성공으로 처리
 
     return _to_response(review, images)
 

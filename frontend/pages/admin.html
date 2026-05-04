@@ -532,7 +532,7 @@
 
           const metaDiv = document.createElement('div');
           metaDiv.className = 'time-meta';
-          metaDiv.textContent = `체크인 ${formatDatetime(m.check_in_time)} · 체크아웃 ${formatDatetime(m.check_out_time)} · 실제 ${rawMinutes ?? '-'}분`;
+          metaDiv.textContent = `체크인 ${formatDatetime(m.check_in_time)} · 체크아웃 ${formatDatetime(m.check_out_time)} · 실제 ${rawMinutes ?? '-'}분 · 최대 ${m.expected_minutes ?? '-'}분`;
 
           info.appendChild(nameDiv);
           info.appendChild(metaDiv);
@@ -550,9 +550,10 @@
           input.className = 'time-input';
           input.type = 'number';
           input.min = '0';
+          if (m.expected_minutes != null) input.max = String(m.expected_minutes);
           input.placeholder = '0';
           input.id = `time-input-${m.matching_id}`;
-          if (roundedMinutes != null) input.value = roundedMinutes;
+          if (roundedMinutes != null) input.value = Math.min(roundedMinutes, m.expected_minutes ?? roundedMinutes);
 
           const unit = document.createElement('span');
           unit.className = 'time-unit';
@@ -592,7 +593,8 @@
     function stepTime(matchingId, delta) {
       const input = document.getElementById(`time-input-${matchingId}`);
       const current = parseInt(input.value, 10) || 0;
-      input.value = Math.max(0, current + delta);
+      const max = input.max !== '' ? parseInt(input.max, 10) : Infinity;
+      input.value = Math.min(max, Math.max(0, current + delta));
     }
 
     async function grantTime(matchingId) {
@@ -600,6 +602,11 @@
       const minutes = parseInt(input.value, 10);
       if (isNaN(minutes) || minutes < 0) {
         showToast('올바른 시간을 입력해주세요', 'error');
+        return;
+      }
+      const max = input.max !== '' ? parseInt(input.max, 10) : null;
+      if (max !== null && minutes > max) {
+        showToast(`호스팅 시간(${max}분)을 초과하여 부여할 수 없어요`, 'error');
         return;
       }
       try {

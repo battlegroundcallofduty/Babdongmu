@@ -1,4 +1,5 @@
 import { mapKakaoAddressToPayload } from '/js/addressMapper.js';
+import { syncUserCache } from './authGuard.js';
 
 // 로그인 안 했으면 로그인 페이지로 이동
 if (!isLoggedIn()) {  // api.js 함수
@@ -189,6 +190,8 @@ async function loadDocuments() {
 async function refreshCertBadge() {
   try {
     const me = await api('/users/me');
+    syncUserCache(me);
+    
     currentCertFlag = me.cert_flag;  // 전역변수 갱신 (loadDocuments가 최신 상태로 렌더링하도록)
     const certBadge = document.getElementById('cert-badge');
     if (me.cert_flag === 'approved') {
@@ -270,7 +273,8 @@ document.getElementById('docs-list')?.addEventListener('change', async (e) => {
 (async () => {
   try {
     const me = await api('/users/me');
-
+    syncUserCache(me);
+    
     // 프로필 카드 채우기
     const roleLabel = { volunteer: '봉사자', guardian: '보호자', admin: '관리자' }[me.user_role] ?? me.user_role;
     document.getElementById('profile-avatar').textContent = me.name[0];

@@ -63,11 +63,10 @@
 
   function _syncBodyLock() {
     const anyOpen =
-      document.getElementById('result-modal')?.classList.contains('open') ||
-      document.getElementById('confirm-modal')?.classList.contains('open');
+      document.querySelectorAll('.modal-overlay.open').length > 0;
     document.body.classList.toggle('modal-open', !!anyOpen);
   }
-
+  
   function _titleFor(type) {
     if (type === 'success') return '완료';
     if (type === 'error') return '오류';
@@ -124,4 +123,6 @@
     _confirmHandler = null;
     _syncBodyLock();
   };
+
+  window.syncBodyLock = _syncBodyLock;
 })();
