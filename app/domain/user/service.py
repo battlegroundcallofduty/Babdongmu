@@ -1,13 +1,15 @@
 """유저 비즈니스 로직."""
 
+import asyncio
 import random
 import string
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import delete, select, update
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.config import settings
 from app.core.security import hash_password, verify_password
 from app.domain.common.models import Address
 from app.domain.common.schemas import AddressCreate
@@ -19,6 +21,7 @@ from app.domain.user.models import (
     User,
     UserRole,
 )
+from app.services.r2 import delete_image, delete_r2_key, list_r2_keys
 
 
 # —— 유저 ─────────
@@ -293,5 +296,78 @@ async def delete_phone_verifications(phone_number: str, db: AsyncSession) -> Non
         delete(PhoneVerification).where(PhoneVerification.phone_number == phone_number)
     )
     await db.commit()
-# TODO: 스케줄러 추가예정
-# (R2 고아 서류파일,리뷰사진 + phone_verifications 만료된행 하루에 한번 정리)
+
+
+# ── 정리 스케줄러용 함수 ────────
+async def delete_expired_phone_verifications(db: AsyncSession) -> int:
+    """만료된 phone_verifications(sms 인증코드) 행 삭제/ 삭제된 행 수 반환."""
+    now = datetime.now(timezone.utc)
+    result = await db.execute(
+        delete(PhoneVerification).where(PhoneVerification.expires_at < now)
+    )
+    await db.commit()
+    return result.rowcount
+
+
+async def delete_duplicate_documents(db: AsyncSession) -> int:
+    """같은 유저의 같은 유형 서류들 중 최신 1개만 남기고 나머지 R2, DB 삭제/ 삭제된 수 반환."""
+    # 유저당 같은 서류유형 중복그룹과 가장 최신파일 뽑기
+    subq = (
+        select(
+            Document.user_id,
+            Document.document_type,
+            func.max(Document.created_at).label("max_created_at"),
+        )
+        .group_by(Document.user_id, Document.document_type)
+        .having(func.count(Document.document_id) > 1)
+        .subquery()
+    )
+    # 가장 최신파일보다 오래된 것들만 stmt
+    stmt = select(Document).join(  # join(대상, on조건)
+        subq,
+        (Document.user_id == subq.c.user_id)
+        & (Document.document_type == subq.c.document_type)
+        & (Document.created_at < subq.c.max_created_at),  # c: columns
+    )
+    result = await db.execute(stmt)
+    # db에서 뽑아내서 duplicates에 list로 저장
+    duplicates = list(result.scalars().all())
+
+    if not duplicates:
+        return 0
+
+    # R2 파일 먼저 삭제(db 먼저 지우면 url 잃어버려서 안됨)
+    await asyncio.gather(
+        *[delete_image(doc.document_url) for doc in duplicates],
+        return_exceptions=True,
+    )
+
+    # db 파일 삭제
+    duplicate_ids = [doc.document_id for doc in duplicates]
+    await db.execute(delete(Document).where(Document.document_id.in_(duplicate_ids)))
+    await db.commit()
+    return len(duplicates)
+
+
+async def delete_orphan_r2_documents(db: AsyncSession) -> int:
+    """R2 private 버킷 documents/ 폴더 파일 중 DB에 없는 파일 삭제, 삭제된 수 반환."""
+    # 로컬 개발환경에서는 팀원마다 DB가 달라 다른 팀원 파일을 고아로 오인할 수 있음
+    if settings.DEBUG:
+        return 0
+
+    # db에서 모든 document_url을 set(해시 때문에 조회 빠름)으로 가져옴
+    result = await db.execute(select(Document.document_url))
+    db_urls = set(result.scalars().all())
+
+    bucket = settings.R2_PRIVATE_BUCKET
+    url_prefix = f"{settings.R2_ENDPOINT}/{bucket}/"
+
+    # R2 key로 url 조립해서 db set에 있는지 비교 -> db에 없으면 삭제
+    orphan_count = 0
+    for key in list_r2_keys(bucket, "documents/"):
+        r2_url = f"{url_prefix}{key}"
+        if r2_url not in db_urls:
+            if delete_r2_key(bucket, key):
+                orphan_count += 1
+
+    return orphan_count
