@@ -92,11 +92,18 @@ document.querySelector('#login-form')?.addEventListener('submit', async (e) => {
       return;
     }
 
-    // redirect 파라미터 있으면 원래 페이지로 복귀 (QR 체크인 등)
+    // redirect 파라미터 있으면 원래 페이지로 복귀 (QR 체크인 등) — 같은 origin만 허용
     const redirectUrl = params.get('redirect');
     if (redirectUrl) {
-      window.location.replace(decodeURIComponent(redirectUrl));
-      return;
+      try {
+        const decoded = decodeURIComponent(redirectUrl);
+        if (new URL(decoded).origin === window.location.origin) {
+          window.location.replace(decoded);
+          return;
+        }
+      } catch (e) {
+        console.warn('redirect 파라미터가 유효하지 않은 URL입니다:', e);
+      }
     }
 
     // 역할별 페이지 이동
