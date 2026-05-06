@@ -15,6 +15,7 @@ from app.domain.user.service import (
     delete_expired_phone_verifications,
     delete_orphan_r2_documents,
 )
+from app.services.r2 import delete_r2_key, list_r2_keys
 
 logger = logging.getLogger(__name__)
 
@@ -52,8 +53,6 @@ async def hosting_scheduler_loop() -> None:
 # cleanup_scheduler_loop(정리 스케줄러)에서만 호출하는 내부 헬퍼 함수
 async def _delete_orphan_review_images(session: AsyncSession) -> int:
     """R2 공개버킷 안의 리뷰이미지 파일 중 db에 없는 파일 삭제(삭제된 수 반환)"""
-    from app.services.r2 import delete_r2_key, list_r2_keys
-
     # 로컬 개발환경에서는 팀원마다 DB가 달라 다른 팀원 파일을 고아로 오인할 수 있음
     if settings.DEBUG:
         return 0

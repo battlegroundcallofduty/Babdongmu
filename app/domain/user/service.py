@@ -1,5 +1,6 @@
 """유저 비즈니스 로직."""
 
+import asyncio
 import random
 import string
 from datetime import datetime, timedelta, timezone
@@ -8,6 +9,7 @@ from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.config import settings
 from app.core.security import hash_password, verify_password
 from app.domain.common.models import Address
 from app.domain.common.schemas import AddressCreate
@@ -19,6 +21,7 @@ from app.domain.user.models import (
     User,
     UserRole,
 )
+from app.services.r2 import delete_image, delete_r2_key, list_r2_keys
 
 
 # —— 유저 ─────────
@@ -334,9 +337,10 @@ async def delete_duplicate_documents(db: AsyncSession) -> int:
         return 0
 
     # R2 파일 먼저 삭제(db 먼저 지우면 url 잃어버려서 안됨)
-    from app.services.r2 import delete_image
-    for doc in duplicates:
-        await delete_image(doc.document_url)
+    await asyncio.gather(
+        *[delete_image(doc.document_url) for doc in duplicates],
+        return_exceptions=True,
+    )
 
     # db 파일 삭제
     duplicate_ids = [doc.document_id for doc in duplicates]
@@ -347,9 +351,6 @@ async def delete_duplicate_documents(db: AsyncSession) -> int:
 
 async def delete_orphan_r2_documents(db: AsyncSession) -> int:
     """R2 private 버킷 documents/ 폴더 파일 중 DB에 없는 파일 삭제, 삭제된 수 반환."""
-    from app.config import settings
-    from app.services.r2 import delete_r2_key, list_r2_keys
-
     # 로컬 개발환경에서는 팀원마다 DB가 달라 다른 팀원 파일을 고아로 오인할 수 있음
     if settings.DEBUG:
         return 0
