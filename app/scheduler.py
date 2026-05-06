@@ -82,6 +82,8 @@ async def cleanup_scheduler_loop() -> None:
 
     try:
         while True:
+            await asyncio.sleep(settings.CLEANUP_SCHEDULER_INTERVAL_SECONDS)
+
             try:
                 async with AsyncSessionLocal() as session:
                     pv_count = await delete_expired_phone_verifications(session)
@@ -99,8 +101,6 @@ async def cleanup_scheduler_loop() -> None:
 
             except Exception:
                 logger.exception("정리 스케줄러 실행 중 오류가 발생했습니다.")
-
-            await asyncio.sleep(settings.CLEANUP_SCHEDULER_INTERVAL_SECONDS)
 
     # 서버 꺼질때
     except asyncio.CancelledError:
