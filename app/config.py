@@ -43,6 +43,7 @@ class Settings(BaseSettings):
 
     # 스케줄러 실행 주기(초)
     SCHEDULER_INTERVAL_SECONDS: int = 300
+    CLEANUP_SCHEDULER_INTERVAL_SECONDS: int = 86400  # 하루 1번(24시간 주기)
 
     class Config:
         env_file = ".env"
