@@ -314,7 +314,9 @@ async def kakao_callback(
 
     # 유저가 카카오 로그인을 취소한 경우(또는 에러)
     if error or code is None:
-        return RedirectResponse(url=f"{frontend_base}/pages/login.html?kakao_error=1")
+        response = RedirectResponse(url=f"{frontend_base}/pages/login.html?kakao_error=1")
+        response.delete_cookie("oauth_state")
+        return response
 
     try:
         async with httpx.AsyncClient() as client:
@@ -341,22 +343,28 @@ async def kakao_callback(
             kakao_id = str(user_resp.json()["id"])
     except Exception:
         logger.exception("카카오 콜백 처리 중 오류")
-        return RedirectResponse(url=f"{frontend_base}/pages/login.html?kakao_error=1")
+        response = RedirectResponse(url=f"{frontend_base}/pages/login.html?kakao_error=1")
+        response.delete_cookie("oauth_state")
+        return response
 
     # 3) 기존 유저 → JWT 발급 후 로그인 처리
     user = await get_user_by_kakao_id(kakao_id, db)
     if user is not None:
         access_token = create_access_token({"sub": str(user.user_id)})
-        return RedirectResponse(url=f"{frontend_base}/pages/login.html#kakao_token={access_token}")
+        response = RedirectResponse(url=f"{frontend_base}/pages/login.html#kakao_token={access_token}")
+        response.delete_cookie("oauth_state")
+        return response
 
     # 4) 신규 유저 → setup_token(10분) 발급 후 카카오 전용 가입 페이지로
     setup_token = create_access_token(
         {"sub": kakao_id, "type": "kakao_setup"},
         expires_delta=timedelta(minutes=10),
     )
-    return RedirectResponse(
+    response = RedirectResponse(
         url=f"{frontend_base}/pages/register.html?kakao=true&setup_token={setup_token}"
     )
+    response.delete_cookie("oauth_state")
+    return response
 
 
 @router.post("/kakao-setup", response_model=RegisterResponse, status_code=status.HTTP_201_CREATED)
