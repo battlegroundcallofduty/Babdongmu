@@ -28,6 +28,9 @@ async def get_current_user(
     payload = decode_access_token(credentials.credentials)
     if payload is None:
         raise credentials_exception
+    # kakao_setup 등 특수 토큰은 일반 인증에 사용 불가
+    if payload.get("type") is not None:
+        raise credentials_exception
 
     user_id = payload.get("sub")
     if user_id is None:
