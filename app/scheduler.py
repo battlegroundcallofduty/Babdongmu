@@ -78,7 +78,7 @@ async def _delete_orphan_review_images(session: AsyncSession) -> int:
 async def cleanup_scheduler_loop() -> None:
     """고아 데이터 정리 스케줄러를 하루에 한 번 실행합니다."""
 
-    logger.info("정리 스케줄러를 시작합니다. 실행주기=하루 1회")
+    logger.info("정리 스케줄러를 등록했습니다. 24시간 후 첫 실행됩니다.")
 
     try:
         while True:
