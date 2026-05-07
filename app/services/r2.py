@@ -9,7 +9,7 @@ import boto3
 from botocore.client import BaseClient
 from botocore.exceptions import BotoCoreError, ClientError
 from fastapi import HTTPException, UploadFile
-from PIL import Image, UnidentifiedImageError
+from PIL import Image
 
 from app.config import settings
 
@@ -114,7 +114,7 @@ async def upload_image(
         try:
             img = Image.open(BytesIO(contents))
             img.verify() # 진짜 이미지 데이터인지 해석
-        except (UnidentifiedImageError, Exception):
+        except Exception:
             raise HTTPException(status_code=400, detail="허용되지 않는 파일 형식입니다.")
 
     ext = CONTENT_TYPE_EXT.get(file.content_type, "bin")
