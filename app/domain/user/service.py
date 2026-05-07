@@ -363,10 +363,10 @@ async def delete_orphan_r2_documents(db: AsyncSession) -> int:
 
     # R2 key로 url 조립해서 db set에 있는지 비교 -> db에 없으면 삭제
     orphan_count = 0
-    for key in list_r2_keys(bucket, "documents/"):
+    for key in await asyncio.to_thread(list_r2_keys, bucket, "documents/"):
         r2_url = f"{url_prefix}{key}"
         if r2_url not in db_urls:
-            if delete_r2_key(bucket, key):
+            if await asyncio.to_thread(delete_r2_key, bucket, key):
                 orphan_count += 1
 
     return orphan_count

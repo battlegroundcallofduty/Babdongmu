@@ -65,10 +65,10 @@ async def _delete_orphan_review_images(session: AsyncSession) -> int:
 
     # delete_orphan_r2_documents 함수와 구조 같음
     orphan_count = 0
-    for key in list_r2_keys(bucket, "reviews/"):
+    for key in await asyncio.to_thread(list_r2_keys, bucket, "reviews/"):
         r2_url = f"{public_url}/{key}"
         if r2_url not in db_urls:
-            if delete_r2_key(bucket, key):
+            if await asyncio.to_thread(delete_r2_key, bucket, key):
                 orphan_count += 1
 
     return orphan_count
