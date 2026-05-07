@@ -7,6 +7,9 @@
  * (별도의 <link rel="stylesheet"> 추가가 필요 없음)
  */
 
+import { KST_TIME_ZONE, parseApiDateTime } from './format-utils.js';
+export { KST_TIME_ZONE, parseApiDateTime };
+
 /* ================================================================
  * 0. 공통 CSS 자동 주입
  *    - 모듈은 한 번만 평가되므로 중복 주입은 일어나지 않지만,
@@ -250,13 +253,7 @@ function injectSharedStyles() {
 injectSharedStyles();
 
 /* ================================================================
- * 1. 상수
- * ================================================================ */
-
-export const KST_TIME_ZONE = 'Asia/Seoul';
-
-/* ================================================================
- * 2. 문자열 / 날짜 유틸
+ * 1. 문자열 / 날짜 유틸
  * ================================================================ */
 
 export function escapeHtml(value) {
@@ -268,30 +265,8 @@ export function escapeHtml(value) {
     .replaceAll("'", '&#39;');
 }
 
-export function parseApiDateTime(value) {
-  if (!value) {
-    return null;
-  }
-
-  if (value instanceof Date) {
-    return value;
-  }
-
-  if (typeof value === 'string') {
-    const normalizedValue = value.includes('T')
-      && !value.endsWith('Z')
-      && !/[+-]\d{2}:\d{2}$/.test(value)
-      ? `${value}Z`
-      : value;
-
-    return new Date(normalizedValue);
-  }
-
-  return new Date(value);
-}
-
 /* ================================================================
- * 3. 시니어 / 인물 유틸
+ * 2. 시니어 / 인물 유틸
  * ================================================================ */
 
 export function getGenderLabel(gender) {
@@ -304,7 +279,7 @@ export function getGenderLabel(gender) {
 }
 
 /* ================================================================
- * 4. 호스팅 상태 메타
+ * 3. 호스팅 상태 메타
  * ================================================================ */
 
 const HOSTING_STATUS_META = {
@@ -321,7 +296,7 @@ export function getStatusMeta(status) {
 }
 
 /* ================================================================
- * 5. 날짜·시간 포맷
+ * 4. 날짜·시간 포맷
  * ================================================================ */
 
 function formatTime(date) {
@@ -418,7 +393,7 @@ export function formatDateTimeRangeWithDuration(hostingAt, hostingEnd) {
 }
 
 /* ================================================================
- * 6. 호스팅 데이터 헬퍼
+ * 5. 호스팅 데이터 헬퍼
  * ================================================================ */
 
 export function buildHostingAddressText(hosting) {
@@ -469,7 +444,7 @@ export function buildHostingKeywordTarget(hosting, extraTokens = []) {
 }
 
 /* ================================================================
- * 7. 호스팅 카드 빌더
+ * 6. 호스팅 카드 빌더
  *    페이지별 차이점은 옵션으로 주입
  * ================================================================ */
 
@@ -576,7 +551,7 @@ export function buildHostingCard(hosting, options) {
 }
 
 /* ================================================================
- * 8. 시군구 셀렉트 옵션 렌더
+ * 7. 시군구 셀렉트 옵션 렌더
  * ================================================================ */
 
 export function renderSigunguOptions(selectElement, hostingItems) {
@@ -601,4 +576,3 @@ export function renderSigunguOptions(selectElement, hostingItems) {
 
   selectElement.value = [...sigunguSet].includes(previousValue) ? previousValue : '';
 }
-
