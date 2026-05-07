@@ -149,3 +149,9 @@ class DocumentResponse(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class DocumentUrlResponse(BaseModel):
+    """서류 presigned URL 반환"""
+
+    url: str

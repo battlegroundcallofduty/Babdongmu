@@ -21,6 +21,7 @@ from app.domain.user.dependency import get_current_user, require_guardian, requi
 from app.domain.user.models import DocumentType, User, UserRole
 from app.domain.user.schemas import (
     DocumentResponse,
+    DocumentUrlResponse,
     KakaoSetupRequest,
     PasswordChangeRequest,
     RegisterResponse,
@@ -251,12 +252,12 @@ async def remove_document(
     await delete_image(document.document_url)  # R2 파일 먼저 삭제
     await delete_document(document_id, db)
 
-@router.get("/documents/{document_id}/presigned-url")
+@router.get("/documents/{document_id}/presigned-url", response_model=DocumentUrlResponse)
 async def get_document_url(
     document_id: int,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> dict:
+):
     """서류 presigned URL 반환 (본인 서류 또는 관리자만 접근 가능, 5분 유효)."""
     document = await get_document_by_id(document_id, db)
     if document is None:
