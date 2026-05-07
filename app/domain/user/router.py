@@ -424,4 +424,5 @@ async def verify_verification(body: SmsVerifyRequest, db: AsyncSession = Depends
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="인증 번호가 일치하지 않습니다.",
         )
-# TODO: service 또는 router에 가입 전 동일번호 존재여부 조회후 409 반환예정 / 폰번 unique 고려
+# 다음주 (월 5/11) 운영서버 테스트 이후 todo
+# TODO: service, router에 가입 전 동일번호 존재여부 조회후 409 반환예정 + sms 인증완료 여부 확인 후 가입 허용
