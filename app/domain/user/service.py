@@ -1,8 +1,7 @@
 """유저 비즈니스 로직."""
 
 import asyncio
-import random
-import string
+import secrets
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import delete, func, select, update
@@ -232,7 +231,7 @@ async def send_phone_verification(phone_number: str, db: AsyncSession) -> bool:
     # sms.py에서 service.py를 참조하고있어서 순환오류 빠지지않도록 함수안에서 import
     from app.services.sms import send_auth_sms
     # 코드 랜덤생성 6자리 / 만료시간 3분
-    code = "".join(random.choices(string.digits, k=6))
+    code = "".join(secrets.choice("0123456789") for _ in range(6))
     now = datetime.now(timezone.utc)
     expires_at = now + timedelta(minutes=3)
 
