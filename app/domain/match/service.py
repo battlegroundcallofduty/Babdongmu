@@ -51,16 +51,18 @@ async def create_match(db: AsyncSession, hosting_id: int, vt_id: int) -> Matchin
     if hosting.hosting_status != HostingStatus.OPEN:
         raise HTTPException(status_code=400, detail="신청 불가능한 호스팅입니다.")
 
-    # 3. 중복 신청 확인
+    # 3. 같은 날짜 중복 신청 확인 (같은 호스팅 포함)
     result = await db.execute(
-        select(MatchingInfo).where(
-            MatchingInfo.hosting_id == hosting_id,
+        select(MatchingInfo)
+        .join(Hosting, MatchingInfo.hosting_id == Hosting.hosting_id)
+        .where(
             MatchingInfo.vt_id == vt_id,
             MatchingInfo.match_status != MatchStatus.CANCELLED,
+            func.date(Hosting.hosting_at) == func.date(hosting.hosting_at),
         )
     )
     if result.scalar_one_or_none():
-        raise HTTPException(status_code=409, detail="이미 신청한 호스팅입니다.")
+        raise HTTPException(status_code=409, detail="같은 날짜에 이미 신청한 호스팅이 있습니다.")
 
     # 4. 선착순 매칭 생성 (즉시 승인)
     match = MatchingInfo(
@@ -106,10 +108,12 @@ async def list_matches_by_volunteer(
         where_conditions.append(
             (MatchingInfo.check_out_time.isnot(None))
             | (MatchingInfo.match_status == MatchStatus.NOT_VISITED)
+            | (Hosting.hosting_status == HostingStatus.CANCELLED)
         )
     else:
         where_conditions.append(MatchingInfo.check_out_time.is_(None))
         where_conditions.append(MatchingInfo.match_status != MatchStatus.NOT_VISITED)
+        where_conditions.append(Hosting.hosting_status != HostingStatus.CANCELLED)
 
     query = (
         select(MatchingInfo, Hosting, Senior)
@@ -154,6 +158,7 @@ async def list_matches_by_volunteer(
             hosting_id=hosting.hosting_id,
             menu=hosting.menu,
             hosting_at=hosting.hosting_at,
+            hosting_status=hosting.hosting_status,
             senior_id=senior.senior_id,
             senior_name=senior.name,
             senior_address=senior.address.road_address,
