@@ -51,6 +51,13 @@ async def get_user_by_email(email: str, db: AsyncSession) -> User | None:
     return result.scalar_one_or_none()
 
 
+async def get_user_by_phone_number(phone_number: str, db: AsyncSession) -> User | None:
+    """전화번호로 유저 조회"""
+    statement = select(User).where(User.phone_number == phone_number).limit(1)
+    result = await db.execute(statement)
+    return result.scalar_one_or_none()
+
+
 async def create_user(
     email: str,
     password: str,
