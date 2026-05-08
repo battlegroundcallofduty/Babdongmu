@@ -47,6 +47,7 @@ from app.domain.user.service import (
     get_user_by_email,
     get_user_by_kakao_id,
     get_user_by_phone_number,
+    is_phone_verified,
     send_phone_verification,
     update_user,
     verify_phone_code,
@@ -85,6 +86,12 @@ async def register(body: UserRegisterRequest, db: AsyncSession = Depends(get_db)
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="이미 가입된 전화번호입니다.",
+        )
+
+    if not await is_phone_verified(body.phone_number, db):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="전화번호 인증을 완료해주세요.",
         )
 
     user = await create_user(
@@ -399,6 +406,12 @@ async def kakao_setup(body: KakaoSetupRequest, db: AsyncSession = Depends(get_db
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="이미 가입된 전화번호입니다.",
+        )
+
+    if not await is_phone_verified(body.phone_number, db):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="전화번호 인증을 완료해주세요.",
         )
 
     if body.user_role == UserRole.ADMIN:

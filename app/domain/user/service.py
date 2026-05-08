@@ -58,6 +58,21 @@ async def get_user_by_phone_number(phone_number: str, db: AsyncSession) -> User 
     return result.scalar_one_or_none()
 
 
+async def is_phone_verified(phone_number: str, db: AsyncSession) -> bool:
+    """해당 번호의 SMS 인증 완료 여부 확인"""
+    statement = (
+        select(PhoneVerification)
+        .where(
+            PhoneVerification.phone_number == phone_number,
+            PhoneVerification.is_verified == True,
+        )
+        .limit(1)
+    )
+    result = await db.execute(statement)
+    # 객체면(none이 아니면) true, none이면 false
+    return result.scalar_one_or_none() is not None
+
+
 async def create_user(
     email: str,
     password: str,
