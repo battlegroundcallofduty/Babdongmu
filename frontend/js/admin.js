@@ -9,7 +9,7 @@ function denyAccess() {
   setTimeout(() => window.location.replace('/pages/login.html'), 2500);
 }
 
-async function checkAdmin() {
+export async function checkAdmin() {
   if (!isLoggedIn()) { denyAccess(); return false; }
   try {
     const me = await api('/users/me');
@@ -19,15 +19,3 @@ async function checkAdmin() {
   }
   return true;
 }
-
-// ── 유틸 ────────────────────────────────────────────────
-function formatDate(iso) {
-  if (!iso) return '-';
-  return new Date(iso).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' });
-}
-
-function formatDatetime(iso) {
-  if (!iso) return '-';
-  return new Date(iso).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-}
-

@@ -27,8 +27,8 @@ const _NAV_LINKS = {
     { href: '/pages/mypage.html',    label: '마이페이지' },
   ],
   admin: [
-    { href: '/pages/admin.html',         label: '대시보드' },
-    { href: '/pages/hosting-match.html', label: '호스팅' },
+    { href: '/pages/admin.html',    label: '대시보드' },
+    { href: '/pages/stats.html',    label: '통계' },
     { href: '#', label: '로그아웃', onclick: 'logout()' },
   ],
 };

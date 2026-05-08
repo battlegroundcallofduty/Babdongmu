@@ -1713,3 +1713,20 @@ body.modal-open { overflow: hidden; }
   gap: 8px;
   margin-bottom: 8px;
 }
+
+/* --- 접근 거부 오버레이 (관리자 전용 페이지) --- */
+.access-denied {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: var(--bg, #fff);
+  z-index: 99999;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.access-denied.show { display: flex; }
+.access-denied-icon { font-size: 48px; }
+.access-denied-title { font-size: 20px; font-weight: 700; color: var(--text); }
+.access-denied-sub { font-size: 14px; color: var(--muted); }
