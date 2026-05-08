@@ -4,6 +4,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.domain.hosting.models import HostingStatus
 from app.domain.match.models import MatchStatus
 
 
@@ -49,6 +50,7 @@ class MyMatchResponse(BaseModel):
     hosting_id: int
     menu: str
     hosting_at: datetime
+    hosting_status: HostingStatus
 
     # 시니어 정보
     senior_id: int
