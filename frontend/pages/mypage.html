@@ -12,7 +12,7 @@
 
   </div>
 
-  <main class="container" style="max-width:720px;">
+  <main class="container container-narrow">
     <div class="page-header slide-up">
       <h1>마이페이지</h1>
     </div>
@@ -46,9 +46,7 @@
     </div>
 
     <div class="detail-section slide-up stagger-3">
-      <div style="margin-bottom:var(--space-md);">
-        <h3 style="margin:0;">내 정보</h3>
-      </div>
+      <h3>내 정보</h3>
       <div class="detail-row">
         <span class="detail-label">이름</span>
         <span class="detail-value" id="user-name">-</span>
@@ -65,19 +63,19 @@
         <span class="detail-label">주소</span>
         <span class="detail-value" id="user-district">-</span>
         <button id="btn-edit-info" class="btn btn-ghost btn-sm">수정</button>
-        <div id="district-edit" style="display:none; gap:8px; flex:1;">
-          <input class="form-input" id="input-district" type="text" readonly style="flex:1;">
-          <button type="button" id="btn-search-address-mypage" class="btn btn-secondary btn-sm" style="white-space:nowrap;">주소 검색</button>
+        <div id="district-edit" class="input-row flex-1" style="display:none;">
+          <input class="form-input flex-1" id="input-district" type="text" readonly>
+          <button type="button" id="btn-search-address-mypage" class="btn btn-secondary btn-sm text-nowrap">주소 검색</button>
         </div>
       </div>
       <div class="detail-row">
         <span class="detail-label">신원검증</span>
         <span class="detail-value"><span id="cert-badge"><span class="badge badge-pending">검토 중</span></span></span>
       </div>
-      <div id="info-msg" class="hidden" style="margin-top:var(--space-sm);"></div>
-      <div id="edit-buttons" style="display:none; gap:8px; margin-top:var(--space-md);">
-        <button id="btn-save-info" class="btn btn-primary" style="flex:1;">저장</button>
-        <button id="btn-cancel-info" class="btn btn-ghost" style="flex:1;">취소</button>
+      <div id="info-msg" class="hidden mt-sm"></div>
+      <div id="edit-buttons" class="edit-actions" style="display:none;">
+        <button id="btn-save-info" class="btn btn-primary flex-1">저장</button>
+        <button id="btn-cancel-info" class="btn btn-ghost flex-1">취소</button>
       </div>
     </div>
 
@@ -88,11 +86,11 @@
 
     <div class="detail-section slide-up stagger-4">
       <h3>서류 관리</h3>
-      <p style="font-size:13px; color:var(--muted); margin-bottom:var(--space-md);">잘못된 서류를 올렸거나 변경하고 싶다면 해당 서류를 <strong>삭제</strong>하신 후 올바른 서류로 다시 <strong>업로드</strong>해주세요.</p>
+      <p class="text-sm text-muted mb-md">잘못된 서류를 올렸거나 변경하고 싶다면 해당 서류를 <strong>삭제</strong>하신 후 올바른 서류로 다시 <strong>업로드</strong>해주세요.</p>
       <div id="docs-list">
-        <p style="color:var(--muted); font-size:14px; padding:12px 0;">서류 목록을 불러오는 중...</p>
+        <p class="text-muted" style="font-size:14px; padding:12px 0;">서류 목록을 불러오는 중...</p>
       </div>
-      <p style="font-size:13px; color:var(--muted); margin-top:var(--space-sm);">허용 파일 형식: jpg, png, pdf, hwp, docx / 최대 5MB</p>
+      <p class="text-sm text-muted mt-sm">허용 파일 형식: jpg, png, pdf, hwp, docx / 최대 5MB</p>
     </div>
 
     <div class="detail-section slide-up stagger-5">

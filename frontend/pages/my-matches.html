@@ -38,10 +38,10 @@
     <div id="empty-state" class="empty-state hidden">
       <svg class="empty-state-icon" viewBox="0 0 80 80" fill="none"><circle cx="40" cy="40" r="36" fill="currentColor" opacity="0.06"/><path d="M24 44c0-8.8 7.2-16 16-16s16 7.2 16 16" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><path d="M20 44h40v2c0 6.6-5.4 12-12 12H32c-6.6 0-12-5.4-12-12v-2z" fill="currentColor" opacity="0.08"/></svg>
       <p>아직 매칭 이력이 없어요</p>
-      <p class="text-sm mt-sm"><a href="/pages/hostings.html" style="color:var(--primary);font-weight:600;">호스팅을 둘러보고</a> 첫 밥동무를 시작해보세요!</p>
+      <p class="text-sm mt-sm"><a href="/pages/hostings.html" class="link-primary">호스팅을 둘러보고</a> 첫 밥동무를 시작해보세요!</p>
     </div>
 
-    <div id="pagination" style="display:none; justify-content:center; gap:4px; margin-top:16px; flex-wrap:wrap;"></div>
+    <div id="pagination" class="pagination" style="display:none;"></div>
   </main>
 
   <!-- 후기 작성 모달 -->
@@ -55,19 +55,18 @@
         <input type="hidden" id="review-match-id">
         <div class="form-group">
           <label class="form-label" for="review-content">후기 내용</label>
-          <textarea class="form-input" id="review-content" rows="4"
-            placeholder="봉사 경험을 자유롭게 작성해주세요" required
-            style="resize:vertical; min-height:100px;"></textarea>
+          <textarea class="form-input textarea-review" id="review-content" rows="4"
+            placeholder="봉사 경험을 자유롭게 작성해주세요" required></textarea>
         </div>
         <div class="form-group">
           <label class="form-label">
             사진 첨부
-            <span style="color:var(--muted); font-weight:400; font-size:13px;">(최대 5장)</span>
+            <span class="label-hint">(최대 5장)</span>
           </label>
-          <div id="review-img-preview" style="display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin-bottom:8px;"></div>
-          <label class="btn btn-ghost btn-sm" style="display:inline-flex; align-items:center; gap:4px; cursor:pointer;">
+          <div id="review-img-preview" class="img-preview-grid"></div>
+          <label class="btn btn-ghost btn-sm">
             + 사진 추가
-            <input type="file" id="review-images" accept=".jpg,.jpeg,.png" multiple style="display:none;">
+            <input type="file" id="review-images" accept=".jpg,.jpeg,.png" multiple class="hidden">
           </label>
           <p class="doc-hint">jpg, png / 최대 5MB씩</p>
         </div>
@@ -142,7 +141,7 @@
           <div class="card match-card mb-md">
             <div class="card-body">
               <div class="match-info">
-                <a href="/pages/hosting-detail.html?id=${match.hosting_id}&view=volunteer" style="text-decoration:none; color:inherit;">
+                <a href="/pages/hosting-detail.html?id=${match.hosting_id}&view=volunteer" class="link-inherit">
                   <h3>${seniorName} 어르신 · ${menu}</h3>
                 </a>
                 <p class="match-meta">${meta}</p>
@@ -164,7 +163,7 @@
           <div class="card match-card mb-md">
             <div class="card-body">
               <div class="match-info">
-                <a href="/pages/hosting-detail.html?id=${match.hosting_id}&view=volunteer" style="text-decoration:none; color:inherit;">
+                <a href="/pages/hosting-detail.html?id=${match.hosting_id}&view=volunteer" class="link-inherit">
                   <h3>${seniorName} 어르신 · ${menu}</h3>
                 </a>
                 <p class="match-meta">${meta}</p>

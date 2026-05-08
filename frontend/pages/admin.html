@@ -163,7 +163,7 @@
 
   </div>
 
-  <main class="container" style="padding-top: var(--space-xl); padding-bottom: var(--space-3xl);">
+  <main class="container page-main">
     <div class="page-header slide-up">
       <h1>관리자 대시보드</h1>
       <p>오늘 매칭 현황과 전체 통계를 확인하세요</p>
@@ -203,7 +203,7 @@
     </div>
     <div class="card mb-lg slide-up stagger-2">
       <div id="recent-match-list">
-        <div class="empty-state" style="padding: var(--space-xl) 0;">
+        <div class="empty-state empty-state-sm">
           <div class="empty-state-icon">🍚</div>
           <p>불러오는 중...</p>
         </div>
@@ -216,7 +216,7 @@
     </div>
     <div class="card mb-lg slide-up stagger-3">
       <div id="doc-list">
-        <div class="empty-state" style="padding: var(--space-xl) 0;">
+        <div class="empty-state empty-state-sm">
           <div class="empty-state-icon">📄</div>
           <p>불러오는 중...</p>
         </div>
@@ -226,11 +226,11 @@
     <!-- 봉사시간 부여 -->
     <div class="section-header slide-up stagger-4">
       <h2>봉사시간 부여</h2>
-      <p style="font-size: 13px; color: var(--muted); margin-top: 4px;">체크인/체크아웃 기록을 확인 후 최종 봉사시간을 입력하세요</p>
+      <p class="section-desc">체크인/체크아웃 기록을 확인 후 최종 봉사시간을 입력하세요</p>
     </div>
     <div class="card slide-up stagger-5">
       <div id="time-list">
-        <div class="empty-state" style="padding: var(--space-xl) 0;">
+        <div class="empty-state empty-state-sm">
           <div class="empty-state-icon">⏱️</div>
           <p>불러오는 중...</p>
         </div>
@@ -300,7 +300,7 @@
         const matches = await api('/admin/matches/recent');
         if (!matches.length) {
           wrap.innerHTML = `
-            <div class="empty-state" style="padding: var(--space-xl) 0;">
+            <div class="empty-state empty-state-sm">
               <div class="empty-state-icon">🍚</div>
               <p>아직 매칭 신청이 없어요</p>
             </div>`;
@@ -336,7 +336,7 @@
         wrap.replaceChildren(frag);
       } catch {
         wrap.innerHTML = `
-          <div class="empty-state" style="padding: var(--space-xl) 0;">
+          <div class="empty-state empty-state-sm">
             <div class="empty-state-icon">🍚</div>
             <p>목록을 불러올 수 없어요</p>
           </div>`;
@@ -350,7 +350,7 @@
         const docs = await api('/admin/documents/pending');
         if (!docs.length) {
           wrap.innerHTML = `
-            <div class="empty-state" style="padding: var(--space-xl) 0;">
+            <div class="empty-state empty-state-sm">
               <div class="empty-state-icon">✅</div>
               <p>승인 대기 중인 서류가 없어요</p>
             </div>`;
@@ -384,7 +384,7 @@
           }
 
           const linksDiv = document.createElement('div');
-          linksDiv.style.cssText = 'display:flex; gap:var(--space-sm); flex-wrap:wrap; margin-top:6px;';
+          linksDiv.className = 'doc-links';
 
           for (const d of user.documents) {
             const a = document.createElement('a');
@@ -430,7 +430,7 @@
         wrap.replaceChildren(frag);
       } catch {
         wrap.innerHTML = `
-          <div class="empty-state" style="padding: var(--space-xl) 0;">
+          <div class="empty-state empty-state-sm">
             <div class="empty-state-icon">📄</div>
             <p>서류 목록을 불러올 수 없어요</p>
           </div>`;
@@ -490,7 +490,7 @@
       const wrap = document.getElementById('doc-list');
       if (!wrap.querySelector('.doc-item')) {
         wrap.innerHTML = `
-          <div class="empty-state" style="padding: var(--space-xl) 0;">
+          <div class="empty-state empty-state-sm">
             <div class="empty-state-icon">✅</div>
             <p>승인 대기 중인 서류가 없어요</p>
           </div>`;
@@ -504,7 +504,7 @@
         const matches = await api('/admin/matches/completed');
         if (!matches.length) {
           wrap.innerHTML = `
-            <div class="empty-state" style="padding: var(--space-xl) 0;">
+            <div class="empty-state empty-state-sm">
               <div class="empty-state-icon">✅</div>
               <p>봉사시간 부여 대기 중인 매칭이 없어요</p>
             </div>`;
@@ -583,7 +583,7 @@
         wrap.replaceChildren(frag);
       } catch {
         wrap.innerHTML = `
-          <div class="empty-state" style="padding: var(--space-xl) 0;">
+          <div class="empty-state empty-state-sm">
             <div class="empty-state-icon">⏱️</div>
             <p>목록을 불러올 수 없어요</p>
           </div>`;
@@ -627,7 +627,7 @@
       const wrap = document.getElementById('time-list');
       if (!wrap.querySelector('.time-item')) {
         wrap.innerHTML = `
-          <div class="empty-state" style="padding: var(--space-xl) 0;">
+          <div class="empty-state empty-state-sm">
             <div class="empty-state-icon">✅</div>
             <p>봉사시간 부여 대기 중인 매칭이 없어요</p>
           </div>`;

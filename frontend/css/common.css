@@ -1609,3 +1609,107 @@ body.modal-open { overflow: hidden; }
   color: var(--text-soft);
   font-size: 14px;
 }
+
+/* --- 추가 유틸리티 --- */
+.flex-1 { flex: 1; }
+.text-nowrap { white-space: nowrap; }
+.text-muted { color: var(--muted); }
+
+/* --- Input + Button 행 레이아웃 --- */
+.input-row {
+  display: flex;
+  gap: 8px;
+}
+
+/* --- 편집 액션 행 (JS가 display:flex 전환) --- */
+.edit-actions {
+  gap: 8px;
+  margin-top: var(--space-md);
+}
+
+/* --- 좁은 컨테이너 --- */
+.container-narrow {
+  max-width: 720px;
+}
+
+/* --- 페이지 메인 여백 --- */
+.page-main {
+  padding-top: var(--space-xl);
+  padding-bottom: var(--space-3xl);
+}
+
+/* --- 섹션 헤더 부연 설명 --- */
+.section-desc {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+/* --- 카드 내부 빈 상태 (compact) --- */
+.empty-state-sm {
+  padding: var(--space-xl) 0;
+}
+
+/* --- 서류 링크 목록 --- */
+.doc-links {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+/* --- 카카오 가입 힌트 --- */
+.kakao-hint {
+  font-size: 0.8rem;
+  color: #888;
+  text-align: center;
+  margin-top: 4px;
+}
+
+/* --- 가운데 정렬 폼 레이블 --- */
+.form-label-center {
+  margin-bottom: 18px;
+  text-align: center;
+  font-size: 1rem;
+}
+
+/* --- 주 색상 링크 --- */
+.link-primary {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+/* --- 카드 내부 상속 링크 --- */
+.link-inherit {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* --- 페이지네이션 컨테이너 --- */
+.pagination {
+  justify-content: center;
+  gap: 4px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+/* --- 후기 텍스트에리어 --- */
+.textarea-review {
+  resize: vertical;
+  min-height: 100px;
+}
+
+/* --- 레이블 부가 텍스트 --- */
+.label-hint {
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 13px;
+}
+
+/* --- 이미지 미리보기 그리드 (후기 작성) --- */
+.img-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin-bottom: 8px;
+}
