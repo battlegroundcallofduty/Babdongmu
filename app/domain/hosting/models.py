@@ -109,7 +109,10 @@ class SmsLog(Base):
         index=True,
     )
     is_send: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    alarm_type: Mapped[AlarmType] = mapped_column(Enum(AlarmType), nullable=False)
+    alarm_type: Mapped[AlarmType] = mapped_column(
+        Enum(AlarmType, values_callable=lambda x: [e.value for e in x]),
+        nullable=False,
+    )
     contents: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True),
