@@ -42,7 +42,10 @@ class Senior(Base):
     )
 
     name: Mapped[str] = mapped_column(String(100), nullable=False)
-    gender: Mapped[GenderEnum] = mapped_column(Enum(GenderEnum), nullable=False)
+    gender: Mapped[GenderEnum] = mapped_column(
+        Enum(GenderEnum, values_callable=lambda x: [e.value for e in x]),
+        nullable=False,
+    )
     birth_date: Mapped[date] = mapped_column(Date, nullable=False)
 
     address_id: Mapped[int] = mapped_column(
