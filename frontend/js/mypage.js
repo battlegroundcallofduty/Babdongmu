@@ -1,5 +1,6 @@
 import { mapKakaoAddressToPayload } from '/js/addressMapper.js';
 import { syncUserCache } from './authGuard.js';
+import { KST_TIME_ZONE, parseApiDateTime } from './format-utils.js';
 
 // 로그인 안 했으면 로그인 페이지로 이동
 if (!isLoggedIn()) {  // api.js 함수
@@ -15,11 +16,11 @@ const DOC_TYPE_LABELS = {
 };
 
 // 날짜 포맷 (UTC → KST 변환 후 표시)
-// Z: UTC임을 명시
-function formatDate(isoString) {
-  const utc = isoString.endsWith('Z') || isoString.includes('+') ? isoString : isoString + 'Z';
-  return new Date(utc).toLocaleString('ko-KR', {
-    timeZone: 'Asia/Seoul',
+function formatDateTime(isoString) {
+  const date = parseApiDateTime(isoString);
+  if (!date) return '-';
+  return date.toLocaleString('ko-KR', {
+    timeZone: KST_TIME_ZONE,
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
@@ -64,7 +65,7 @@ function renderUploadedSlot(doc, label, isLocked) {
         <div style="font-weight:600; font-size:14px;">${label}</div>
         <a class="open-doc-link" data-doc-id="${doc.document_id}" href="#"
           style="font-size:12px; color:var(--primary); margin-top:2px; display:block; word-break:break-all;">${fileName}</a>
-        <div style="font-size:12px; color:var(--muted);">${formatDate(doc.created_at)} 업로드</div>
+        <div style="font-size:12px; color:var(--muted);">${formatDateTime(doc.created_at)} 업로드</div>
       </div>
       ${deleteBtn}
     </div>`;

@@ -1,4 +1,5 @@
 import { mapKakaoAddressToPayload } from '/js/addressMapper.js';
+import { normalizePhone } from './format-utils.js';
 
 // 카카오 모드 감지 (?kakao=true&setup_token=xxx 로 넘어온 경우)
 const params = new URLSearchParams(window.location.search);
@@ -98,12 +99,6 @@ document.querySelector('#btn-search-address')?.addEventListener('click', () => {
 
 // SMS 인증
 let phoneVerified = false;
-
-// 하이픈·공백 제거후 010+8자리 검증, 유효하지 않은 형식은 null
-function normalizePhone(raw) {
-  const digits = raw.trim().replace(/[-\s]/g, '');
-  return /^010\d{8}$/.test(digits) ? digits : null;
-}
 
 // 인증하기 버튼
 document.querySelector('#btn-send-code')?.addEventListener('click', async () => {

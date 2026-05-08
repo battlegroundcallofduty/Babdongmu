@@ -91,14 +91,14 @@ class KakaoSetupRequest(BaseModel):
 class SmsSendRequest(BaseModel):
     """SMS 인증 코드 발송 요청"""
 
-    phone_number: str
+    phone_number: str = Field(min_length=1)
 
 
 class SmsVerifyRequest(BaseModel):
     """SMS 인증 코드 확인 요청"""
 
-    phone_number: str
-    code: str
+    phone_number: str = Field(min_length=1)
+    code: str = Field(min_length=6, max_length=6)
 
 
 # ── 유저 응답 ─────────────────
@@ -149,3 +149,9 @@ class DocumentResponse(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class DocumentUrlResponse(BaseModel):
+    """서류 presigned URL 반환"""
+
+    url: str

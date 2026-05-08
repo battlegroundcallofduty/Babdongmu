@@ -1,8 +1,7 @@
 """유저 비즈니스 로직."""
 
 import asyncio
-import random
-import string
+import secrets
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import delete, func, select, update
@@ -232,7 +231,7 @@ async def send_phone_verification(phone_number: str, db: AsyncSession) -> bool:
     # sms.py에서 service.py를 참조하고있어서 순환오류 빠지지않도록 함수안에서 import
     from app.services.sms import send_auth_sms
     # 코드 랜덤생성 6자리 / 만료시간 3분
-    code = "".join(random.choices(string.digits, k=6))
+    code = "".join(secrets.choice("0123456789") for _ in range(6))
     now = datetime.now(timezone.utc)
     expires_at = now + timedelta(minutes=3)
 
@@ -364,10 +363,10 @@ async def delete_orphan_r2_documents(db: AsyncSession) -> int:
 
     # R2 key로 url 조립해서 db set에 있는지 비교 -> db에 없으면 삭제
     orphan_count = 0
-    for key in list_r2_keys(bucket, "documents/"):
+    for key in await asyncio.to_thread(list_r2_keys, bucket, "documents/"):
         r2_url = f"{url_prefix}{key}"
         if r2_url not in db_urls:
-            if delete_r2_key(bucket, key):
+            if await asyncio.to_thread(delete_r2_key, bucket, key):
                 orphan_count += 1
 
     return orphan_count

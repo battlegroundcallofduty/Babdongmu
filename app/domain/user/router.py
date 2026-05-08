@@ -21,6 +21,7 @@ from app.domain.user.dependency import get_current_user, require_guardian, requi
 from app.domain.user.models import DocumentType, User, UserRole
 from app.domain.user.schemas import (
     DocumentResponse,
+    DocumentUrlResponse,
     KakaoSetupRequest,
     PasswordChangeRequest,
     RegisterResponse,
@@ -251,12 +252,12 @@ async def remove_document(
     await delete_image(document.document_url)  # R2 파일 먼저 삭제
     await delete_document(document_id, db)
 
-@router.get("/documents/{document_id}/presigned-url")
+@router.get("/documents/{document_id}/presigned-url", response_model=DocumentUrlResponse)
 async def get_document_url(
     document_id: int,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> dict:
+):
     """서류 presigned URL 반환 (본인 서류 또는 관리자만 접근 가능, 5분 유효)."""
     document = await get_document_by_id(document_id, db)
     if document is None:
@@ -314,7 +315,9 @@ async def kakao_callback(
 
     # 유저가 카카오 로그인을 취소한 경우(또는 에러)
     if error or code is None:
-        return RedirectResponse(url=f"{frontend_base}/pages/login.html?kakao_error=1")
+        response = RedirectResponse(url=f"{frontend_base}/pages/login.html?kakao_error=1")
+        response.delete_cookie("oauth_state")
+        return response
 
     try:
         async with httpx.AsyncClient() as client:
@@ -341,22 +344,28 @@ async def kakao_callback(
             kakao_id = str(user_resp.json()["id"])
     except Exception:
         logger.exception("카카오 콜백 처리 중 오류")
-        return RedirectResponse(url=f"{frontend_base}/pages/login.html?kakao_error=1")
+        response = RedirectResponse(url=f"{frontend_base}/pages/login.html?kakao_error=1")
+        response.delete_cookie("oauth_state")
+        return response
 
     # 3) 기존 유저 → JWT 발급 후 로그인 처리
     user = await get_user_by_kakao_id(kakao_id, db)
     if user is not None:
         access_token = create_access_token({"sub": str(user.user_id)})
-        return RedirectResponse(url=f"{frontend_base}/pages/login.html#kakao_token={access_token}")
+        response = RedirectResponse(url=f"{frontend_base}/pages/login.html#kakao_token={access_token}")
+        response.delete_cookie("oauth_state")
+        return response
 
     # 4) 신규 유저 → setup_token(10분) 발급 후 카카오 전용 가입 페이지로
     setup_token = create_access_token(
         {"sub": kakao_id, "type": "kakao_setup"},
         expires_delta=timedelta(minutes=10),
     )
-    return RedirectResponse(
+    response = RedirectResponse(
         url=f"{frontend_base}/pages/register.html?kakao=true&setup_token={setup_token}"
     )
+    response.delete_cookie("oauth_state")
+    return response
 
 
 @router.post("/kakao-setup", response_model=RegisterResponse, status_code=status.HTTP_201_CREATED)
@@ -424,4 +433,5 @@ async def verify_verification(body: SmsVerifyRequest, db: AsyncSession = Depends
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="인증 번호가 일치하지 않습니다.",
         )
-# TODO: service 또는 router에 가입 전 동일번호 존재여부 조회후 409 반환예정 / 폰번 unique 고려
+# 다음주 (월 5/11) 운영서버 테스트 이후 todo
+# TODO: service, router에 가입 전 동일번호 존재여부 조회후 409 반환예정 + sms 인증완료 여부 확인 후 가입 허용
