@@ -108,12 +108,12 @@ async def list_matches_by_volunteer(
         where_conditions.append(
             (MatchingInfo.check_out_time.isnot(None))
             | (MatchingInfo.match_status == MatchStatus.NOT_VISITED)
-            | (Hosting.hosting_status == HostingStatus.CANCELLED)
+            | (Hosting.hosting_status == HostingStatus.FAILED)
         )
     else:
         where_conditions.append(MatchingInfo.check_out_time.is_(None))
         where_conditions.append(MatchingInfo.match_status != MatchStatus.NOT_VISITED)
-        where_conditions.append(Hosting.hosting_status != HostingStatus.CANCELLED)
+        where_conditions.append(Hosting.hosting_status != HostingStatus.FAILED)
 
     query = (
         select(MatchingInfo, Hosting, Senior)
