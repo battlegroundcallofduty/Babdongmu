@@ -46,6 +46,8 @@ from app.domain.user.service import (
     get_documents_by_user_id,
     get_user_by_email,
     get_user_by_kakao_id,
+    get_user_by_phone_number,
+    is_phone_verified,
     send_phone_verification,
     update_user,
     verify_phone_code,
@@ -78,6 +80,18 @@ async def register(body: UserRegisterRequest, db: AsyncSession = Depends(get_db)
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="이미 사용 중인 이메일입니다.",
+        )
+
+    if await get_user_by_phone_number(body.phone_number, db):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="이미 가입된 전화번호입니다.",
+        )
+
+    if not await is_phone_verified(body.phone_number, db):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="전화번호 인증이 완료되지 않았거나 만료되었습니다. 다시 인증해주세요.",
         )
 
     user = await create_user(
@@ -388,6 +402,18 @@ async def kakao_setup(body: KakaoSetupRequest, db: AsyncSession = Depends(get_db
             detail="이미 가입된 카카오 계정입니다.",
         )
 
+    if await get_user_by_phone_number(body.phone_number, db):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="이미 가입된 전화번호입니다.",
+        )
+
+    if not await is_phone_verified(body.phone_number, db):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="전화번호 인증이 완료되지 않았거나 만료되었습니다. 다시 인증해주세요.",
+        )
+
     if body.user_role == UserRole.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -411,6 +437,12 @@ async def kakao_setup(body: KakaoSetupRequest, db: AsyncSession = Depends(get_db
 @router.post("/phone/send", status_code=status.HTTP_204_NO_CONTENT)
 async def send_verification(body: SmsSendRequest, db: AsyncSession = Depends(get_db)):
     """SMS 인증 코드 발송"""
+    if await get_user_by_phone_number(body.phone_number, db):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="이미 가입된 전화번호입니다.",
+        )
+
     success = await send_phone_verification(body.phone_number, db)
     if not success:
         raise HTTPException(
@@ -433,5 +465,3 @@ async def verify_verification(body: SmsVerifyRequest, db: AsyncSession = Depends
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="인증 번호가 일치하지 않습니다.",
         )
-# 다음주 (월 5/11) 운영서버 테스트 이후 todo
-# TODO: service, router에 가입 전 동일번호 존재여부 조회후 409 반환예정 + sms 인증완료 여부 확인 후 가입 허용

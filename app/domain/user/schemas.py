@@ -1,5 +1,6 @@
 """유저 요청/응답 스키마."""
 
+import re
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
@@ -21,6 +22,15 @@ class UserRegisterRequest(BaseModel):
     phone_number: str = Field(min_length=1)
     user_role: UserRole  # volunteer | guardian
     address: AddressCreate
+
+    # 일반 가입, 카카오 가입, sms코드 발송 및 확인 4군데에 동일 추가(전화번호 정규화)
+    @field_validator("phone_number")
+    @classmethod
+    def normalize_phone(cls, v):
+        digits = re.sub(r"[-\s]", "", v.strip())   # 하이픈, 공백 제거
+        if not re.fullmatch(r"010\d{8}", digits):  # 010XXXXXXXX 형식 검증
+            raise ValueError("올바른 전화번호 형식이 아닙니다. (예: 01012345678)")
+        return digits
 
     @field_validator("password")  # 특정 필드(비번) 하나
     # userregisterrequest 객체가 없는 상태라서 클래스(cls) 받음
@@ -84,6 +94,14 @@ class KakaoSetupRequest(BaseModel):
     user_role: UserRole
     address: AddressCreate
 
+    @field_validator("phone_number")
+    @classmethod
+    def normalize_phone(cls, v):
+        digits = re.sub(r"[-\s]", "", v.strip())
+        if not re.fullmatch(r"010\d{8}", digits):
+            raise ValueError("올바른 전화번호 형식이 아닙니다. (예: 01012345678)")
+        return digits
+
 
 # ── SMS 요청 ───────────────
 
@@ -93,12 +111,28 @@ class SmsSendRequest(BaseModel):
 
     phone_number: str = Field(min_length=1)
 
+    @field_validator("phone_number")
+    @classmethod
+    def normalize_phone(cls, v):
+        digits = re.sub(r"[-\s]", "", v.strip())
+        if not re.fullmatch(r"010\d{8}", digits):
+            raise ValueError("올바른 전화번호 형식이 아닙니다. (예: 01012345678)")
+        return digits
+
 
 class SmsVerifyRequest(BaseModel):
     """SMS 인증 코드 확인 요청"""
 
     phone_number: str = Field(min_length=1)
     code: str = Field(min_length=6, max_length=6)
+
+    @field_validator("phone_number")
+    @classmethod
+    def normalize_phone(cls, v):
+        digits = re.sub(r"[-\s]", "", v.strip())
+        if not re.fullmatch(r"010\d{8}", digits):
+            raise ValueError("올바른 전화번호 형식이 아닙니다. (예: 01012345678)")
+        return digits
 
 
 # ── 유저 응답 ─────────────────
