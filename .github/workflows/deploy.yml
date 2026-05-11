@@ -5,6 +5,10 @@ on:
     branches:
       - main
 
+concurrency:
+  group: deploy-to-ec2-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -64,7 +68,7 @@ jobs:
             docker-compose build
             docker-compose up -d postgres
             docker-compose run --rm app alembic upgrade head
-            docker-compose up -d --wait
+            docker-compose up -d --wait --remove-orphans
             docker image prune -f
 
             echo "::STAGE:: verify https"
