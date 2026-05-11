@@ -135,6 +135,62 @@ class SmsVerifyRequest(BaseModel):
         return digits
 
 
+# ── 비밀번호 찾기 요청 ────────────────
+class PasswordResetRequest(BaseModel):
+    """비밀번호 찾기 1단계: 이메일로 SMS 발송 요청"""
+
+    email: EmailStr
+
+
+class PasswordResetVerifyRequest(BaseModel):
+    """비밀번호 찾기 2단계: SMS 코드 확인"""
+
+    phone_number: str = Field(min_length=1)
+    code: str = Field(min_length=6, max_length=6)
+
+    @field_validator("phone_number")
+    @classmethod
+    def normalize_phone(cls, v):
+        digits = re.sub(r"[-\s]", "", v.strip())
+        if not re.fullmatch(r"010\d{8}", digits):
+            raise ValueError("올바른 전화번호 형식이 아닙니다. (예: 01012345678)")
+        return digits
+
+
+class NewPasswordRequest(BaseModel):
+    """비밀번호 찾기 3단계: 새 비밀번호 설정"""
+
+    new_password: str
+    new_password_confirm: str
+
+    @field_validator("new_password")
+    @classmethod
+    def password_min_length(cls, v):
+        if len(v) < 8:
+            raise ValueError("비밀번호는 8자 이상이어야 합니다.")
+        return v
+
+    @model_validator(mode="after")
+    def passwords_match(self):
+        if self.new_password != self.new_password_confirm:
+            raise ValueError("비밀번호가 일치하지 않습니다.")
+        return self
+
+
+# ── 비밀번호 찾기 응답 ────────────────
+class PasswordResetRequestResponse(BaseModel):
+    """비밀번호 찾기 1단계 응답: 마스킹된 전화번호 + 실제 전화번호(2단계 코드 검증용)"""
+
+    phone_masked: str
+    phone_number: str
+
+
+class PasswordResetVerifyResponse(BaseModel):
+    """비밀번호 찾기 2단계 응답: 비밀번호 재설정용 임시 토큰"""
+
+    reset_token: str
+
+
 # ── 유저 응답 ─────────────────
 
 
