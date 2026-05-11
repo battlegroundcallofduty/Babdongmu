@@ -1,3 +1,154 @@
+// ── 비밀번호 찾기 모달 ────────────────────────────────────────────
+let _pwResetEmail = '';  // 1단계에서 입력한 이메일
+let _pwResetPhone = '';  // 서버가 준 전화번호
+let _pwResetToken = '';  // 서버가 준 reset_token
+
+function showPwStep(n) {
+  [1, 2, 3].forEach(i => {
+    document.getElementById(`pw-step-${i}`).classList.toggle('hidden', i !== n);
+  });
+}
+
+// 모달 열때마다 전부 초기화후 1단계로 리셋
+function openPwResetModal() {
+  _pwResetPhone = '';
+  _pwResetToken = '';
+  _pwResetEmail = '';
+  document.getElementById('pw-email').value = '';
+  document.getElementById('pw-code').value = '';
+  document.getElementById('pw-new').value = '';
+  document.getElementById('pw-confirm').value = '';
+  ['pw-step1-error', 'pw-step2-error', 'pw-step3-error'].forEach(id => {
+    document.getElementById(id).classList.add('hidden');
+  });
+  showPwStep(1);
+  document.getElementById('pw-reset-modal').classList.add('open');
+  syncBodyLock();
+}
+
+function closePwResetModal() {
+  document.getElementById('pw-reset-modal').classList.remove('open');
+  syncBodyLock();
+}
+
+// 비밀번호 찾기 링크 클릭 -> 모달 열기
+document.getElementById('forgot-pw-link')?.addEventListener('click', (e) => {
+  e.preventDefault();
+  openPwResetModal();
+});
+
+// X 버튼 클릭 -> 모달 닫기 (모달 바깥 영역 클릭시 닫히는거 삭제함)
+document.getElementById('pw-reset-close')?.addEventListener('click', closePwResetModal);
+
+
+// 1단계: 이메일 입력 → SMS 발송
+document.getElementById('pw-step1-btn')?.addEventListener('click', async () => {
+  const errEl = document.getElementById('pw-step1-error');
+  errEl.classList.add('hidden');
+  const email = document.getElementById('pw-email').value.trim();
+  if (!email) {  // 빈칸일때 에러 표시
+    errEl.textContent = '이메일을 입력해주세요.';
+    errEl.classList.remove('hidden');
+    return;
+  }
+  try {
+    const data = await api('/users/password/reset/request', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+    _pwResetEmail = email;
+    _pwResetPhone = data.phone_number;
+    document.getElementById('pw-phone-hint').textContent =
+      `${data.phone_masked}로 인증코드를 발송했습니다.`;
+    showPwStep(2);
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.classList.remove('hidden');
+  }
+});
+
+// 2단계: 인증코드 재발송 (2단계 안에서 재요청)
+document.getElementById('pw-resend-link')?.addEventListener('click', async (e) => {
+  e.preventDefault();
+  const errEl = document.getElementById('pw-step2-error');
+  errEl.classList.add('hidden');
+  try {
+    const data = await api('/users/password/reset/request', {
+      method: 'POST',
+      body: JSON.stringify({ email: _pwResetEmail }),
+    });
+    _pwResetPhone = data.phone_number;
+    document.getElementById('pw-phone-hint').textContent =
+      `${data.phone_masked}로 인증코드를 재발송했습니다.`;
+    document.getElementById('pw-code').value = '';
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.classList.remove('hidden');
+  }
+});
+
+// 2단계: SMS 코드 확인 → reset_token 발급
+document.getElementById('pw-step2-btn')?.addEventListener('click', async () => {
+  const errEl = document.getElementById('pw-step2-error');
+  errEl.classList.add('hidden');
+  const code = document.getElementById('pw-code').value.trim();
+  if (code.length !== 6) {
+    errEl.textContent = '6자리 인증코드를 입력해주세요.';
+    errEl.classList.remove('hidden');
+    return;
+  }
+  try {
+    const data = await api('/users/password/reset/verify', {
+      method: 'POST',
+      body: JSON.stringify({ phone_number: _pwResetPhone, code }),
+    });
+    _pwResetToken = data.reset_token;
+    showPwStep(3);
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.classList.remove('hidden');
+  }
+});
+
+// 3단계: 새 비밀번호 설정
+// api()는 localStorage 토큰을 항상 우선해서 reset_token 전달 불가 → fetch 직접 사용
+document.getElementById('pw-step3-btn')?.addEventListener('click', async () => {
+  const errEl = document.getElementById('pw-step3-error');
+  errEl.classList.add('hidden');
+  const newPw = document.getElementById('pw-new').value;
+  const confirmPw = document.getElementById('pw-confirm').value;
+  if (newPw.length < 8) {
+    errEl.textContent = '비밀번호는 8자 이상이어야 합니다.';
+    errEl.classList.remove('hidden');
+    return;
+  }
+  if (newPw !== confirmPw) {
+    errEl.textContent = '비밀번호가 일치하지 않습니다.';
+    errEl.classList.remove('hidden');
+    return;
+  }
+  try {
+    const response = await fetch('/api/v1/users/password/reset', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${_pwResetToken}`,
+      },
+      body: JSON.stringify({ new_password: newPw, new_password_confirm: confirmPw }),
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: '요청에 실패했어요.' }));
+      throw new Error(error.detail || '요청에 실패했어요.');
+    }
+    closePwResetModal();
+    await showResultModal('비밀번호가 변경되었습니다. 새 비밀번호로 로그인해주세요.', 'success');
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.classList.remove('hidden');
+  }
+});
+
+// ──────────────────────────────────────────────────────────────────
 const params = new URLSearchParams(window.location.search);
 // url의 # 이후 전체 문자열 + '#' 제거
 const hashParams = new URLSearchParams(window.location.hash.slice(1));
