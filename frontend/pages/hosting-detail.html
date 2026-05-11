@@ -618,9 +618,27 @@
       applyButtonElement.classList.remove('hidden');
 
       if (myMatchId !== null) {
-        applyButtonElement.className = 'btn btn-secondary';
-        applyButtonElement.disabled = false;
-        applyButtonElement.textContent = '신청 취소';
+        if (hostingDetail.hosting_status === 'FAILED') {
+          applyButtonElement.className = 'btn status-action-button';
+          applyButtonElement.disabled = true;
+          applyButtonElement.textContent = '취소됨';
+        } else if (hostingDetail.hosting_status === 'FIXED') {
+          applyButtonElement.className = 'btn status-action-button';
+          applyButtonElement.disabled = true;
+          applyButtonElement.textContent = '확정됨';
+        } else if (hostingDetail.hosting_status === 'IN_PROGRESS') {
+          applyButtonElement.className = 'btn status-action-button';
+          applyButtonElement.disabled = true;
+          applyButtonElement.textContent = '진행중';
+        } else if (hostingDetail.hosting_status === 'CLOSED') {
+          applyButtonElement.className = 'btn status-action-button';
+          applyButtonElement.disabled = true;
+          applyButtonElement.textContent = '완료된 호스팅';
+        } else {
+          applyButtonElement.className = 'btn btn-secondary';
+          applyButtonElement.disabled = false;
+          applyButtonElement.textContent = '신청 취소';
+        }
       } else {
         applyButtonElement.className = 'btn btn-primary';
         applyButtonElement.disabled = !isApplyEnabled(hostingDetail.hosting_status);
