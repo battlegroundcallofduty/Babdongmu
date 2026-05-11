@@ -17,13 +17,18 @@ from app.domain.match.schemas import VolunteerStatsResponse
 from app.domain.match.service import get_volunteer_stats
 from app.domain.senior.schemas import GuardianStatsResponse
 from app.domain.senior.service import get_guardian_stats, list_seniors_by_guardian
-from app.domain.user.dependency import get_current_user, require_guardian, require_volunteer
+from app.domain.user.dependency import get_current_user, get_password_reset_user, require_guardian, require_volunteer
 from app.domain.user.models import DocumentType, User, UserRole
 from app.domain.user.schemas import (
     DocumentResponse,
     DocumentUrlResponse,
     KakaoSetupRequest,
+    NewPasswordRequest,
     PasswordChangeRequest,
+    PasswordResetRequest,
+    PasswordResetRequestResponse,
+    PasswordResetVerifyRequest,
+    PasswordResetVerifyResponse,
     RegisterResponse,
     SmsSendRequest,
     SmsVerifyRequest,
@@ -48,6 +53,7 @@ from app.domain.user.service import (
     get_user_by_kakao_id,
     get_user_by_phone_number,
     is_phone_verified,
+    reset_password,
     send_phone_verification,
     update_user,
     verify_phone_code,
@@ -431,6 +437,76 @@ async def kakao_setup(body: KakaoSetupRequest, db: AsyncSession = Depends(get_db
     await delete_phone_verifications(body.phone_number, db)
     access_token = create_access_token({"sub": str(user.user_id)})
     return RegisterResponse(user=user, access_token=access_token)
+
+
+# ── 비밀번호 찾기 ───────────────────
+@router.post("/password/reset/request", response_model=PasswordResetRequestResponse)
+async def password_reset_request(body: PasswordResetRequest, db: AsyncSession = Depends(get_db)):
+    """비밀번호 찾기 1단계: 이메일로 계정 확인 후 등록된 번호로 SMS 발송"""
+    user = await get_user_by_email(body.email, db)
+    # 없는 이메일이거나 password가 None이면 404
+    if user is None or user.password is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="해당 이메일로 가입된 계정을 찾을 수 없습니다.",
+        )
+
+    # 유저 조회 성공하면, 유저의 전화번호로 sms 코드 발송
+    success = await send_phone_verification(user.phone_number, db)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="SMS 발송에 실패했습니다. 잠시 후 다시 시도해주세요.",
+        )
+
+    phone = user.phone_number
+    phone_masked = f"{phone[:3]}-****-{phone[-4:]}"
+    # 2단계 api 호출때 실제번호 필요해서 마스킹번호, 실제번호 같이 반환
+    return PasswordResetRequestResponse(phone_masked=phone_masked, phone_number=phone)
+
+
+@router.post("/password/reset/verify", response_model=PasswordResetVerifyResponse)
+async def password_reset_verify(body: PasswordResetVerifyRequest, db: AsyncSession = Depends(get_db)):
+    """비밀번호 찾기 2단계: SMS 코드 확인 후 password_reset 임시 토큰 발급 (10분)"""
+    result = await verify_phone_code(body.phone_number, body.code, db)
+    if result is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="인증 번호가 만료되었습니다. 다시 요청해주세요.",
+        )
+    if result is False:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="인증 번호가 일치하지 않습니다.",
+        )
+
+    # 코드 인증 성공하면 전화번호로 유저 찾기
+    user = await get_user_by_phone_number(body.phone_number, db)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="해당 전화번호로 가입된 계정을 찾을 수 없습니다.",
+        )
+
+    # 비밀번호 찾기 전용 특수 토큰 발급(10분 유효)
+    reset_token = create_access_token(
+        {"sub": str(user.user_id), "type": "password_reset"},
+        expires_delta=timedelta(minutes=10),
+    )
+    return PasswordResetVerifyResponse(reset_token=reset_token)
+
+
+@router.post("/password/reset", status_code=status.HTTP_204_NO_CONTENT)
+async def password_reset(
+    body: NewPasswordRequest,
+    # 토큰 검증 + 유저 추출
+    current_user: User = Depends(get_password_reset_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """비밀번호 찾기 3단계: 새 비밀번호 설정"""
+    await reset_password(current_user.user_id, body.new_password, db)
+    await delete_phone_verifications(current_user.phone_number, db)
+    # 회원가입과 동일하게 비밀번호 변경후 phone_verifications 기록 삭제
 
 
 # ── SMS 인증 ───────────────────
