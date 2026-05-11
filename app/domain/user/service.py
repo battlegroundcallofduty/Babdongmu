@@ -65,6 +65,7 @@ async def is_phone_verified(phone_number: str, db: AsyncSession) -> bool:
         .where(
             PhoneVerification.phone_number == phone_number,
             PhoneVerification.is_verified == True,
+            PhoneVerification.expires_at > datetime.now(timezone.utc),  # 인증 후 10분 이내만 유효
         )
         .limit(1)
     )
@@ -307,6 +308,7 @@ async def verify_phone_code(phone_number: str, code: str, db: AsyncSession) -> b
         return False
 
     verification.is_verified = True
+    verification.expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)  # 가입 완료 여유시간
     await db.commit()
     return True
 

@@ -91,7 +91,7 @@ async def register(body: UserRegisterRequest, db: AsyncSession = Depends(get_db)
     if not await is_phone_verified(body.phone_number, db):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="전화번호 인증을 완료해주세요.",
+            detail="전화번호 인증이 완료되지 않았거나 만료되었습니다. 다시 인증해주세요.",
         )
 
     user = await create_user(
@@ -411,7 +411,7 @@ async def kakao_setup(body: KakaoSetupRequest, db: AsyncSession = Depends(get_db
     if not await is_phone_verified(body.phone_number, db):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="전화번호 인증을 완료해주세요.",
+            detail="전화번호 인증이 완료되지 않았거나 만료되었습니다. 다시 인증해주세요.",
         )
 
     if body.user_role == UserRole.ADMIN:
