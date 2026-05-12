@@ -145,16 +145,8 @@ class PasswordResetRequest(BaseModel):
 class PasswordResetVerifyRequest(BaseModel):
     """비밀번호 찾기 2단계: SMS 코드 확인"""
 
-    phone_number: str = Field(min_length=1)
+    email: EmailStr
     code: str = Field(min_length=6, max_length=6)
-
-    @field_validator("phone_number")
-    @classmethod
-    def normalize_phone(cls, v):
-        digits = re.sub(r"[-\s]", "", v.strip())
-        if not re.fullmatch(r"010\d{8}", digits):
-            raise ValueError("올바른 전화번호 형식이 아닙니다. (예: 01012345678)")
-        return digits
 
 
 class NewPasswordRequest(BaseModel):
@@ -179,10 +171,9 @@ class NewPasswordRequest(BaseModel):
 
 # ── 비밀번호 찾기 응답 ────────────────
 class PasswordResetRequestResponse(BaseModel):
-    """비밀번호 찾기 1단계 응답: 마스킹된 전화번호 + 실제 전화번호(2단계 코드 검증용)"""
+    """비밀번호 찾기 1단계 응답: 마스킹된 전화번호"""
 
     phone_masked: str
-    phone_number: str
 
 
 class PasswordResetVerifyResponse(BaseModel):

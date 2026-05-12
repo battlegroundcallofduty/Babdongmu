@@ -461,14 +461,21 @@ async def password_reset_request(body: PasswordResetRequest, db: AsyncSession = 
 
     phone = user.phone_number
     phone_masked = f"{phone[:3]}-****-{phone[-4:]}"
-    # 2단계 api 호출때 실제번호 필요해서 마스킹번호, 실제번호 같이 반환
-    return PasswordResetRequestResponse(phone_masked=phone_masked, phone_number=phone)
+    return PasswordResetRequestResponse(phone_masked=phone_masked)
 
 
 @router.post("/password/reset/verify", response_model=PasswordResetVerifyResponse)
 async def password_reset_verify(body: PasswordResetVerifyRequest, db: AsyncSession = Depends(get_db)):
     """비밀번호 찾기 2단계: SMS 코드 확인 후 password_reset 임시 토큰 발급 (10분)"""
-    result = await verify_phone_code(body.phone_number, body.code, db)
+    # 1단계에서 확인한 이메일로 유저 조회 → 이메일-전화번호 결합 검증
+    user = await get_user_by_email(body.email, db)
+    if user is None or user.password is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="해당 이메일로 가입된 계정을 찾을 수 없습니다.",
+        )
+
+    result = await verify_phone_code(user.phone_number, body.code, db)
     if result is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -478,14 +485,6 @@ async def password_reset_verify(body: PasswordResetVerifyRequest, db: AsyncSessi
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="인증 번호가 일치하지 않습니다.",
-        )
-
-    # 코드 인증 성공하면 전화번호로 유저 찾기
-    user = await get_user_by_phone_number(body.phone_number, db)
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="해당 전화번호로 가입된 계정을 찾을 수 없습니다.",
         )
 
     # 비밀번호 찾기 전용 특수 토큰 발급(10분 유효)

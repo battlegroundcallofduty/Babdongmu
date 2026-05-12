@@ -1,6 +1,5 @@
 // ── 비밀번호 찾기 모달 ────────────────────────────────────────────
 let _pwResetEmail = '';  // 1단계에서 입력한 이메일
-let _pwResetPhone = '';  // 서버가 준 전화번호
 let _pwResetToken = '';  // 서버가 준 reset_token
 
 function showPwStep(n) {
@@ -11,7 +10,6 @@ function showPwStep(n) {
 
 // 모달 열때마다 전부 초기화후 1단계로 리셋
 function openPwResetModal() {
-  _pwResetPhone = '';
   _pwResetToken = '';
   _pwResetEmail = '';
   document.getElementById('pw-email').value = '';
@@ -57,7 +55,6 @@ document.getElementById('pw-step1-btn')?.addEventListener('click', async () => {
       body: JSON.stringify({ email }),
     });
     _pwResetEmail = email;
-    _pwResetPhone = data.phone_number;
     document.getElementById('pw-phone-hint').textContent =
       `${data.phone_masked}로 인증코드를 발송했습니다.`;
     showPwStep(2);
@@ -77,7 +74,6 @@ document.getElementById('pw-resend-link')?.addEventListener('click', async (e) =
       method: 'POST',
       body: JSON.stringify({ email: _pwResetEmail }),
     });
-    _pwResetPhone = data.phone_number;
     document.getElementById('pw-phone-hint').textContent =
       `${data.phone_masked}로 인증코드를 재발송했습니다.`;
     document.getElementById('pw-code').value = '';
@@ -100,7 +96,7 @@ document.getElementById('pw-step2-btn')?.addEventListener('click', async () => {
   try {
     const data = await api('/users/password/reset/verify', {
       method: 'POST',
-      body: JSON.stringify({ phone_number: _pwResetPhone, code }),
+      body: JSON.stringify({ email: _pwResetEmail, code }),
     });
     _pwResetToken = data.reset_token;
     showPwStep(3);
