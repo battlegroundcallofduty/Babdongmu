@@ -444,12 +444,9 @@ async def kakao_setup(body: KakaoSetupRequest, db: AsyncSession = Depends(get_db
 async def password_reset_request(body: PasswordResetRequest, db: AsyncSession = Depends(get_db)):
     """비밀번호 찾기 1단계: 이메일로 계정 확인 후 등록된 번호로 SMS 발송"""
     user = await get_user_by_email(body.email, db)
-    # 없는 이메일이거나 password가 None이면 404
+    # 없는 이메일이거나 소셜 계정이면 계정 존재 여부 노출 없이 조용히 반환
     if user is None or user.password is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="해당 이메일로 가입된 계정을 찾을 수 없습니다.",
-        )
+        return PasswordResetRequestResponse(phone_masked="010-****-****")
 
     # 유저 조회 성공하면, 유저의 전화번호로 sms 코드 발송
     success = await send_phone_verification(user.phone_number, db)
@@ -468,11 +465,12 @@ async def password_reset_request(body: PasswordResetRequest, db: AsyncSession = 
 async def password_reset_verify(body: PasswordResetVerifyRequest, db: AsyncSession = Depends(get_db)):
     """비밀번호 찾기 2단계: SMS 코드 확인 후 password_reset 임시 토큰 발급 (10분)"""
     # 1단계에서 확인한 이메일로 유저 조회 → 이메일-전화번호 결합 검증
+    # 계정 존재 여부 노출 방지: 404 대신 400으로 통일
     user = await get_user_by_email(body.email, db)
     if user is None or user.password is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="해당 이메일로 가입된 계정을 찾을 수 없습니다.",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="인증 번호가 일치하지 않습니다.",
         )
 
     result = await verify_phone_code(user.phone_number, body.code, db)

@@ -56,7 +56,7 @@ document.getElementById('pw-step1-btn')?.addEventListener('click', async () => {
     });
     _pwResetEmail = email;
     document.getElementById('pw-phone-hint').textContent =
-      `${data.phone_masked}로 인증코드를 발송했습니다.`;
+      `가입된 계정이 있다면 ${data.phone_masked}로 인증코드를 발송했습니다.`;
     showPwStep(2);
   } catch (err) {
     errEl.textContent = err.message;
@@ -75,7 +75,7 @@ document.getElementById('pw-resend-link')?.addEventListener('click', async (e) =
       body: JSON.stringify({ email: _pwResetEmail }),
     });
     document.getElementById('pw-phone-hint').textContent =
-      `${data.phone_masked}로 인증코드를 재발송했습니다.`;
+      `가입된 계정이 있다면 ${data.phone_masked}로 인증코드를 재발송했습니다.`;
     document.getElementById('pw-code').value = '';
   } catch (err) {
     errEl.textContent = err.message;
