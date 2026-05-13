@@ -228,7 +228,7 @@
               ${data.items.map(r => `
                 <tr>
                   <td>${escapeHtml(r.volunteer_name)}${r.is_social_login ? ' · <span class="badge-kakao">카카오</span>' : `<span class="cell-muted"> · ${escapeHtml(r.volunteer_email)}</span>`}</td>
-                  <td>${r.senior_name}</td>
+                  <td>${escapeHtml(r.senior_name)}</td>
                   <td class="cell-muted">${formatDatetime(r.created_at)}</td>
                 </tr>
               `).join('')}
@@ -262,7 +262,7 @@
                 <tr>
                   <td>${escapeHtml(r.receiver_name)}${r.is_social_login ? ' · <span class="badge-kakao">카카오</span>' : `<span class="cell-muted"> · ${escapeHtml(r.receiver_email)}</span>`}</td>
                   <td><span class="badge-fail">${ALARM_LABEL[r.alarm_type] ?? r.alarm_type}</span></td>
-                  <td class="cell-muted">${r.contents}</td>
+                  <td class="cell-muted">${escapeHtml(r.contents)}</td>
                   <td class="cell-muted">${formatDatetime(r.created_at)}</td>
                 </tr>
               `).join('')}
