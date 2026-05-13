@@ -51,6 +51,29 @@ async def get_user_by_email(email: str, db: AsyncSession) -> User | None:
     return result.scalar_one_or_none()
 
 
+async def get_user_by_phone_number(phone_number: str, db: AsyncSession) -> User | None:
+    """전화번호로 유저 조회"""
+    statement = select(User).where(User.phone_number == phone_number).limit(1)
+    result = await db.execute(statement)
+    return result.scalar_one_or_none()
+
+
+async def is_phone_verified(phone_number: str, db: AsyncSession) -> bool:
+    """해당 번호의 SMS 인증 완료 여부 확인"""
+    statement = (
+        select(PhoneVerification)
+        .where(
+            PhoneVerification.phone_number == phone_number,
+            PhoneVerification.is_verified == True,
+            PhoneVerification.expires_at > datetime.now(timezone.utc),  # 인증 후 10분 이내만 유효
+        )
+        .limit(1)
+    )
+    result = await db.execute(statement)
+    # 객체면(none이 아니면) true, none이면 false
+    return result.scalar_one_or_none() is not None
+
+
 async def create_user(
     email: str,
     password: str,
@@ -285,6 +308,7 @@ async def verify_phone_code(phone_number: str, code: str, db: AsyncSession) -> b
         return False
 
     verification.is_verified = True
+    verification.expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)  # 가입 완료 여유시간
     await db.commit()
     return True
 
