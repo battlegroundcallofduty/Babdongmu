@@ -9,8 +9,8 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.domain.hosting.models import Hosting
-from app.domain.match.models import MatchingInfo
+from app.domain.hosting.models import Hosting, SmsLog
+from app.domain.match.models import MatchingInfo, MatchStatus
 from app.domain.senior.models import Senior
 from app.domain.user.dependency import require_admin
 from app.domain.user.models import CertFlag, Document, User, UserRole
@@ -37,6 +37,36 @@ def _fmt(dt: datetime | None) -> str | None:
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)
     return dt.isoformat()
+
+
+# ── 공개 통계 (랜딩페이지용, 인증 불필요) ────────────────────────────────────
+
+@router.get("/public-stats")
+async def get_public_stats(db: AsyncSession = Depends(get_db)) -> dict:
+    """랜딩페이지 표시용 공개 통계를 반환합니다."""
+    seniors = await db.scalar(
+        select(func.count()).select_from(Senior)
+        .where(Senior.active_flag.is_(True))
+    )
+    volunteers = await db.scalar(
+        select(func.count()).select_from(User)
+        .where(User.user_role == UserRole.VOLUNTEER, User.cert_flag == CertFlag.APPROVED)
+    )
+    total_meals = await db.scalar(
+        select(func.count()).select_from(MatchingInfo)
+        .where(MatchingInfo.check_out_time.is_not(None))
+    )
+    total_minutes = await db.scalar(
+        select(func.coalesce(func.sum(MatchingInfo.actual_volunteer_time), 0))
+        .select_from(MatchingInfo)
+        .where(MatchingInfo.actual_volunteer_time.is_not(None))
+    )
+    return {
+        "seniors": seniors,
+        "volunteers": volunteers,
+        "total_meals": total_meals,
+        "total_volunteer_hours": int(total_minutes) // 60,
+    }
 
 
 # ── 통계 ──────────────────────────────────────────────────────────────────────
@@ -241,6 +271,117 @@ async def list_completed_matches(
         }
         for m, u, h, s in rows
     ]
+
+
+# ── 통계 페이지 API ───────────────────────────────────────────────────────────
+
+@router.get("/stats/volunteers")
+async def get_volunteer_stats(
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_admin),
+) -> list[dict]:
+    """봉사자별 방문 횟수 및 봉사시간 합계를 반환합니다."""
+    result = await db.execute(
+        select(
+            User.user_id,
+            User.name,
+            User.email,
+            User.kakao_id,
+            func.count(MatchingInfo.matching_id).label("visit_count"),
+            func.coalesce(func.sum(MatchingInfo.actual_volunteer_time), 0).label("total_minutes"),
+        )
+        .join(MatchingInfo, MatchingInfo.vt_id == User.user_id)
+        .where(
+            User.user_role == UserRole.VOLUNTEER,
+            MatchingInfo.match_status == MatchStatus.APPROVED,
+            MatchingInfo.check_out_time.is_not(None),
+        )
+        .group_by(User.user_id, User.kakao_id)
+        .order_by(func.count(MatchingInfo.matching_id).desc())
+    )
+    rows = result.all()
+    return [
+        {
+            "user_id": r.user_id,
+            "name": r.name,
+            "email": r.email,
+            "is_social_login": r.kakao_id is not None,
+            "visit_count": r.visit_count,
+            "total_minutes": r.total_minutes,
+        }
+        for r in rows
+    ]
+
+
+@router.get("/stats/not-visited")
+async def get_not_visited_stats(
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_admin),
+) -> dict:
+    """not_visited 매칭 목록과 총 건수를 반환합니다.
+
+    total_closed: 체크아웃 완료 + not_visited 합계 (미방문율 계산용)
+    """
+    from sqlalchemy import or_
+
+    result = await db.execute(
+        select(MatchingInfo, User, Senior)
+        .join(User, MatchingInfo.vt_id == User.user_id)
+        .join(Senior, MatchingInfo.senior_id == Senior.senior_id)
+        .where(MatchingInfo.match_status == MatchStatus.NOT_VISITED)
+        .order_by(MatchingInfo.created_at.desc())
+    )
+    rows = result.all()
+    items = [
+        {
+            "matching_id": m.matching_id,
+            "volunteer_name": u.name,
+            "volunteer_email": u.email,
+            "is_social_login": u.kakao_id is not None,
+            "senior_name": s.name,
+            "created_at": _fmt(m.created_at),
+        }
+        for m, u, s in rows
+    ]
+    # 체크아웃 완료(방문) + 미방문 = 실제 방문 예정이었던 매칭 전체
+    total_closed = await db.scalar(
+        select(func.count()).select_from(MatchingInfo)
+        .where(
+            or_(
+                MatchingInfo.match_status == MatchStatus.NOT_VISITED,
+                MatchingInfo.check_out_time.is_not(None),
+            )
+        )
+    )
+    return {"total": len(items), "total_closed": total_closed, "items": items}
+
+
+@router.get("/stats/sms-failures")
+async def get_sms_failure_stats(
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_admin),
+) -> dict:
+    """SMS 발송 실패 목록과 총 건수를 반환합니다."""
+    result = await db.execute(
+        select(SmsLog, User)
+        .join(User, SmsLog.receiver_id == User.user_id)
+        .where(SmsLog.is_send.is_(False))
+        .order_by(SmsLog.created_at.desc())
+    )
+    rows = result.all()
+    items = [
+        {
+            "sms_id": s.sms_id,
+            "receiver_name": u.name,
+            "receiver_email": u.email,
+            "is_social_login": u.kakao_id is not None,
+            "alarm_type": s.alarm_type.value,
+            "contents": s.contents,
+            "created_at": _fmt(s.created_at),
+        }
+        for s, u in rows
+    ]
+    return {"total": len(items), "items": items}
 
 
 @router.patch("/matches/{matching_id}/volunteer-time", status_code=status.HTTP_200_OK)
