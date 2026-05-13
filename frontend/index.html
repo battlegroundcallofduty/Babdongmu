@@ -723,19 +723,19 @@
     <section class="s-stats">
       <div class="s-stats-grid reveal">
         <div>
-          <div class="s-stats-val">11</div>
+          <div class="s-stats-val" id="stat-seniors">—</div>
           <div class="s-stats-label">등록 어르신</div>
         </div>
         <div>
-          <div class="s-stats-val">38</div>
+          <div class="s-stats-val" id="stat-volunteers">—</div>
           <div class="s-stats-label">활동 봉사자</div>
         </div>
         <div>
-          <div class="s-stats-val">147</div>
+          <div class="s-stats-val" id="stat-meals">—</div>
           <div class="s-stats-label">함께한 식사</div>
         </div>
         <div>
-          <div class="s-stats-val">463</div>
+          <div class="s-stats-val" id="stat-hours">—</div>
           <div class="s-stats-label">누적 봉사시간</div>
         </div>
       </div>
@@ -808,6 +808,19 @@
     }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
 
     document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+
+    // STATS 실 데이터 로딩
+    (async () => {
+      try {
+        const stats = await fetch('/api/v1/admin/public-stats').then(r => r.json());
+        document.getElementById('stat-seniors').textContent   = stats.seniors;
+        document.getElementById('stat-volunteers').textContent = stats.volunteers;
+        document.getElementById('stat-meals').textContent     = stats.total_meals;
+        document.getElementById('stat-hours').textContent     = stats.total_volunteer_hours;
+      } catch {
+        // 로딩 실패 시 — 표시 그대로 둠
+      }
+    })();
   </script>
 </body>
 </html>

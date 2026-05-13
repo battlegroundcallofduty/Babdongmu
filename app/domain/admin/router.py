@@ -39,6 +39,36 @@ def _fmt(dt: datetime | None) -> str | None:
     return dt.isoformat()
 
 
+# ── 공개 통계 (랜딩페이지용, 인증 불필요) ────────────────────────────────────
+
+@router.get("/public-stats")
+async def get_public_stats(db: AsyncSession = Depends(get_db)) -> dict:
+    """랜딩페이지 표시용 공개 통계를 반환합니다."""
+    seniors = await db.scalar(
+        select(func.count()).select_from(Senior)
+        .where(Senior.active_flag.is_(True))
+    )
+    volunteers = await db.scalar(
+        select(func.count()).select_from(User)
+        .where(User.user_role == UserRole.VOLUNTEER, User.cert_flag == CertFlag.APPROVED)
+    )
+    total_meals = await db.scalar(
+        select(func.count()).select_from(MatchingInfo)
+        .where(MatchingInfo.check_out_time.is_not(None))
+    )
+    total_minutes = await db.scalar(
+        select(func.coalesce(func.sum(MatchingInfo.actual_volunteer_time), 0))
+        .select_from(MatchingInfo)
+        .where(MatchingInfo.actual_volunteer_time.is_not(None))
+    )
+    return {
+        "seniors": seniors,
+        "volunteers": volunteers,
+        "total_meals": total_meals,
+        "total_volunteer_hours": int(total_minutes) // 60,
+    }
+
+
 # ── 통계 ──────────────────────────────────────────────────────────────────────
 
 @router.get("/stats")
