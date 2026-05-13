@@ -151,6 +151,16 @@ async def change_password(
     return True
 
 
+async def reset_password(user_id: int, new_password: str, db: AsyncSession) -> None:
+    """비밀번호 찾기: 현재 비밀번호 확인 없이 새 비밀번호로 변경"""
+    user = await get_user_by_id(user_id, db)
+    if user is None:
+        return
+    user.password = hash_password(new_password)
+    user.updated_at = datetime.now(timezone.utc)
+    await db.commit()
+
+
 async def delete_user(user_id: int, db: AsyncSession) -> None:
     """탈퇴: 유저를 db에서 삭제"""
     user = await get_user_by_id(user_id, db)

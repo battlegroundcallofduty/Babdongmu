@@ -53,6 +53,32 @@ async def get_current_user(
     return user
 
 
+async def get_password_reset_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: AsyncSession = Depends(get_db),
+) -> User:
+    """password_reset 토큰 전용 의존성 (일반 로그인 토큰으로는 접근 불가)"""
+    # 비밀번호 찾기 전용 토큰으로 토큰의 주인 유저 꺼내주는 함수
+    invalid = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="유효하지 않은 토큰입니다.",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    payload = decode_access_token(credentials.credentials)
+    if payload is None or payload.get("type") != "password_reset":
+        raise invalid
+
+    try:
+        user_id = int(payload.get("sub"))
+    except (TypeError, ValueError):
+        raise invalid
+
+    user = await get_user_with_address(user_id, db)
+    if user is None:
+        raise invalid
+    return user
+
+
 async def require_admin(current_user: User = Depends(get_current_user)) -> User:
     """관리자 권한 확인(관리자만 접근 가능)"""
     if current_user.user_role != UserRole.ADMIN:
