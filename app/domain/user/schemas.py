@@ -8,6 +8,15 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, mo
 from app.domain.common.schemas import AddressCreate, AddressResponse
 from app.domain.user.models import CertFlag, DocumentType, UserRole
 
+
+# 공통으로 쓰는 전화번호 정규화 validator
+def _normalize_phone(v: str) -> str:
+    digits = re.sub(r"[-\s]", "", v.strip())   # 하이픈, 공백 제거
+    if not re.fullmatch(r"010\d{8}", digits):  # 010XXXXXXXX 형식 검증
+        raise ValueError("올바른 전화번호 형식이 아닙니다. (예: 01012345678)")
+    return digits
+
+
 # (요청: 클라이언트 -body(데이터)-> 서버)
 # ── 유저 요청 ──────────────
 
@@ -27,10 +36,7 @@ class UserRegisterRequest(BaseModel):
     @field_validator("phone_number")
     @classmethod
     def normalize_phone(cls, v):
-        digits = re.sub(r"[-\s]", "", v.strip())   # 하이픈, 공백 제거
-        if not re.fullmatch(r"010\d{8}", digits):  # 010XXXXXXXX 형식 검증
-            raise ValueError("올바른 전화번호 형식이 아닙니다. (예: 01012345678)")
-        return digits
+        return _normalize_phone(v)
 
     @field_validator("password")  # 특정 필드(비번) 하나
     # userregisterrequest 객체가 없는 상태라서 클래스(cls) 받음
@@ -97,10 +103,7 @@ class KakaoSetupRequest(BaseModel):
     @field_validator("phone_number")
     @classmethod
     def normalize_phone(cls, v):
-        digits = re.sub(r"[-\s]", "", v.strip())
-        if not re.fullmatch(r"010\d{8}", digits):
-            raise ValueError("올바른 전화번호 형식이 아닙니다. (예: 01012345678)")
-        return digits
+        return _normalize_phone(v)
 
 
 # ── SMS 요청 ───────────────
@@ -114,10 +117,7 @@ class SmsSendRequest(BaseModel):
     @field_validator("phone_number")
     @classmethod
     def normalize_phone(cls, v):
-        digits = re.sub(r"[-\s]", "", v.strip())
-        if not re.fullmatch(r"010\d{8}", digits):
-            raise ValueError("올바른 전화번호 형식이 아닙니다. (예: 01012345678)")
-        return digits
+        return _normalize_phone(v)
 
 
 class SmsVerifyRequest(BaseModel):
@@ -129,10 +129,7 @@ class SmsVerifyRequest(BaseModel):
     @field_validator("phone_number")
     @classmethod
     def normalize_phone(cls, v):
-        digits = re.sub(r"[-\s]", "", v.strip())
-        if not re.fullmatch(r"010\d{8}", digits):
-            raise ValueError("올바른 전화번호 형식이 아닙니다. (예: 01012345678)")
-        return digits
+        return _normalize_phone(v)
 
 
 # ── 비밀번호 찾기 요청 ────────────────
