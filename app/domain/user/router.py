@@ -242,6 +242,7 @@ async def upload_document(
     )
     return document
 
+
 @router.get("/me/documents", response_model=list[DocumentResponse])
 async def get_my_documents(
     current_user: User = Depends(get_current_user),
@@ -249,6 +250,7 @@ async def get_my_documents(
 ):
     """마이페이지: 내 서류 목록 조회"""
     return await get_documents_by_user_id(current_user.user_id, db)
+
 
 # 204: 삭제 후 응답 바디 X(성공했지만 돌려줄 내용 x)
 @router.delete("/me/documents/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -271,6 +273,7 @@ async def remove_document(
         )
     await delete_image(document.document_url)  # R2 파일 먼저 삭제
     await delete_document(document_id, db)
+
 
 @router.get("/documents/{document_id}/presigned-url", response_model=DocumentUrlResponse)
 async def get_document_url(
@@ -401,6 +404,13 @@ async def kakao_setup(body: KakaoSetupRequest, db: AsyncSession = Depends(get_db
 
     kakao_id = payload["sub"]
 
+    # admin 역할로는 가입 불가 — admin은 seed 스크립트로 별도 생성
+    if body.user_role == UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="유효하지 않은 역할입니다.",
+        )
+
     # 중복 가입 방지 (setup_token 재사용 시도 등)
     if await get_user_by_kakao_id(kakao_id, db):
         raise HTTPException(
@@ -418,12 +428,6 @@ async def kakao_setup(body: KakaoSetupRequest, db: AsyncSession = Depends(get_db
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="전화번호 인증이 완료되지 않았거나 만료되었습니다. 다시 인증해주세요.",
-        )
-
-    if body.user_role == UserRole.ADMIN:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="유효하지 않은 역할입니다.",
         )
 
     user = await create_kakao_user(
