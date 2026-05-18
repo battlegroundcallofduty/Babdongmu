@@ -1,5 +1,9 @@
 # 밥동무 데이터베이스 설계
 
+밥동무의 테이블 구조, ORM 모델 위치, migration 운영 방법을 정리한 문서입니다.
+
+관련 문서: [README](../README.md) · [기능 명세](FEATURES.md) · [ERD](bab_donmu_erd.html)
+
 ## 기술 스택
 - **DB**: PostgreSQL 16
 - **ORM**: SQLAlchemy 2.x (asyncio / Mapped 스타일)
