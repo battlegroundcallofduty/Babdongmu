@@ -1,26 +1,159 @@
 # 밥동무
 
-독거 어르신을 위한 식사 동반 플랫폼 - FastAPI 백엔드
+<p align="center">
+  <strong>독거 어르신의 집안일과 식사 시간을 생활 봉사로 연결하는 플랫폼</strong>
+</p>
 
-https://babdongmu.duckdns.org/
+<p align="center">
+  <a href="https://babdongmu.duckdns.org/">Live Demo</a>
+  ·
+  <a href="docs/FEATURES.md">기능 명세</a>
+  ·
+  <a href="docs/DATABASE.md">DB 설계</a>
+  ·
+  <a href="presentation/babdongmu-demo.html">발표 슬라이드</a>
+</p>
 
-## 기술 스택
+<p align="center">
+  <img alt="Python 3.12" src="https://img.shields.io/badge/Python-3.12-111111?logo=python">
+  <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-0.115-111111?logo=fastapi">
+  <img alt="SQLAlchemy" src="https://img.shields.io/badge/SQLAlchemy-2.x-111111">
+  <img alt="PostgreSQL" src="https://img.shields.io/badge/PostgreSQL-16-111111?logo=postgresql">
+  <img alt="Docker" src="https://img.shields.io/badge/Docker-ready-111111?logo=docker">
+</p>
 
-- **Framework**: FastAPI (Python 3.11)
-- **Database**: SQLite (로컬) / PostgreSQL (프로덕션), SQLAlchemy 2.x async + Alembic
-- **Auth**: JWT (PyJWT + bcrypt)
-- **Infra**: Docker, AWS EC2, Caddy, GitHub Actions
+밥동무는 독거 어르신이 혼자 감당하기 어려운 청소, 쓰레기 배출 같은 일상 도움과 따뜻한 식사 시간을 하나의 방문 경험으로 연결합니다. 보호자는 어르신의 밥자리를 등록하고, 봉사자는 필요한 생활 봉사를 한 뒤 함께 식사를 나누며, 관리자는 기록과 봉사시간을 확인합니다.
 
-## 로컬 실행
+---
 
-### 1. 환경 설정
+## Team
+
+- 개발 기간 : 2026.04.06 - 2026.05.15
+- 구성 : 5인 팀 프로젝트
+
+| 이름 | 도메인 | 백엔드 | 프론트엔드 |
+|------|------------|------------|----------------|
+| **[김상혁](https://github.com/gabriel-1204)** | 인프라 / 배포 | 스켈레톤, Docker, CI/CD, 배포 | 랜딩페이지 |
+| **[나솔림](https://github.com/solrimna)** | 관리자 / AI | 대시보드 API, 호스팅 승인, 통계, CoolSMS, Gemini AI 소개글 | admin.html |
+| **[박지영](https://github.com/battlegroundcallofduty)** | 회원 / 인증 | 회원가입, 로그인, JWT, 서류 업로드, 신원검증 | login, register, mypage |
+| **[서호근](https://github.com/azure5finger-cmyk)** | 어르신 / 호스팅 | 어르신 CRUD, 호스팅 CRUD, 보호자 관리 | guardian, hostings, hosting-detail |
+| **[유민지](https://github.com/kittyjoa)** | 매칭 / 후기 | 매칭 신청, 체크인/아웃, 봉사시간, 후기 | my-matches |
+
+---
+
+## Why
+
+혼자 사는 어르신에게 어려운 일은 거창한 문제가 아닐 때가 많습니다. 쓰레기를 버리는 일, 집을 정리하는 일, 냉장고를 열어도 함께 먹을 사람이 없는 시간이 쌓이면서 일상은 더 외로워집니다.
+
+밥동무는 이 문제를 “밥만 같이 먹는 서비스”로 보지 않습니다. 봉사자가 먼저 필요한 일을 돕고, 그 끝에서 식사 시간을 함께 나누며 관계가 생기도록 설계했습니다.
+
+| 문제 | 밥동무의 접근 |
+|------|---------------|
+| 어르신의 일상 부담 | 보호자가 도움이 필요한 어르신과 호스팅을 등록합니다. |
+| 봉사 활동의 현장 기록 | QR 체크인·체크아웃으로 방문 시작과 종료를 남깁니다. |
+| 보호자의 불안 | 체크인·체크아웃과 매칭 상태를 SMS와 관리자 기록으로 확인합니다. |
+| 봉사시간 정산 | 관리자가 실제 기록을 보고 최종 봉사시간을 부여합니다. |
+
+---
+
+## How It Works
+
+| 역할 | 사용 흐름 |
+|------|-----------|
+| 보호자 | 회원가입 후 어르신을 등록하고, 필요한 날짜와 장소로 호스팅을 엽니다. |
+| 봉사자 | 승인된 계정으로 호스팅을 조회하고 신청한 뒤, 현장에서 QR로 방문을 기록합니다. |
+| 관리자 | 신원 서류를 승인·반려하고, 방문 기록을 확인해 봉사시간과 통계를 관리합니다. |
+
+```mermaid
+flowchart LR
+    Guardian["보호자"] --> Senior["어르신 등록"]
+    Senior --> Hosting["호스팅 개설"]
+    Volunteer["봉사자"] --> Apply["호스팅 신청"]
+    Hosting --> Apply
+    Apply --> QR["QR 체크인·체크아웃"]
+    QR --> Review["후기 작성"]
+    QR --> Admin["관리자 확인"]
+    Admin --> Hours["봉사시간 부여"]
+```
+
+---
+
+## Demo
+
+| 회원가입 | 보호자 호스팅 등록 |
+|----------|--------------------|
+| ![회원가입](presentation/assets/1_회원가입.gif) | ![보호자 호스팅 등록](presentation/assets/2_보호자_호스팅등록.gif) |
+
+| 봉사자 호스팅 신청 | QR 체크인·체크아웃 |
+|--------------------|--------------------|
+| ![봉사자 호스팅 신청](presentation/assets/3_봉사자_호스팅신청.gif) | ![체크인 체크아웃](presentation/assets/4_체크인_체크아웃.gif) |
+
+| 매칭 후기 작성 | 관리자 승인 | 어르신 QR 확인 |
+|----------------|-------------|----------------|
+| ![매칭 후기 작성](presentation/assets/5_매칭후기작성.gif) | ![관리자 승인](presentation/assets/기타_관리자_승인.gif) | ![어르신 QR 확인](presentation/assets/기타_어르신_QR확인.gif) |
+
+---
+
+## Features
+
+| 영역 | 핵심 기능 |
+|------|-----------|
+| 회원·인증 | 이메일 로그인, JWT 인증, 역할 기반 접근, 서류 업로드와 신원검증 |
+| 어르신 관리 | 보호자 전용 어르신 등록, 주소·특이사항·수용 인원 관리, QR UUID 발급 |
+| 호스팅 | 날짜, 장소, 식사 메뉴, 모집 인원을 설정해 밥자리 개설 |
+| 매칭 | 승인된 봉사자가 호스팅에 신청하고 방문 기록을 남기는 선착순 흐름 |
+| QR 방문 기록 | 어르신별 QR로 체크인·체크아웃을 기록해 현장 방문을 확인 |
+| 후기 | 체크아웃 완료 후 후기 작성, 후기 기반 Gemini AI 소개글 생성 |
+| 관리자 | 서류 승인·반려, 봉사시간 최종 부여, 통계 확인 |
+| 알림·파일 | Solapi SMS, Cloudflare R2 파일 저장, 스케줄러 기반 상태 전환 |
+
+---
+
+## Architecture
+
+```mermaid
+flowchart TB
+    User["사용자 브라우저"] --> Frontend["HTML / CSS / JavaScript"]
+    Frontend --> API["FastAPI / API v1"]
+    API --> Domain["Domain Services"]
+    Domain --> DB["SQLite local / PostgreSQL prod"]
+    Domain --> R2["Cloudflare R2"]
+    Domain --> SMS["Solapi SMS"]
+    Domain --> Gemini["Gemini AI"]
+    Scheduler["Hosting Scheduler"] --> Domain
+    GitHub["GitHub Actions"] --> EC2["AWS EC2 + Docker + Caddy"]
+    EC2 --> API
+```
+
+| 레이어 | 구성 |
+|--------|------|
+| Frontend | 정적 HTML, 공통 CSS, 페이지별 JavaScript |
+| API | FastAPI, JWT 인증, `/api/v1` 라우터 |
+| Domain | user, senior, hosting, match, review, admin, ai 도메인 분리 |
+| Database | SQLAlchemy 2.x async, Alembic migration, SQLite/PostgreSQL |
+| External | Solapi SMS, Cloudflare R2, Gemini AI |
+| Deploy | Docker Compose, Caddy, AWS EC2, GitHub Actions |
+
+---
+
+## Getting Started
+
+### 1. 환경 변수 준비
 
 ```bash
 cp .env.example .env
-# .env 파일에서 SECRET_KEY 등 설정
 ```
 
-### 2-A. pip으로 실행
+`.env`에서 `SECRET_KEY`, `DATABASE_URL`, SMS/R2/Gemini 관련 값을 환경에 맞게 설정합니다. 로컬 SQLite로 시작하면 별도 PostgreSQL 없이도 실행할 수 있습니다.
+
+### 2-A. uv로 실행
+
+```bash
+uv sync
+uv run uvicorn app.main:app --reload
+```
+
+### 2-B. pip으로 실행
 
 ```bash
 python -m venv venv
@@ -29,246 +162,93 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-### 2-B. uv로 실행
-
-```bash
-uv sync
-uv run uvicorn app.main:app --reload
-```
-
 ### 2-C. Docker로 실행
 
 ```bash
 docker compose up --build
 ```
 
-### DB 초기화 동작 방식
+### 3. 확인
+
+- Frontend: http://localhost:8000
+- Swagger UI: http://localhost:8000/docs
+- OpenAPI JSON: http://localhost:8000/openapi.json
+
+---
+
+## Database & Migration
 
 | 상황 | 동작 |
 |------|------|
-| `babdongmu.db` 없음 (최초 실행) | 서버 시작 시 `create_all`로 자동 생성 |
-| `babdongmu.db` 있음 + `DEBUG=True` | 서버 시작 시 `alembic upgrade head` 자동 실행 |
-| `babdongmu.db` 있음 + `DEBUG=False` | 아무것도 안 함 |
-| 프로덕션 (PostgreSQL) | `deploy.yml`에서 `alembic upgrade head` 실행 |
+| `babdongmu.db` 없음 | 서버 시작 시 SQLite 테이블을 자동 생성하고 Alembic head로 기록합니다. |
+| `babdongmu.db` 있음 + `DEBUG=True` | 서버 시작 시 `alembic upgrade head`를 자동 실행합니다. |
+| `babdongmu.db` 있음 + `DEBUG=False` | 자동 migration을 실행하지 않습니다. |
+| 프로덕션 PostgreSQL | GitHub Actions 배포 과정에서 `alembic upgrade head`를 실행합니다. |
 
-### 모델/DB 스키마가 바뀐 직후 pull 받았을 때
-
-`.env`에 `DEBUG=True`가 설정되어 있으면 서버 시작 시 자동으로 migration이 적용됩니다.
-
-`no such column` 같은 에러가 나거나 DB를 완전히 초기화하고 싶으면:
+모델 변경 후 직접 migration을 만들 때는 아래 명령을 사용합니다.
 
 ```bash
-# 서버 중지 후
-rm babdongmu.db
-uvicorn app.main:app --reload  # 자동으로 create_all 실행
-```
-
-## API 문서
-
-서버 실행 후 아래 주소에서 Swagger UI 확인:
-
-- http://localhost:8000/docs
-
-## 린터 (Ruff)
-
-코드 품질 유지를 위해 [Ruff](https://docs.astral.sh/ruff/)를 사용합니다. 설정은 `pyproject.toml`에 정의되어 있습니다.
-
-```bash
-# 설치
-pip install ruff
-
-# 린트 검사
-ruff check app/
-
-# 자동 수정
-ruff check app/ --fix
-
-# 코드 포맷팅
-ruff format app/
-```
-
-## 프로젝트 구조
-
-```
-app/                             # 백엔드 (FastAPI)
-├── main.py                      # FastAPI 앱 진입점
-├── config.py                    # 환경변수 설정
-├── database.py                  # MongoDB 연결 관리
-├── scheduler.py                 # 호스팅 상태 자동 전환 스케줄러
-├── core/
-│   └── security.py              # JWT + 비밀번호 해싱
-├── api/v1/
-│   └── router.py                # API 라우터 통합
-├── domain/
-│   ├── common/
-│   │   └── models.py                # Address 공유 모델
-│   ├── user/                    # 유저 (봉사자/보호자/관리자)
-│   │   ├── models.py                # 유저 문서 스키마
-│   │   ├── schemas.py                # 요청/응답 DTO
-│   │   ├── router.py                # 인증 API 엔드포인트
-│   │   ├── service.py               # 비즈니스 로직
-│   │   └── dependency.py            # 인증 의존성
-│   ├── senior/                  # 어르신
-│   │   ├── models.py                # 어르신 문서 스키마
-│   │   ├── schemas.py                # 요청/응답 DTO
-│   │   ├── router.py                # 어르신 API 엔드포인트
-│   │   └── service.py               # 비즈니스 로직
-│   ├── hosting/                 # 호스팅
-│   │   ├── models.py                # 호스팅 문서 스키마
-│   │   ├── schemas.py                # 요청/응답 DTO
-│   │   ├── router.py                # 호스팅 API 엔드포인트
-│   │   └── service.py               # 비즈니스 로직
-│   ├── match/                   # 매칭
-│   │   ├── models.py                # 매칭 문서 스키마
-│   │   ├── schemas.py                # 요청/응답 DTO
-│   │   ├── router.py                # 매칭 API 엔드포인트
-│   │   └── service.py               # 비즈니스 로직
-│   ├── review/                  # 후기
-│   │   ├── models.py                # 후기 문서 스키마
-│   │   ├── schemas.py                # 요청/응답 DTO
-│   │   ├── router.py                # 후기 API 엔드포인트
-│   │   └── service.py               # 비즈니스 로직
-│   ├── admin/                   # 관리자
-│   │   ├── router.py                # 관리자 API 엔드포인트
-│   │   └── service.py               # 비즈니스 로직
-│   └── ai/                      # Gemini AI 소개글
-│       └── router.py                # AI 소개글 생성 엔드포인트
-└── services/
-    ├── sms.py                       # Solapi SMS 발송 유틸리티
-    ├── ai.py                        # Gemini 소개글 생성
-    ├── qr.py                        # QR 코드 생성
-    └── r2.py                        # Cloudflare R2 파일 업로드
-frontend/                        # 프론트엔드 (HTML/CSS/JS)
-├── index.html                   # 랜딩 페이지
-├── css/
-│   └── common.css               # 공통 스타일 (DESIGN.md 기반)
-├── js/
-│   ├── api.js                   # API 공통 헬퍼
-│   ├── authGuard.js             # 인증/권한 가드
-│   ├── base.js                  # 공통 초기화 (네비게이션 등)
-│   ├── addressMapper.js         # 카카오 주소 데이터 매핑
-│   ├── login.js                 # 로그인
-│   ├── register.js              # 회원가입
-│   ├── mypage.js                # 마이페이지
-│   └── admin.js                 # 관리자 대시보드
-└── pages/
-    ├── login.html               # 로그인
-    ├── register.html            # 회원가입
-    ├── hostings.html            # 호스팅 목록 (보호자)
-    ├── hosting-match.html       # 호스팅 목록 (봉사자)
-    ├── hosting-detail.html      # 호스팅 상세 (봉사자/보호자)
-    ├── my-matches.html          # 내 매칭
-    ├── mypage.html              # 마이페이지
-    ├── guardian.html            # 보호자 관리
-    ├── admin.html               # 관리자 대시보드
-    ├── review-detail.html       # 후기 상세
-    └── check.html               # QR 체크인/체크아웃
-tests/                           # 테스트
-├── conftest.py                  # TestClient fixture
-└── test_user.py                 # 유저 인증 테스트
+alembic revision --autogenerate -m "변경내용"
+alembic upgrade head
 ```
 
 ---
 
-## Git 작업 가이드
+## Project Structure
 
-### 0. Git 명령어 기본 용어
+```text
+app/
+├── main.py                 # FastAPI 앱 진입점
+├── database.py             # SQLAlchemy async DB 연결과 로컬 migration 처리
+├── scheduler.py            # 호스팅 상태 자동 전환 스케줄러
+├── api/v1/router.py        # API 라우터 통합
+├── core/security.py        # JWT와 비밀번호 해싱
+├── domain/                 # 역할과 기능별 도메인
+└── services/               # SMS, R2, QR, Gemini 연동
 
-| 용어 | 의미 | 예시 |
-|------|------|------|
-| `origin` | GitHub 원격 저장소의 별명 | `origin` = `https://github.com/gabriel-1204/Babdongmu.git` |
-| `feature/user` | 내 컴퓨터(로컬)의 브랜치 | `git checkout feature/user` |
-| `origin/main` | GitHub(원격)의 main 브랜치 | `git merge origin/main` |
+frontend/
+├── index.html              # 랜딩 페이지
+├── css/common.css          # 공통 스타일
+├── js/                     # 페이지별 동작
+└── pages/                  # 로그인, 회원가입, 호스팅, 관리자 등 화면
 
-**origin을 붙이는 기준:**
-- **내 컴퓨터에서 이동**할 때 → origin 안 붙임 (`git checkout feature/user`)
-- **GitHub의 코드를 참조**할 때 → origin 붙임 (`git merge origin/main`, `git push origin 내브랜치`)
+docs/
+├── FEATURES.md             # 기능 명세
+├── DATABASE.md             # DB 설계
+└── bab_donmu_erd.html      # ERD
+```
 
-자주 쓰는 명령어 정리:
+---
 
-| 명령어 | 하는 일 |
-|--------|---------|
-| `git fetch origin` | GitHub에서 최신 정보를 가져옴 (내 코드는 안 바뀜) |
-| `git merge origin/main` | GitHub의 main 코드를 내 브랜치에 합침 |
-| `git checkout 브랜치명` | 다른 브랜치로 이동 |
-| `git status` | 변경된 파일 목록 확인 |
-| `git add 파일명` | 커밋할 파일을 지정 |
-| `git commit -m "메시지"` | 변경사항을 저장 (커밋) |
-| `git push origin 브랜치명` | 내 커밋을 GitHub에 업로드 |
+## Docs
 
-### 1. PR 올리기 전 main 최신화 필수
+| 문서 | 설명 |
+|------|------|
+| [기능 명세](docs/FEATURES.md) | 역할별 기능, 호스팅·매칭 상태, SMS 트리거를 정리합니다. |
+| [DB 설계](docs/DATABASE.md) | 테이블, 컬럼, migration 운영 방법을 정리합니다. |
+| [ERD](docs/bab_donmu_erd.html) | 데이터 관계를 시각적으로 확인합니다. |
+| [발표 슬라이드](presentation/babdongmu-demo.html) | 최종 시연 발표용 웹 슬라이드입니다. |
 
-PR을 올리기 전에 반드시 최신 main을 내 브랜치에 반영해야 합니다.
+---
+
+## Development
 
 ```bash
-git fetch origin
-git merge origin/main
-# 충돌이 있으면 해결 후 커밋
+ruff check app/
+ruff format app/
+pytest
 ```
 
-### 2. `git add .` 사용 금지
+커밋 전에는 `git status`로 변경 파일을 확인하고, 필요한 파일만 명시적으로 스테이징합니다.
 
-`git add .`이나 `git add -A`를 사용하면 **본인이 수정하지 않은 파일까지 커밋에 포함**됩니다.
+---
 
-#### 올바른 커밋 순서
+## My Contributions
 
-```bash
-# 1단계: 변경된 파일 목록 확인
-git status
+<!-- 본인이 직접 구현한 기능 목록과 간략한 설명을 작성합니다. -->
 
-# 2단계: 본인이 작업한 파일만 골라서 추가
-git add app/domain/hosting/service.py
-git add app/domain/hosting/router.py
+---
 
-# 3단계: 스테이징된 파일이 내 것만인지 다시 확인
-git diff --staged --stat
+## Code Review & Trouble Shooting
 
-# 4단계: 커밋
-git commit -m "[hosting] 호스팅 신청 서비스 구현"
-```
-
-#### 특정 폴더 안의 파일만 추가하고 싶을 때
-
-```bash
-# 본인 담당 폴더만 추가
-git add app/domain/hosting/
-```
-
-#### 실수로 다른 파일까지 add 했을 때
-
-```bash
-# 특정 파일을 스테이징에서 제거 (파일 내용은 유지됨)
-git restore --staged app/config.py
-```
-
-### 3. 공통 파일 수정 시 팀 공유
-
-아래 파일들은 여러 파트에서 사용하므로, 수정 전에 반드시 팀에 알려주세요.
-
-| 공통 파일 | 역할 |
-|-----------|------|
-| `app/config.py` | 환경변수 설정 |
-| `app/database.py` | DB 연결 관리 |
-| `app/main.py` | FastAPI 앱 진입점 |
-| `app/api/v1/router.py` | API 라우터 통합 |
-| `requirements.txt` | 패키지 의존성 |
-
-공통 파일 수정이 필요하면:
-1. 팀 채팅에 수정 내용 공유
-2. **별도 PR로 먼저 머지**
-3. 나머지 팀원이 `git fetch origin && git merge origin/main`으로 반영
-
-### 4. 전체 작업 흐름 요약
-
-```
-작업 시작
-  └─ git fetch origin && git merge origin/main   (최신화)
-  └─ 코드 작업
-  └─ git status                                   (변경 파일 확인)
-  └─ git add 내파일만                              (본인 파일만 추가)
-  └─ git diff --staged --stat                     (스테이징 확인)
-  └─ git commit -m "[파트] 작업내용"                (커밋)
-  └─ git fetch origin && git merge origin/main    (PR 전 다시 최신화)
-  └─ git push origin 내브랜치                      (푸시)
-  └─ GitHub에서 PR 생성
-```
+<!-- 코드 리뷰 내용, 발견한 버그와 해결 과정을 작성합니다. -->
