@@ -1,0 +1,1549 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="밥동무 최종시연 발표 웹 슬라이드">
+  <title>밥동무 최종시연 발표</title>
+  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansBold.woff2" rel="preload" as="font" type="font/woff2" crossorigin>
+  <style>
+    /* ===========================================
+       THEME — WARM DOCUMENTARY EDITORIAL
+       =========================================== */
+    @font-face {
+      font-family: 'Gmarket Sans';
+      src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansBold.woff2') format('woff2');
+      font-weight: 700;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    :root {
+      --stage: #211A16;
+      --stage-soft: #33251E;
+      --paper: #FFF8EF;
+      --paper-deep: #F2DEC8;
+      --ink: #241A15;
+      --ink-soft: #46342B;
+      --ink-muted: #6A5143;
+      --line: rgba(158, 79, 37, 0.22);
+      --terracotta: #D4763C;
+      --terracotta-deep: #9E4F25;
+      --sage: #5B8C5A;
+      --mustard: #D4A63C;
+      --cream: #FBF1E6;
+      --white-glow: rgba(255, 255, 255, 0.72);
+      --shadow-warm: 0 clamp(1rem, 2.4vw, 1.8rem) clamp(2.4rem, 5.2vw, 4.5rem) rgba(23, 14, 10, 0.34);
+      --font-display: 'Gmarket Sans', 'Pretendard Variable', sans-serif;
+      --font-body: 'Pretendard Variable', sans-serif;
+      --title-size: clamp(2.2rem, 6vw, 5.5rem);
+      --h2-size: clamp(1.55rem, 3.5vw, 3.05rem);
+      --h3-size: clamp(0.98rem, 1.8vw, 1.35rem);
+      --body-size: clamp(0.78rem, 1.28vw, 1.08rem);
+      --small-size: clamp(0.66rem, 0.96vw, 0.84rem);
+      --slide-padding: clamp(1rem, 2.6vw, 2.4rem);
+      --content-gap: clamp(0.75rem, 2vw, 1.8rem);
+      --element-gap: clamp(0.38rem, 1vw, 0.85rem);
+      --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+      --duration-normal: 0.7s;
+    }
+
+    /* ===========================================
+       RESET
+       =========================================== */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* ===========================================
+       VIEWPORT FITTING: MANDATORY BASE STYLES
+       Include this ENTIRE file in every presentation.
+       These styles ensure slides fit exactly in the viewport.
+       =========================================== */
+
+    /* 1. Lock html/body to viewport */
+    html, body {
+        height: 100%;
+        overflow-x: hidden;
+    }
+
+    html {
+        scroll-snap-type: y mandatory;
+        scroll-behavior: smooth;
+    }
+
+    /* 2. Each slide = exact viewport height */
+    .slide {
+        width: 100vw;
+        height: 100vh;
+        height: 100dvh; /* Dynamic viewport height for mobile browsers */
+        overflow: hidden; /* CRITICAL: Prevent ANY overflow */
+        scroll-snap-align: start;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+    }
+
+    /* 3. Content container with flex for centering */
+    .slide-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        max-height: 100%;
+        overflow: hidden; /* Double-protection against overflow */
+        padding: var(--slide-padding);
+    }
+
+    /* 4. ALL typography uses clamp() for responsive scaling */
+    :root {
+        /* Titles scale from mobile to desktop */
+        --title-size: clamp(1.5rem, 5vw, 4rem);
+        --h2-size: clamp(1.25rem, 3.5vw, 2.5rem);
+        --h3-size: clamp(1rem, 2.5vw, 1.75rem);
+
+        /* Body text */
+        --body-size: clamp(0.75rem, 1.5vw, 1.125rem);
+        --small-size: clamp(0.65rem, 1vw, 0.875rem);
+
+        /* Spacing scales with viewport */
+        --slide-padding: clamp(1rem, 4vw, 4rem);
+        --content-gap: clamp(0.5rem, 2vw, 2rem);
+        --element-gap: clamp(0.25rem, 1vw, 1rem);
+    }
+
+    /* 5. Cards/containers use viewport-relative max sizes */
+    .card, .container, .content-box {
+        max-width: min(90vw, 1000px);
+        max-height: min(80vh, 700px);
+    }
+
+    /* 6. Lists auto-scale with viewport */
+    .feature-list, .bullet-list {
+        gap: clamp(0.4rem, 1vh, 1rem);
+    }
+
+    .feature-list li, .bullet-list li {
+        font-size: var(--body-size);
+        line-height: 1.4;
+    }
+
+    /* 7. Grids adapt to available space */
+    .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+        gap: clamp(0.5rem, 1.5vw, 1rem);
+    }
+
+    /* 8. Images constrained to viewport */
+    img, .image-container {
+        max-width: 100%;
+        max-height: min(50vh, 400px);
+        object-fit: contain;
+    }
+
+    /* ===========================================
+       RESPONSIVE BREAKPOINTS
+       Aggressive scaling for smaller viewports
+       =========================================== */
+
+    /* Short viewports (< 700px height) */
+    @media (max-height: 700px) {
+        :root {
+            --slide-padding: clamp(0.75rem, 3vw, 2rem);
+            --content-gap: clamp(0.4rem, 1.5vw, 1rem);
+            --title-size: clamp(1.25rem, 4.5vw, 2.5rem);
+            --h2-size: clamp(1rem, 3vw, 1.75rem);
+        }
+    }
+
+    /* Very short viewports (< 600px height) */
+    @media (max-height: 600px) {
+        :root {
+            --slide-padding: clamp(0.5rem, 2.5vw, 1.5rem);
+            --content-gap: clamp(0.3rem, 1vw, 0.75rem);
+            --title-size: clamp(1.1rem, 4vw, 2rem);
+            --body-size: clamp(0.7rem, 1.2vw, 0.95rem);
+        }
+
+        /* Hide non-essential elements */
+        .nav-dots, .keyboard-hint, .decorative {
+            display: none;
+        }
+    }
+
+    /* Extremely short (landscape phones, < 500px height) */
+    @media (max-height: 500px) {
+        :root {
+            --slide-padding: clamp(0.4rem, 2vw, 1rem);
+            --title-size: clamp(1rem, 3.5vw, 1.5rem);
+            --h2-size: clamp(0.9rem, 2.5vw, 1.25rem);
+            --body-size: clamp(0.65rem, 1vw, 0.85rem);
+        }
+    }
+
+    /* Narrow viewports (< 600px width) */
+    @media (max-width: 600px) {
+        :root {
+            --title-size: clamp(1.25rem, 7vw, 2.5rem);
+        }
+
+        /* Stack grids vertically */
+        .grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* ===========================================
+       REDUCED MOTION
+       Respect user preferences
+       =========================================== */
+    @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+            animation-duration: 0.01ms !important;
+            transition-duration: 0.2s !important;
+        }
+
+        html {
+            scroll-behavior: auto;
+        }
+    }
+
+    /* ===========================================
+       GLOBAL PRESENTATION STAGE
+       =========================================== */
+    html {
+      scrollbar-width: none;
+    }
+
+    html::-webkit-scrollbar,
+    body::-webkit-scrollbar {
+      display: none;
+    }
+
+    body {
+      font-family: var(--font-body);
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 8% 18%, rgba(212, 118, 60, 0.18), transparent 26%),
+        radial-gradient(circle at 92% 88%, rgba(91, 140, 90, 0.16), transparent 30%),
+        linear-gradient(135deg, var(--stage) 0%, var(--stage-soft) 100%);
+      word-break: keep-all;
+      font-variant-numeric: tabular-nums;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.05;
+      z-index: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+
+    .slide {
+      display: grid;
+      place-items: center;
+      padding: 0;
+      counter-increment: slide;
+      background:
+        radial-gradient(circle at var(--orb-x, 20%) var(--orb-y, 20%), rgba(212, 118, 60, 0.13), transparent 34%),
+        linear-gradient(145deg, #FFF8EF 0%, #F2DEC8 100%);
+    }
+
+    .slide:nth-of-type(3n) { --orb-x: 82%; --orb-y: 22%; }
+    .slide:nth-of-type(3n + 1) { --orb-x: 24%; --orb-y: 84%; }
+    .slide:nth-of-type(3n + 2) { --orb-x: 12%; --orb-y: 18%; }
+
+    .slide-content {
+      position: relative;
+      flex: initial;
+      width: min(1100px, calc(100vw - clamp(2rem, 6vw, 5rem)));
+      height: 100vh;
+      height: 100dvh;
+      min-height: 0;
+      margin: 0 auto;
+      padding: clamp(2rem, 5vw, 4.25rem) 0;
+      display: grid;
+      align-items: center;
+      justify-items: stretch;
+      gap: var(--content-gap);
+      overflow: hidden;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+      z-index: 1;
+    }
+
+    .slide-content::before {
+      content: none;
+    }
+
+    .slide-content::after {
+      content: counter(slide, decimal-leading-zero);
+      position: absolute;
+      right: 0;
+      bottom: clamp(1.4rem, 3vw, 2.5rem);
+      color: rgba(36, 26, 21, 0.12);
+      font-family: var(--font-display);
+      font-size: clamp(2rem, 5vw, 4.4rem);
+      line-height: 1;
+    }
+
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      gap: clamp(0.35rem, 0.7vw, 0.55rem);
+      padding: clamp(0.36rem, 0.72vw, 0.52rem) clamp(0.7rem, 1.2vw, 0.95rem);
+      border: 1px solid rgba(158, 79, 37, 0.22);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.72);
+      color: var(--terracotta-deep);
+      font-size: clamp(0.67rem, 0.96vw, 0.82rem);
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      box-shadow: 0 clamp(0.3rem, 0.7vw, 0.55rem) clamp(0.8rem, 1.6vw, 1.2rem) rgba(71, 45, 33, 0.08);
+    }
+
+    .kicker::before {
+      content: '';
+      width: clamp(0.46rem, 0.8vw, 0.58rem);
+      height: clamp(0.46rem, 0.8vw, 0.58rem);
+      border-radius: 50%;
+      background: var(--sage);
+      box-shadow: 0 0 0 clamp(0.14rem, 0.32vw, 0.24rem) rgba(91, 140, 90, 0.18);
+    }
+
+    h1,
+    h2,
+    h3 {
+      font-family: var(--font-display);
+      color: var(--ink);
+      letter-spacing: -0.055em;
+      line-height: 1.08;
+      text-wrap: balance;
+    }
+
+    h1 {
+      font-size: clamp(3.5rem, 9vw, 7.9rem);
+    }
+
+    h2 {
+      font-size: var(--h2-size);
+      max-width: min(900px, 90vw);
+    }
+
+    h3 {
+      font-size: var(--h3-size);
+    }
+
+    p,
+    li,
+    span {
+      color: var(--ink-soft);
+      font-size: var(--body-size);
+      line-height: 1.62;
+    }
+
+    strong {
+      color: var(--ink);
+      font-weight: 850;
+    }
+
+    .mark {
+      color: var(--terracotta-deep);
+    }
+
+    .reveal,
+    .reveal-left,
+    .reveal-scale {
+      opacity: 0;
+      transition:
+        opacity var(--duration-normal) var(--ease-out-expo),
+        transform var(--duration-normal) var(--ease-out-expo),
+        filter var(--duration-normal) var(--ease-out-expo);
+    }
+
+    .reveal {
+      transform: translateY(clamp(0.9rem, 2vw, 1.5rem));
+    }
+
+    .reveal-left {
+      transform: translateX(calc(-1 * clamp(1rem, 2.5vw, 2rem)));
+    }
+
+    .reveal-scale {
+      transform: scale(0.96);
+      filter: blur(0.2rem);
+    }
+
+    .slide.visible .reveal,
+    .slide.visible .reveal-left,
+    .slide.visible .reveal-scale {
+      opacity: 1;
+      transform: translate(0, 0) scale(1);
+      filter: blur(0);
+    }
+
+    .delay-1 { transition-delay: 0.08s; }
+    .delay-2 { transition-delay: 0.16s; }
+    .delay-3 { transition-delay: 0.24s; }
+    .delay-4 { transition-delay: 0.32s; }
+    .delay-5 { transition-delay: 0.40s; }
+
+    /* ===========================================
+       NAVIGATION
+       =========================================== */
+    .progress-bar {
+      position: fixed;
+      left: 0;
+      top: 0;
+      height: clamp(0.18rem, 0.38vw, 0.28rem);
+      width: 0;
+      z-index: 1000;
+      background: linear-gradient(90deg, var(--terracotta), var(--sage));
+      transition: width 0.2s ease;
+    }
+
+    .nav-dots {
+      position: fixed;
+      right: clamp(0.55rem, 1.2vw, 1rem);
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 999;
+      display: flex;
+      flex-direction: column;
+      gap: clamp(0.32rem, 0.65vw, 0.5rem);
+    }
+
+    .nav-dot {
+      width: clamp(0.45rem, 0.78vw, 0.62rem);
+      height: clamp(0.45rem, 0.78vw, 0.62rem);
+      border: 1px solid rgba(255, 248, 239, 0.52);
+      border-radius: 999px;
+      background: rgba(255, 248, 239, 0.28);
+      cursor: pointer;
+      transition: transform 0.25s var(--ease-out-expo), background 0.25s ease;
+    }
+
+    .nav-dot.active {
+      background: var(--terracotta);
+      transform: scale(1.45);
+      border-color: var(--terracotta);
+    }
+
+    .keyboard-hint {
+      position: fixed;
+      left: clamp(0.75rem, 1.5vw, 1.2rem);
+      bottom: clamp(0.75rem, 1.5vw, 1.2rem);
+      z-index: 999;
+      padding: clamp(0.34rem, 0.7vw, 0.52rem) clamp(0.62rem, 1.2vw, 0.9rem);
+      border: 1px solid rgba(255, 248, 239, 0.24);
+      border-radius: 999px;
+      background: rgba(255, 248, 239, 0.12);
+      color: rgba(255, 248, 239, 0.82);
+      font-size: var(--small-size);
+      backdrop-filter: blur(clamp(0.4rem, 1vw, 0.8rem));
+    }
+
+    /* ===========================================
+       SHARED DESIGN OBJECTS
+       =========================================== */
+    .quote-line {
+      position: relative;
+      padding-left: clamp(0.85rem, 2vw, 1.35rem);
+      border-left: clamp(0.18rem, 0.45vw, 0.3rem) solid var(--terracotta);
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: clamp(0.42rem, 0.9vw, 0.65rem);
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: clamp(0.28rem, 0.55vw, 0.42rem);
+      padding: clamp(0.4rem, 0.8vw, 0.6rem) clamp(0.65rem, 1.2vw, 0.9rem);
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.6);
+      color: var(--ink-soft);
+      font-size: var(--small-size);
+      font-weight: 750;
+    }
+
+    .note-card {
+      border: 1px solid rgba(158, 79, 37, 0.16);
+      border-radius: clamp(1rem, 2vw, 1.45rem);
+      background: rgba(255, 255, 255, 0.68);
+      box-shadow: 0 clamp(0.45rem, 1vw, 0.85rem) clamp(1rem, 2.5vw, 1.8rem) rgba(71, 45, 33, 0.08);
+    }
+
+    .bullet-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: clamp(0.55rem, 1.1vh, 0.9rem);
+    }
+
+    .bullet-list li {
+      position: relative;
+      padding-left: clamp(1.2rem, 2vw, 1.55rem);
+      color: var(--ink-soft);
+      font-size: clamp(0.82rem, 1.18vw, 1rem);
+      line-height: 1.52;
+    }
+
+    .bullet-list li::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: clamp(0.36rem, 0.72vw, 0.52rem);
+      width: clamp(0.48rem, 0.8vw, 0.62rem);
+      height: clamp(0.48rem, 0.8vw, 0.62rem);
+      border-radius: 999px;
+      background: var(--terracotta);
+      box-shadow: 0 0 0 clamp(0.14rem, 0.3vw, 0.22rem) rgba(212, 118, 60, 0.14);
+    }
+
+    /* ===========================================
+       SLIDE-SPECIFIC LAYOUTS
+       =========================================== */
+    .hero-slide {
+      grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
+      gap: clamp(2rem, 4vw, 3.5rem);
+    }
+
+    .hero-copy {
+      display: flex;
+      flex-direction: column;
+      gap: clamp(0.8rem, 1.8vw, 1.35rem);
+      z-index: 2;
+    }
+
+    .hero-copy p {
+      max-width: min(520px, 100%);
+    }
+
+    .video-shell {
+      position: relative;
+      justify-self: stretch;
+      align-self: center;
+    }
+
+    .video-shell::before {
+      content: none;
+    }
+
+    .video-frame {
+      display: block;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      max-height: min(68vh, 560px);
+      border-radius: clamp(0.8rem, 1.8vw, 1.35rem);
+      background: #1D1511;
+      object-fit: cover;
+    }
+
+    .team-photo-shell {
+      justify-self: center;
+      align-self: center;
+      width: min(100%, 440px);
+    }
+
+    .team-photo {
+      display: block;
+      width: 100%;
+      max-height: min(72vh, 560px);
+      border-radius: clamp(0.9rem, 1.8vw, 1.35rem);
+      object-fit: cover;
+      box-shadow: 0 clamp(0.7rem, 1.7vw, 1.3rem) clamp(1.5rem, 3.6vw, 2.8rem) rgba(71, 45, 33, 0.18);
+    }
+
+    .video-only-slide {
+      place-items: center;
+    }
+
+    .video-only-slide .video-shell {
+      width: min(1100px, 100%);
+    }
+
+    .video-only-slide .video-frame {
+      max-height: min(78vh, 640px);
+      box-shadow: 0 clamp(0.8rem, 2vw, 1.5rem) clamp(1.8rem, 4vw, 3.2rem) rgba(71, 45, 33, 0.16);
+    }
+
+    .problem-slide {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 0.86fr);
+      gap: clamp(2rem, 4vw, 3.5rem);
+    }
+
+    .problem-copy {
+      display: flex;
+      flex-direction: column;
+      gap: clamp(0.85rem, 1.8vw, 1.35rem);
+    }
+
+    .daily-stack {
+      display: grid;
+      gap: clamp(0.55rem, 1.2vw, 0.85rem);
+      transform: rotate(-1.5deg);
+    }
+
+    .daily-item {
+      padding: clamp(0.75rem, 1.45vw, 1.05rem);
+      border-radius: clamp(0.95rem, 1.7vw, 1.3rem);
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid rgba(158, 79, 37, 0.16);
+    }
+
+    .daily-item:nth-child(2) {
+      transform: translateX(clamp(0.6rem, 1.5vw, 1rem));
+      background: rgba(251, 241, 230, 0.9);
+    }
+
+    .daily-item:nth-child(3) {
+      transform: translateX(calc(-1 * clamp(0.35rem, 1vw, 0.7rem)));
+    }
+
+    .daily-item strong {
+      display: block;
+      margin-bottom: clamp(0.16rem, 0.4vw, 0.3rem);
+      font-family: var(--font-display);
+      font-size: clamp(0.9rem, 1.5vw, 1.15rem);
+      letter-spacing: -0.04em;
+    }
+
+    .solution-slide {
+      grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);
+      gap: clamp(2rem, 4vw, 3.5rem);
+    }
+
+    .solution-map {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      align-items: stretch;
+      gap: clamp(0.65rem, 1.4vw, 1rem);
+    }
+
+    .map-card {
+      position: relative;
+      min-height: clamp(11rem, 31vh, 16rem);
+      padding: clamp(0.85rem, 1.55vw, 1.15rem);
+      overflow: hidden;
+    }
+
+    .map-card::after {
+      content: attr(data-index);
+      position: absolute;
+      right: clamp(0.55rem, 1vw, 0.75rem);
+      bottom: clamp(0.35rem, 0.8vw, 0.55rem);
+      color: rgba(158, 79, 37, 0.14);
+      font-family: var(--font-display);
+      font-size: clamp(2rem, 5vw, 4rem);
+      line-height: 1;
+    }
+
+    .map-card h3 {
+      margin-bottom: clamp(0.45rem, 1vw, 0.75rem);
+    }
+
+    .journey-slide {
+      grid-template-rows: auto auto;
+      align-content: center;
+      gap: clamp(2rem, 4vw, 3.6rem);
+    }
+
+    .journey-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: clamp(1rem, 2vw, 1.5rem);
+    }
+
+    .journey-header h2 {
+      max-width: min(720px, 72vw);
+    }
+
+    .journey-path {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: clamp(0.65rem, 1.3vw, 1rem);
+      align-items: stretch;
+    }
+
+    .journey-path::before {
+      content: '';
+      position: absolute;
+      left: 5%;
+      right: 5%;
+      top: 50%;
+      height: clamp(0.18rem, 0.38vw, 0.28rem);
+      transform: translateY(-50%);
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(212, 118, 60, 0.34), rgba(91, 140, 90, 0.28));
+    }
+
+    .journey-step {
+      position: relative;
+      min-height: clamp(8rem, 24vh, 12.5rem);
+      padding: clamp(0.75rem, 1.4vw, 1.05rem);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      z-index: 2;
+    }
+
+    .journey-step:nth-child(even) {
+      transform: translateY(clamp(0.5rem, 1.2vw, 0.9rem));
+    }
+
+    .step-no {
+      color: var(--terracotta-deep);
+      font-family: var(--font-display);
+      font-size: clamp(1.6rem, 3.8vw, 3rem);
+      line-height: 0.9;
+    }
+
+    .role-slide {
+      grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.72fr);
+      gap: clamp(2rem, 4vw, 3.5rem);
+    }
+
+    .phone-frame {
+      justify-self: center;
+      width: min(100%, 360px);
+      padding: clamp(0.75rem, 1.5vw, 1rem);
+      border-radius: clamp(1.5rem, 3vw, 2rem);
+      background: #241A15;
+      box-shadow: 0 clamp(0.7rem, 2vw, 1.5rem) clamp(2rem, 4vw, 3rem) rgba(36, 26, 21, 0.28);
+      transform: rotate(1.4deg);
+    }
+
+    .phone-screen {
+      min-height: clamp(17rem, 52vh, 25rem);
+      padding: clamp(0.85rem, 1.8vw, 1.3rem);
+      border-radius: clamp(1rem, 2vw, 1.45rem);
+      background: linear-gradient(180deg, #FFF9F0, #F2DEC8);
+      display: flex;
+      flex-direction: column;
+      gap: clamp(0.55rem, 1vw, 0.8rem);
+    }
+
+    .phone-card {
+      padding: clamp(0.65rem, 1.2vw, 0.9rem);
+      border-radius: clamp(0.75rem, 1.5vw, 1.1rem);
+      background: rgba(255, 255, 255, 0.78);
+      border: 1px solid rgba(158, 79, 37, 0.14);
+    }
+
+    .phone-card b {
+      display: block;
+      margin-bottom: clamp(0.18rem, 0.4vw, 0.3rem);
+      color: var(--ink);
+      font-size: clamp(0.76rem, 1vw, 0.9rem);
+    }
+
+    .phone-card span {
+      color: var(--ink-muted);
+      font-size: var(--small-size);
+      line-height: 1.35;
+    }
+
+    .guardian-slide {
+      grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+      gap: clamp(2rem, 4vw, 3.5rem);
+    }
+
+    .alert-stack {
+      position: relative;
+      display: grid;
+      gap: clamp(0.65rem, 1.2vw, 0.9rem);
+    }
+
+    .alert-card {
+      padding: clamp(0.8rem, 1.45vw, 1.1rem);
+      border-radius: clamp(0.95rem, 1.8vw, 1.3rem);
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid rgba(158, 79, 37, 0.16);
+    }
+
+    .alert-card:nth-child(2) {
+      margin-left: clamp(1.3rem, 3vw, 2.2rem);
+      background: rgba(237, 245, 237, 0.86);
+    }
+
+    .alert-card:nth-child(3) {
+      margin-right: clamp(1.3rem, 3vw, 2.2rem);
+      background: rgba(253, 245, 230, 0.9);
+    }
+
+    .admin-slide {
+      grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+      gap: clamp(2rem, 4vw, 3.5rem);
+    }
+
+    .control-room {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      grid-template-rows: repeat(2, minmax(0, 1fr));
+      gap: clamp(0.65rem, 1.2vw, 0.9rem);
+    }
+
+    .control-card {
+      padding: clamp(0.8rem, 1.45vw, 1.1rem);
+      border-radius: clamp(1rem, 1.8vw, 1.35rem);
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid rgba(158, 79, 37, 0.16);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .control-card.large {
+      grid-row: span 2;
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.78), rgba(237, 245, 237, 0.76));
+    }
+
+    .meter {
+      height: clamp(0.45rem, 0.8vw, 0.6rem);
+      border-radius: 999px;
+      background: rgba(158, 79, 37, 0.14);
+      overflow: hidden;
+    }
+
+    .meter span {
+      display: block;
+      width: var(--value);
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--terracotta), var(--sage));
+    }
+
+    .feature-slide {
+      grid-template-rows: auto auto;
+      align-content: center;
+      gap: clamp(2rem, 4vw, 3.6rem);
+    }
+
+    .bento-grid {
+      display: grid;
+      grid-template-columns: 1.25fr 0.8fr 0.95fr;
+      grid-template-rows: repeat(2, minmax(0, 1fr));
+      gap: clamp(0.65rem, 1.3vw, 1rem);
+    }
+
+    .bento-card {
+      padding: clamp(0.85rem, 1.6vw, 1.2rem);
+      border-radius: clamp(1rem, 1.9vw, 1.4rem);
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid rgba(158, 79, 37, 0.16);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: clamp(7rem, 18vh, 10.5rem);
+    }
+
+    .bento-card.primary {
+      grid-row: span 2;
+      background:
+        radial-gradient(circle at 85% 18%, rgba(212, 118, 60, 0.22), transparent 34%),
+        rgba(255, 255, 255, 0.78);
+    }
+
+    .bento-card.wide {
+      grid-column: span 2;
+      background: rgba(237, 245, 237, 0.84);
+    }
+
+    .bento-card h3 {
+      margin-bottom: clamp(0.35rem, 0.75vw, 0.55rem);
+    }
+
+    .bento-card p {
+      font-size: clamp(0.72rem, 1.05vw, 0.9rem);
+      line-height: 1.45;
+    }
+
+    .tech-slide {
+      grid-template-rows: auto auto;
+      align-content: center;
+      gap: clamp(2rem, 4vw, 3.6rem);
+    }
+
+    .system-map {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: clamp(0.55rem, 1.1vw, 0.85rem);
+      align-items: center;
+    }
+
+    .system-map::before {
+      content: '';
+      position: absolute;
+      left: 8%;
+      right: 8%;
+      top: 50%;
+      height: clamp(0.12rem, 0.3vw, 0.22rem);
+      transform: translateY(-50%);
+      background: rgba(158, 79, 37, 0.24);
+    }
+
+    .system-node {
+      position: relative;
+      z-index: 2;
+      min-height: clamp(9rem, 27vh, 13rem);
+      padding: clamp(0.75rem, 1.4vw, 1.05rem);
+      border-radius: clamp(1rem, 1.9vw, 1.35rem);
+      background: rgba(255, 255, 255, 0.78);
+      border: 1px solid rgba(158, 79, 37, 0.16);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .system-node strong {
+      display: block;
+      margin-bottom: clamp(0.35rem, 0.7vw, 0.5rem);
+      font-family: var(--font-display);
+      color: var(--terracotta-deep);
+      font-size: clamp(0.82rem, 1.25vw, 1.05rem);
+    }
+
+    .system-node span {
+      color: var(--ink-soft);
+      font-size: var(--small-size);
+      line-height: 1.42;
+    }
+
+    .deploy-slide {
+      grid-template-columns: minmax(0, 0.88fr) minmax(0, 1.12fr);
+      gap: clamp(2rem, 4vw, 3.5rem);
+    }
+
+    .pipeline {
+      display: grid;
+      gap: clamp(0.65rem, 1.2vw, 0.9rem);
+    }
+
+    .pipe-step {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      align-items: center;
+      gap: clamp(0.65rem, 1.2vw, 0.9rem);
+      padding: clamp(0.7rem, 1.3vw, 0.95rem);
+      border-radius: clamp(0.9rem, 1.7vw, 1.25rem);
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid rgba(158, 79, 37, 0.16);
+    }
+
+    .pipe-step b {
+      width: clamp(2.1rem, 4vw, 3rem);
+      height: clamp(2.1rem, 4vw, 3rem);
+      display: grid;
+      place-items: center;
+      border-radius: 999px;
+      color: #FFFFFF;
+      background: var(--terracotta);
+      font-size: clamp(0.76rem, 1.1vw, 0.92rem);
+    }
+
+    .demo-slide {
+      grid-template-rows: auto auto;
+      align-content: center;
+      gap: clamp(2rem, 4vw, 3.6rem);
+    }
+
+    .demo-board {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: clamp(0.7rem, 1.4vw, 1rem);
+    }
+
+    .demo-item {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: clamp(0.65rem, 1.2vw, 0.9rem);
+      align-items: center;
+      padding: clamp(0.7rem, 1.3vw, 0.95rem);
+      border-radius: clamp(0.95rem, 1.8vw, 1.3rem);
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid rgba(158, 79, 37, 0.16);
+    }
+
+    .demo-item::before {
+      content: attr(data-no);
+      width: clamp(2.1rem, 4vw, 3rem);
+      height: clamp(2.1rem, 4vw, 3rem);
+      display: grid;
+      place-items: center;
+      border-radius: clamp(0.7rem, 1.4vw, 1rem);
+      color: #FFFFFF;
+      background: linear-gradient(135deg, var(--terracotta), var(--sage));
+      font-weight: 900;
+    }
+
+    .demo-item strong {
+      display: block;
+      color: var(--ink);
+      font-size: clamp(0.82rem, 1.2vw, 1rem);
+    }
+
+    .demo-item span {
+      display: block;
+      margin-top: clamp(0.1rem, 0.3vw, 0.2rem);
+      color: var(--ink-muted);
+      font-size: var(--small-size);
+      line-height: 1.36;
+    }
+
+    .gif-slide {
+      grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);
+      gap: clamp(2rem, 4vw, 3.5rem);
+    }
+
+    .gif-copy {
+      display: flex;
+      flex-direction: column;
+      gap: clamp(0.85rem, 1.8vw, 1.35rem);
+    }
+
+    .gif-copy p {
+      max-width: min(460px, 100%);
+    }
+
+    .gif-stage {
+      justify-self: stretch;
+      align-self: center;
+      display: grid;
+      place-items: center;
+      min-width: 0;
+    }
+
+    .gif-frame {
+      display: block;
+      width: 100%;
+      max-height: min(72vh, 560px);
+      object-fit: contain;
+      border-radius: clamp(0.85rem, 1.8vw, 1.35rem);
+      box-shadow: 0 clamp(0.7rem, 1.7vw, 1.3rem) clamp(1.5rem, 3.6vw, 2.8rem) rgba(71, 45, 33, 0.16);
+    }
+
+    .closing-slide {
+      grid-template-columns: minmax(0, 0.92fr) auto;
+      gap: clamp(2rem, 4vw, 3.5rem);
+    }
+
+    .closing-mark {
+      width: clamp(15rem, 34vw, 28rem);
+      max-height: min(58vh, 440px);
+      object-fit: contain;
+      filter: drop-shadow(0 clamp(0.8rem, 2vw, 1.5rem) clamp(1.5rem, 4vw, 3rem) rgba(71, 45, 33, 0.18));
+    }
+
+    /* ===========================================
+       RESPONSIVE FITTING FOR SHORT PRESENTATION SCREENS
+       =========================================== */
+    @media (max-width: 860px) {
+      .hero-slide,
+      .problem-slide,
+      .solution-slide,
+      .role-slide,
+      .guardian-slide,
+      .admin-slide,
+      .deploy-slide,
+      .gif-slide,
+      .closing-slide {
+        grid-template-columns: 1fr;
+      }
+
+      .solution-map,
+      .journey-path,
+      .system-map {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .bento-grid,
+      .demo-board {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-height: 700px) {
+      .slide-content {
+        padding: clamp(1.35rem, 3.5vw, 3rem);
+      }
+
+      h1 {
+        font-size: clamp(2.8rem, 7vw, 5.2rem);
+      }
+
+      h2 {
+        font-size: clamp(1.25rem, 2.8vw, 2.15rem);
+      }
+
+      p,
+      li {
+        font-size: clamp(0.68rem, 1.05vw, 0.9rem);
+      }
+
+      .video-frame {
+        max-height: min(62vh, 440px);
+      }
+
+      .journey-step,
+      .system-node {
+        min-height: clamp(6rem, 20vh, 9rem);
+      }
+
+      .phone-screen {
+        min-height: clamp(13rem, 42vh, 19rem);
+      }
+    }
+
+    @media (max-height: 600px) {
+      .pill-row,
+      .keyboard-hint {
+        display: none;
+      }
+
+      .journey-path,
+      .system-map {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .solution-map {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .bento-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="progress-bar" id="progressBar"></div>
+  <nav class="nav-dots" id="navDots" aria-label="슬라이드 이동"></nav>
+  <div class="keyboard-hint">Space / 방향키로 이동</div>
+
+  <section class="slide title-slide">
+    <div class="slide-content hero-slide">
+      <div class="hero-copy">
+        <span class="kicker reveal-left">최종시연 발표</span>
+        <h1 class="reveal delay-1">밥동무</h1>
+        <p class="reveal delay-2">독거 어르신의 집에 봉사자가 방문해 청소, 정리, 쓰레기 배출 같은 <strong>생활 봉사</strong>를 돕고, 활동 후 함께 식사하며 안부를 나누는 서비스입니다.</p>
+        <p class="reveal delay-3">봉사가 단순 방문으로 끝나지 않도록, 보호자와 운영자가 확인할 수 있는 기록까지 연결합니다.</p>
+      </div>
+      <div class="team-photo-shell reveal-scale delay-2">
+        <img class="team-photo" src="assets/팀사진.png" alt="밥동무 팀 소개 이미지">
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="slide-content video-only-slide">
+      <div class="video-shell reveal-scale delay-1">
+        <video class="video-frame" controls preload="metadata" playsinline>
+          <source src="0512(2).mp4" type="video/mp4">
+          브라우저가 영상을 지원하지 않습니다.
+        </video>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="slide-content problem-slide">
+      <div class="problem-copy">
+        <span class="kicker reveal-left">문제 정의</span>
+        <h2 class="quote-line reveal delay-1">혼자 사는 어르신에게는 작은 집안일도 하루를 무겁게 만들 수 있습니다.</h2>
+        <p class="reveal delay-2">청소, 쓰레기 버리기, 식사 준비처럼 평범해 보이는 일이 몸이 불편하거나 기운이 없는 날에는 쉽게 미뤄집니다.</p>
+      </div>
+      <div class="daily-stack reveal-scale delay-2">
+        <div class="daily-item"><strong>도움을 요청하기 어렵습니다.</strong><p>부담이 될까 봐 참고 넘기다 보면 일상이 더 무거워집니다.</p></div>
+        <div class="daily-item"><strong>봉사자는 정보를 찾기 어렵습니다.</strong><p>어떤 가정에 어떤 도움이 필요한지 확인할 창구가 부족합니다.</p></div>
+        <div class="daily-item"><strong>보호자는 과정을 바로 알기 어렵습니다.</strong><p>방문이 실제로 이루어졌는지, 활동이 끝났는지 확인이 늦어집니다.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="slide-content solution-slide">
+      <div class="hero-copy">
+        <span class="kicker reveal-left">해결 방식</span>
+        <h2 class="reveal delay-1">밥동무는 생활 봉사와 식사 나눔을 하나의 약속으로 묶습니다.</h2>
+        <p class="reveal delay-2">봉사자는 먼저 일상에 필요한 도움을 드리고, 활동 후에는 함께 밥상을 나누며 안부를 확인합니다.</p>
+      </div>
+      <div class="solution-map reveal-scale delay-2">
+        <article class="map-card note-card" data-index="01">
+          <h3>생활 봉사</h3>
+          <p>청소, 정리, 쓰레기 배출처럼 혼자 하기 버거운 일을 돕습니다.</p>
+        </article>
+        <article class="map-card note-card" data-index="02">
+          <h3>함께 식사</h3>
+          <p>봉사 후 어르신과 한 끼를 나누며 자연스럽게 대화를 이어갑니다.</p>
+        </article>
+        <article class="map-card note-card" data-index="03">
+          <h3>확인 가능한 기록</h3>
+          <p>QR 체크와 알림으로 보호자와 운영자가 활동 흐름을 확인합니다.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="slide-content journey-slide">
+      <div class="journey-header">
+        <div>
+          <span class="kicker reveal-left">서비스 흐름</span>
+          <h2 class="reveal delay-1">가입부터 봉사 완료까지 같은 흐름 안에서 움직입니다.</h2>
+        </div>
+        <p class="reveal delay-2">복잡한 운영 절차를 사용자 여정에 맞춰 정리했습니다.</p>
+      </div>
+      <div class="journey-path reveal-scale delay-2">
+        <article class="journey-step note-card"><span class="step-no">01</span><h3>가입과 승인</h3><p>역할을 선택하고, 관리자가 제출 서류를 확인합니다.</p></article>
+        <article class="journey-step note-card"><span class="step-no">02</span><h3>어르신 등록</h3><p>보호자가 어르신 정보와 필요한 참고사항을 입력합니다.</p></article>
+        <article class="journey-step note-card"><span class="step-no">03</span><h3>호스팅 신청</h3><p>봉사자가 일정, 장소, 내용을 보고 방문을 신청합니다.</p></article>
+        <article class="journey-step note-card"><span class="step-no">04</span><h3>방문과 정산</h3><p>QR 기록, 후기 작성, 봉사시간 부여로 활동을 마무리합니다.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="slide-content role-slide">
+      <div class="hero-copy">
+        <span class="kicker reveal-left">봉사자 화면</span>
+        <h2 class="reveal delay-1">봉사자는 필요한 생활 도움을 확인하고 방문 활동을 마무리합니다.</h2>
+        <ul class="bullet-list reveal delay-2">
+          <li>호스팅 목록에서 시간, 위치, 메뉴, 어르신 정보를 확인합니다.</li>
+          <li>신원 서류가 승인된 봉사자만 신청할 수 있어 안전성을 높입니다.</li>
+          <li>방문 당일 QR로 체크인하고, 봉사 후 체크아웃을 남깁니다.</li>
+          <li>활동이 끝나면 후기와 사진을 남겨 다음 방문자에게 정보를 전달합니다.</li>
+        </ul>
+      </div>
+      <div class="phone-frame reveal-scale delay-2">
+        <div class="phone-screen">
+          <div class="phone-card"><b>오늘의 밥동무</b><span>오후 1시 · 중랑구 · 집안 정리와 식사 동행</span></div>
+          <div class="phone-card"><b>신청 가능</b><span>승인된 봉사자만 신청할 수 있습니다.</span></div>
+          <div class="phone-card"><b>QR 체크</b><span>도착과 종료 시간을 현장에서 기록합니다.</span></div>
+          <div class="phone-card"><b>후기 작성</b><span>방문 후 경험과 참고사항을 남깁니다.</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="slide-content guardian-slide">
+      <div class="hero-copy">
+        <span class="kicker reveal-left">보호자 화면</span>
+        <h2 class="reveal delay-1">보호자는 어르신의 일상과 방문 과정을 대신 관리합니다.</h2>
+        <p class="reveal delay-2">어르신 정보, 주소, 수용 인원, 특이사항을 등록하고 식사 호스팅을 개설합니다.</p>
+        <p class="reveal delay-3">봉사자가 도착하고 활동을 마치면 알림으로 확인해, 멀리 있어도 진행 상황을 파악할 수 있습니다.</p>
+      </div>
+      <div class="alert-stack reveal-scale delay-2">
+        <article class="alert-card"><h3>어르신 등록</h3><p>기본 정보, 주소, 특이사항, 수용 인원을 입력합니다.</p></article>
+        <article class="alert-card"><h3>호스팅 개설</h3><p>메뉴, 시간, 장소, 모집 인원을 설정해 봉사 일정을 만듭니다.</p></article>
+        <article class="alert-card"><h3>방문 알림</h3><p>체크인과 체크아웃 알림으로 활동 흐름을 확인합니다.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="slide-content admin-slide">
+      <div class="hero-copy">
+        <span class="kicker reveal-left">관리자 화면</span>
+        <h2 class="reveal delay-1">관리자는 봉사가 안전하게 운영되도록 마지막 확인을 담당합니다.</h2>
+        <p class="reveal delay-2">누구나 바로 방문하는 구조가 아니라, 관리자 승인과 방문 기록 확인을 거쳐 봉사시간이 확정되는 구조입니다.</p>
+      </div>
+      <div class="control-room reveal-scale delay-2">
+        <article class="control-card large"><h3>서류 심사</h3><p>제출 서류를 보고 활동 가능 여부를 승인하거나 반려합니다.</p><div class="meter"><span style="--value: 82%"></span></div></article>
+        <article class="control-card"><h3>시간 부여</h3><p>체크 기록을 기준으로 실제 봉사시간을 입력합니다.</p><div class="meter"><span style="--value: 64%"></span></div></article>
+        <article class="control-card"><h3>통계 확인</h3><p>최근 매칭과 누적 봉사시간으로 운영 상태를 봅니다.</p><div class="meter"><span style="--value: 74%"></span></div></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="slide-content feature-slide">
+      <div>
+        <span class="kicker reveal-left">차별 기능</span>
+        <h2 class="reveal delay-1">핵심 기능은 실제 방문 봉사를 검증하고 연결하는 데 맞춰져 있습니다.</h2>
+      </div>
+      <div class="bento-grid reveal-scale delay-2">
+        <article class="bento-card primary"><h3>QR 현장 체크</h3><p>어르신별 QR로 도착과 종료를 기록해 현장 방문 여부를 남깁니다.</p></article>
+        <article class="bento-card"><h3>SMS 알림</h3><p>확정, 취소, 체크인, 체크아웃 상황을 보호자와 봉사자에게 알립니다.</p></article>
+        <article class="bento-card"><h3>상태 스케줄러</h3><p>호스팅 시간에 맞춰 모집, 진행, 완료 상태를 자동으로 바꿉니다.</p></article>
+        <article class="bento-card"><h3>인증 기반 접근</h3><p>JWT와 역할 권한으로 봉사자, 보호자, 관리자 기능을 분리합니다.</p></article>
+        <article class="bento-card wide"><h3>후기 기반 소개글</h3><p>여러 후기가 쌓이면 어르신의 분위기와 특징을 소개글로 정리합니다.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="slide-content tech-slide">
+      <div>
+        <span class="kicker reveal-left">기술 구조</span>
+        <h2 class="reveal delay-1">백엔드는 역할별 기능이 섞이지 않도록 도메인 단위로 나누었습니다.</h2>
+      </div>
+      <div class="system-map reveal-scale delay-2">
+        <article class="system-node"><strong>Frontend</strong><span>HTML, CSS, JS로 랜딩, 신청, 관리자 화면 구성</span></article>
+        <article class="system-node"><strong>API</strong><span>FastAPI 라우터가 화면 요청을 /api/v1로 연결</span></article>
+        <article class="system-node"><strong>Domain</strong><span>회원, 어르신, 호스팅, 매칭, 후기 로직 분리</span></article>
+        <article class="system-node"><strong>Database</strong><span>PostgreSQL과 SQLAlchemy async로 데이터 저장</span></article>
+        <article class="system-node"><strong>External</strong><span>SMS, R2, Gemini를 필요한 기능에 연결</span></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="slide-content deploy-slide">
+      <div class="hero-copy">
+        <span class="kicker reveal-left">배포 구조</span>
+        <h2 class="reveal delay-1">배포는 코드가 main에 반영되면 서버까지 자동으로 이어집니다.</h2>
+        <p class="reveal delay-2">GitHub Actions가 EC2에 접속해 최신 코드를 가져오고, 마이그레이션과 컨테이너 재시작, HTTPS 상태 확인까지 처리합니다.</p>
+      </div>
+      <div class="pipeline reveal-scale delay-2">
+        <div class="pipe-step"><b>01</b><p>Docker Compose로 앱, PostgreSQL, Caddy를 함께 실행합니다.</p></div>
+        <div class="pipe-step"><b>02</b><p>Caddy가 HTTPS와 reverse proxy를 담당합니다.</p></div>
+        <div class="pipe-step"><b>03</b><p>DuckDNS 갱신으로 고정 도메인 접근을 유지합니다.</p></div>
+        <div class="pipe-step"><b>04</b><p>배포 후 OpenAPI 응답을 확인해 서비스가 살아있는지 검증합니다.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="slide-content gif-slide">
+      <div class="gif-copy">
+        <span class="kicker reveal-left">시연 01</span>
+        <h2 class="reveal delay-1">회원가입</h2>
+        <p class="reveal delay-2">사용자가 역할과 기본 정보를 입력해 밥동무 이용을 시작하는 화면입니다.</p>
+      </div>
+      <div class="gif-stage reveal-scale delay-2">
+        <img class="gif-frame" src="assets/1_회원가입.gif" alt="회원가입 시연 GIF">
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="slide-content gif-slide">
+      <div class="gif-copy">
+        <span class="kicker reveal-left">시연 02</span>
+        <h2 class="reveal delay-1">보호자 호스팅 등록</h2>
+        <p class="reveal delay-2">보호자가 어르신 정보와 식사 호스팅 일정을 등록하는 과정입니다.</p>
+      </div>
+      <div class="gif-stage reveal-scale delay-2">
+        <img class="gif-frame" src="assets/2_보호자_호스팅등록.gif" alt="보호자 호스팅 등록 시연 GIF">
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="slide-content gif-slide">
+      <div class="gif-copy">
+        <span class="kicker reveal-left">시연 03</span>
+        <h2 class="reveal delay-1">봉사자 호스팅 신청</h2>
+        <p class="reveal delay-2">봉사자가 도움이 필요한 호스팅을 확인하고 방문 가능한 일정에 신청합니다.</p>
+      </div>
+      <div class="gif-stage reveal-scale delay-2">
+        <img class="gif-frame" src="assets/3_봉사자_호스팅신청.gif" alt="봉사자 호스팅 신청 시연 GIF">
+      </div>
+    </div>
+  </section>
+
+    <section class="slide">
+    <div class="slide-content gif-slide">
+      <div class="gif-copy">
+        <span class="kicker reveal-left">시연 03-1</span>
+        <h2 class="reveal delay-1">매칭확정</h2>
+        <p class="reveal delay-2">봉사자가 호스팅에 매칭되면 휴대폰 번호로 매칭확정 문자가 발송됩니다.</p>
+      </div>
+      <div class="gif-stage reveal-scale delay-2">
+        <img class="gif-frame" src="assets/기타_매칭확정문자.jpg" alt="매칭확정문자">
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="slide-content gif-slide">
+      <div class="gif-copy">
+        <span class="kicker reveal-left">시연 04</span>
+        <h2 class="reveal delay-1">체크인·체크아웃</h2>
+        <p class="reveal delay-2">현장 방문 시작과 종료를 QR 흐름으로 기록해 실제 활동 여부를 남깁니다.</p>
+      </div>
+      <div class="gif-stage reveal-scale delay-2">
+        <img class="gif-frame" src="assets/4_체크인_체크아웃.gif" alt="체크인 체크아웃 시연 GIF">
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="slide-content gif-slide">
+      <div class="gif-copy">
+        <span class="kicker reveal-left">시연 05</span>
+        <h2 class="reveal delay-1">매칭 후기 작성</h2>
+        <p class="reveal delay-2">활동이 끝난 뒤 봉사자가 방문 경험과 참고사항을 후기로 남깁니다.</p>
+      </div>
+      <div class="gif-stage reveal-scale delay-2">
+        <img class="gif-frame" src="assets/5_매칭후기작성.gif" alt="매칭 후기 작성 시연 GIF">
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="slide-content gif-slide">
+      <div class="gif-copy">
+        <span class="kicker reveal-left">시연 06</span>
+        <h2 class="reveal delay-1">관리자 승인</h2>
+        <p class="reveal delay-2">관리자가 제출 서류를 확인하고 사용자 활동 가능 여부를 승인합니다.</p>
+      </div>
+      <div class="gif-stage reveal-scale delay-2">
+        <img class="gif-frame" src="assets/기타_관리자_승인.gif" alt="관리자 승인 시연 GIF">
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="slide-content gif-slide">
+      <div class="gif-copy">
+        <span class="kicker reveal-left">시연 07</span>
+        <h2 class="reveal delay-1">어르신 QR 확인</h2>
+        <p class="reveal delay-2">어르신별 QR을 확인해 현장 체크인과 체크아웃에 사용할 수 있도록 준비합니다.</p>
+      </div>
+      <div class="gif-stage reveal-scale delay-2">
+        <img class="gif-frame" src="assets/기타_어르신_QR확인.gif" alt="어르신 QR 확인 시연 GIF">
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="slide-content closing-slide">
+      <div class="hero-copy">
+        <span class="kicker reveal-left">마무리</span>
+        <h2 class="quote-line reveal delay-1">밥동무는 도움이 필요한 일상에 사람의 손길과 식사 시간을 연결합니다.</h2>
+        <p class="reveal delay-2">청소나 쓰레기 배출처럼 혼자 버거운 일을 봉사자가 돕고, 그 끝에서 함께 밥상을 나누며 관계가 생기도록 설계했습니다. 기록과 알림까지 함께 남겨 보호자와 운영자도 안심할 수 있습니다.</p>
+      </div>
+      <img class="closing-mark reveal-scale delay-2" src="assets/babdongmu-bowl.png" alt="밥동무 밥그릇 로고">
+    </div>
+  </section>
+
+  <script>
+    /* ===========================================
+       SLIDE PRESENTATION CONTROLLER
+       =========================================== */
+    class SlidePresentation {
+      constructor() {
+        this.slides = Array.from(document.querySelectorAll('.slide'));
+        this.currentSlide = 0;
+        this.navDotsContainer = document.querySelector('#navDots');
+        this.progressBar = document.querySelector('#progressBar');
+        this.touchStartY = 0;
+        this.wheelLocked = false;
+        this.setupIntersectionObserver();
+        this.setupKeyboardNav();
+        this.setupTouchNav();
+        this.setupWheelNav();
+        this.setupNavDots();
+        this.updateProgress();
+      }
+
+      setupIntersectionObserver() {
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('visible');
+              this.currentSlide = this.slides.indexOf(entry.target);
+              this.updateProgress();
+              this.updateDots();
+            }
+          });
+        }, { threshold: 0.55 });
+
+        this.slides.forEach((slide) => observer.observe(slide));
+      }
+
+      setupKeyboardNav() {
+        window.addEventListener('keydown', (event) => {
+          const nextKeys = ['ArrowDown', 'ArrowRight', ' ', 'PageDown'];
+          const prevKeys = ['ArrowUp', 'ArrowLeft', 'PageUp'];
+
+          if (nextKeys.includes(event.key)) {
+            event.preventDefault();
+            this.goToSlide(this.currentSlide + 1);
+          }
+
+          if (prevKeys.includes(event.key)) {
+            event.preventDefault();
+            this.goToSlide(this.currentSlide - 1);
+          }
+        });
+      }
+
+      setupTouchNav() {
+        window.addEventListener('touchstart', (event) => {
+          this.touchStartY = event.changedTouches[0].clientY;
+        }, { passive: true });
+
+        window.addEventListener('touchend', (event) => {
+          const deltaY = this.touchStartY - event.changedTouches[0].clientY;
+          if (Math.abs(deltaY) < 40) return;
+          this.goToSlide(this.currentSlide + (deltaY > 0 ? 1 : -1));
+        }, { passive: true });
+      }
+
+      setupWheelNav() {
+        window.addEventListener('wheel', (event) => {
+          if (this.wheelLocked || Math.abs(event.deltaY) < 30) return;
+          this.wheelLocked = true;
+          this.goToSlide(this.currentSlide + (event.deltaY > 0 ? 1 : -1));
+          setTimeout(() => {
+            this.wheelLocked = false;
+          }, 650);
+        }, { passive: true });
+      }
+
+      setupNavDots() {
+        this.navDotsContainer.innerHTML = '';
+        this.slides.forEach((_, index) => {
+          const button = document.createElement('button');
+          button.className = 'nav-dot';
+          button.type = 'button';
+          button.setAttribute('aria-label', `${index + 1}번 슬라이드로 이동`);
+          button.addEventListener('click', () => this.goToSlide(index));
+          this.navDotsContainer.appendChild(button);
+        });
+        this.updateDots();
+      }
+
+      goToSlide(index) {
+        const targetIndex = Math.max(0, Math.min(index, this.slides.length - 1));
+        this.slides[targetIndex].scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+
+      updateProgress() {
+        const progress = ((this.currentSlide + 1) / this.slides.length) * 100;
+        this.progressBar.style.width = `${progress}%`;
+      }
+
+      updateDots() {
+        const dots = this.navDotsContainer.querySelectorAll('.nav-dot');
+        dots.forEach((dot, index) => {
+          dot.classList.toggle('active', index === this.currentSlide);
+        });
+      }
+    }
+
+    new SlidePresentation();
+  </script>
+</body>
+</html>
