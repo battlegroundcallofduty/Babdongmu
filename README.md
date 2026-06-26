@@ -153,16 +153,6 @@ uv sync
 uv run uvicorn app.main:app --reload
 ```
 
-`.env`에서 `SECRET_KEY`, `DATABASE_URL`, SMS/R2/Gemini 관련 값을 환경에 맞게 설정합니다. 로컬 SQLite로 시작하면 별도 PostgreSQL 없이도 실행할 수 있습니다.
-
-### 2-A. uv로 실행
-
-```bash
-uv sync
-uv run uvicorn app.main:app --reload
-```
-
-### 2-B. pip으로 실행
 ### 2-B. pip으로 실행
 
 ```bash
@@ -187,15 +177,6 @@ docker compose up --build
 ---
 
 ## Database & Migration
-### 3. 확인
-
-- Frontend: http://localhost:8000
-- Swagger UI: http://localhost:8000/docs
-- OpenAPI JSON: http://localhost:8000/openapi.json
-
----
-
-## Database & Migration
 
 | 상황 | 동작 |
 |------|------|
@@ -203,12 +184,7 @@ docker compose up --build
 | `babdongmu.db` 있음 + `DEBUG=True` | 서버 시작 시 `alembic upgrade head`를 자동 실행합니다. |
 | `babdongmu.db` 있음 + `DEBUG=False` | 자동 migration을 실행하지 않습니다. |
 | 프로덕션 PostgreSQL | GitHub Actions 배포 과정에서 `alembic upgrade head`를 실행합니다. |
-| `babdongmu.db` 없음 | 서버 시작 시 SQLite 테이블을 자동 생성하고 Alembic head로 기록합니다. |
-| `babdongmu.db` 있음 + `DEBUG=True` | 서버 시작 시 `alembic upgrade head`를 자동 실행합니다. |
-| `babdongmu.db` 있음 + `DEBUG=False` | 자동 migration을 실행하지 않습니다. |
-| 프로덕션 PostgreSQL | GitHub Actions 배포 과정에서 `alembic upgrade head`를 실행합니다. |
 
-모델 변경 후 직접 migration을 만들 때는 아래 명령을 사용합니다.
 모델 변경 후 직접 migration을 만들 때는 아래 명령을 사용합니다.
 
 ```bash
