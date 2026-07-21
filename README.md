@@ -37,7 +37,7 @@
 | **[나솔림](https://github.com/solrimna)** | 관리자 / AI | 대시보드 API, 호스팅 승인, 통계, CoolSMS, Gemini AI 소개글 | admin.html |
 | **[박지영](https://github.com/battlegroundcallofduty)** | 회원 / 인증 | 회원가입, 로그인, JWT, 서류 업로드, 신원검증 | login, register, mypage |
 | **[서호근](https://github.com/azure5finger-cmyk)** | 어르신 / 호스팅 | 어르신 CRUD, 호스팅 CRUD, 보호자 관리 | guardian, hostings, hosting-detail |
-| **[유민지](https://github.com/kittyjoa)** | 매칭 / 후기 | 매칭 신청, 체크인/아웃, 봉사시간, 후기 | my-matches |
+| **[류도희](https://github.com/kittyjoa)** | 매칭 / 후기 | 매칭 신청, 체크인/아웃, 봉사시간, 후기 | my-matches |
 
 ---
 
