@@ -26,10 +26,29 @@
 
 ---
 
+## Contents
+- [Team](#Team)
+- [Why](#Why)
+- [How It Works](#How-It-Works)
+- [Demo](#Demo)
+- [Features](#Features)
+- [Architecture](#Architecture)
+- [Getting Started](#Getting-Started)
+- [Database & Migration](#Database--Migration)
+- [Project Structure](#Project-Structure)
+- [Docs](#Docs)
+- [Development](#Development)
+- [+ My Contributions](#+-My-Contributions)
+- [+ Code Review & Trouble Shooting](#+-Code-Review--Trouble-Shooting)
+- [+ Project Review](#+-Project-Review)
+
+---
+
 ## Team
 
 - 개발 기간 : 2026.04.06 - 2026.05.15
 - 구성 : 5인 팀 프로젝트
+- [원본 팀 레포](https://github.com/gabriel-1204/Babdongmu)
 
 | 구성원&nbsp; | 도메인 | 백엔드 | 프론트엔드 |
 |------|------------|------------|----------------|
@@ -243,7 +262,7 @@ pytest
 
 ---
 
-## ✔️ My Contributions
+## + My Contributions
 
 담당 도메인: **회원 / 인증** — 백엔드 API + 프론트엔드 (login, register, mypage)
 
@@ -292,7 +311,7 @@ pytest
 
 ---
 
-## ✔️ Code Review & Trouble Shooting
+## + Code Review & Trouble Shooting
 
 ### 1. 비밀번호 찾기 — 전화번호 클라이언트 노출
 **문제** : 1단계 응답에 실제 전화번호(`phone_number`)를 포함해 프론트엔드가 보관했다가 2단계에서 그대로 서버로 전송하는 구조.
@@ -327,7 +346,7 @@ pytest
 
 ---
 
-## ✔️ Project review
+## + Project review
 
 - **Refresh Token 미구현에 대한 아쉬움** — 카카오 로그인, 스케줄러 등 다른 기능 구현에 집중하다 보니 후반부에야 필요성을 인식했습니다. 발표까지 시간이 촉박해 구조를 변경하기 어려운 상황이었고, 프로젝트 안정성을 우선해 도입하지 않았습니다. 추후 개선한다면 가장 먼저 추가하고 싶은 기능입니다.
 
