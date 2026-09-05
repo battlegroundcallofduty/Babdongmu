@@ -38,9 +38,9 @@
 - [Project Structure](#Project-Structure)
 - [Docs](#Docs)
 - [Development](#Development)
-- [My Contributions](#My-Contributions)
-- [Code Review & Trouble Shooting](#Code-Review--Trouble-Shooting)
-- [Project Review](#Project-Review)
+- [+ My Contributions](#My-Contributions)
+- [+ Code Review & Trouble Shooting](#Code-Review--Trouble-Shooting)
+- [+ Project Review](#Project-Review)
 
 ---
 
