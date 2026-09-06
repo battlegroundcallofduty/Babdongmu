@@ -278,6 +278,7 @@ pytest
 - 인증 완료 후 10분 유효, 만료 시간 조건 포함한 상태 검증
 - 동일 번호 중복 가입 차단 — `get_user_by_phone_number` 라우터 레벨 체크
 - 전화번호 정규화 로직 schemas 헬퍼 함수로 추출해 재사용
+- `pytest` 기반 전화번호 정규화 단위 테스트 작성 (`tests/test_phone_normalize.py`) — 하이픈/공백 제거, 자릿수 검증, 4개 스키마(`SmsSendRequest`, `SmsVerifyRequest`, `UserRegisterRequest`, `KakaoSetupRequest`) 공통 적용 여부 커버
 
 ### 카카오 소셜 로그인
 - 카카오 OAuth 2.0 연동 엔드포인트 3개 구현 (인가 코드, 토큰 교환, 사용자 정보 조회)
@@ -319,6 +320,8 @@ pytest
 **원인** : SMS 코드 검증(2단계)에 전화번호가 필요했고, 이를 클라이언트가 넘겨주는 방식으로 초기 설계. 코드리뷰에서 "전화번호가 클라이언트에 노출된다"고 지적.
 
 **해결** : 1단계 응답에서 `phone_number` 필드 제거. 2단계에서는 클라이언트가 보낸 이메일로 서버가 직접 유저를 조회해 전화번호를 획득하도록 변경.
+
+**결과** : 클라이언트·네트워크 어디에도 실제 전화번호가 노출되지 않으면서 SMS 인증 플로우는 기존과 동일하게 동작함을 확인.
 <br>
 
 ### 2. 비밀번호 찾기 — 계정 열거 공격(Account Enumeration) 방지
@@ -327,6 +330,18 @@ pytest
 **원인** : "없으면 404"라는 일반적인 REST 패턴을 그대로 적용.
 
 **해결** : 없는 이메일도 가짜 마스킹 번호(`010-****-****`)와 200을 반환해 응답 차이 제거. 프론트엔드 안내 문구도 `"~로 인증코드를 발송했습니다"` → `"가입된 계정이 있다면 ~로 인증코드를 발송했습니다"`로 수정.
+
+```python
+# Before: 존재 여부에 따라 상태 코드가 갈려 이메일 가입 여부가 노출됨
+if not user:
+    raise HTTPException(status_code=404, detail="가입된 이메일이 없습니다.")
+
+# After: 항상 200 + 마스킹된 번호로 응답 통일
+phone = user.phone_number if user else "010-****-****"
+return {"masked_phone": mask_phone(phone)}
+```
+
+**결과** : 존재/미존재 이메일 모두 동일한 응답 형태를 반환해 이메일 가입 여부를 외부에서 추론할 수 없음을 확인.
 <br>
 
 ### 3. 카카오 OAuth — CSRF 방어·토큰 노출·쿠키 잔류
@@ -335,7 +350,10 @@ pytest
 **해결** :
 - `secrets.token_urlsafe(32)`로 state 생성 → httpOnly 쿠키에 저장 → 콜백에서 검증
 - 성공·에러·예외 4가지 분기 모두에 `response.delete_cookie("oauth_state")` 추가
-- access_token을 fragment(`#`)로 전달하고, 프론트에서 읽은 직후 `history.replaceState`로 주소창에서도 제거    
+- access_token을 fragment(`#`)로 전달하고, 프론트에서 읽은 직후 `history.replaceState`로 주소창에서도 제거
+
+**결과** : state 불일치 시 요청 차단, 모든 분기에서 쿠키 잔류 없음, 브라우저 히스토리·서버 로그에 토큰 미노출을 확인.
+<br>
 
 ### 4. 특수 목적 토큰으로 일반 API 접근 가능
 **문제** : 카카오 가입용 `kakao_setup` 토큰, 비밀번호 찾기용 `password_reset` 토큰으로 일반 인증이 필요한 API(`/users/me` 등) 호출 가능한 상황.
@@ -343,6 +361,16 @@ pytest
 **원인** : `get_current_user`가 JWT 서명·만료만 검증하고 토큰의 `type` 필드는 확인하지 않음. 특수 토큰을 새로 추가하면서 기존 인증 로직과의 충돌을 뒤늦게 인식.
 
 **해결** : `payload.get("type") is not None`이면 즉시 401을 반환하도록 `get_current_user`에 3줄 추가. 특수 토큰은 각각의 전용 dependency에서만 검증.
+
+```python
+async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)):
+    payload = decode_token(token)
+    if payload.get("type") is not None:
+        raise HTTPException(status_code=401, detail="일반 인증 토큰이 아닙니다.")
+    ...
+```
+
+**결과** : `kakao_setup`/`password_reset` 토큰으로 `/users/me` 등 일반 API 호출 시 401 반환, 정상 로그인 토큰은 기존과 동일하게 동작함을 확인.
 
 ---
 
