@@ -27,20 +27,11 @@
 ---
 
 ## Contents
-- [Team](#Team)
-- [Why](#Why)
-- [How It Works](#How-It-Works)
-- [Demo](#Demo)
-- [Features](#Features)
-- [Architecture](#Architecture)
-- [Getting Started](#Getting-Started)
-- [Database & Migration](#Database--Migration)
-- [Project Structure](#Project-Structure)
-- [Docs](#Docs)
-- [Development](#Development)
-- [**+ My Contributions**](#My-Contributions)
-- [**+ Code Review & Trouble Shooting**](#Code-Review--Trouble-Shooting)
-- [+ Project Review](#Project-Review)
+1. &nbsp;[Team](#Team)&nbsp;&nbsp;·&nbsp;&nbsp;[Why](#Why)
+2. &nbsp;[How It Works](#How-It-Works)&nbsp;&nbsp;·&nbsp;&nbsp;[Demo](#Demo)&nbsp;&nbsp;·&nbsp;&nbsp;[Features](#Features)&nbsp;&nbsp;·&nbsp;&nbsp;[Architecture](#Architecture)
+3. &nbsp;[Getting Started](#Getting-Started)&nbsp;&nbsp;·&nbsp;&nbsp;[Project Structure](#Project-Structure)&nbsp;&nbsp;·&nbsp;&nbsp;[Docs](#Docs)
+4. &nbsp;[Database & Migration](#Database--Migration)&nbsp;&nbsp;·&nbsp;&nbsp;[Development](#Development)
+5. &nbsp;[**My Contributions**](#My-Contributions)&nbsp;&nbsp;·&nbsp;&nbsp;[**Code Review & Trouble Shooting**](#Code-Review--Trouble-Shooting)&nbsp;&nbsp;·&nbsp;&nbsp;[Project Review](#Project-Review)
 
 ---
 
@@ -195,24 +186,6 @@ docker compose up --build
 
 ---
 
-## Database & Migration
-
-| 상황 | 동작 |
-|------|------|
-| `babdongmu.db` 없음 | 서버 시작 시 SQLite 테이블을 자동 생성하고 Alembic head로 기록합니다. |
-| `babdongmu.db` 있음 + `DEBUG=True` | 서버 시작 시 `alembic upgrade head`를 자동 실행합니다. |
-| `babdongmu.db` 있음 + `DEBUG=False` | 자동 migration을 실행하지 않습니다. |
-| 프로덕션 PostgreSQL | GitHub Actions 배포 과정에서 `alembic upgrade head`를 실행합니다. |
-
-모델 변경 후 직접 migration을 만들 때는 아래 명령을 사용합니다.
-
-```bash
-alembic revision --autogenerate -m "변경내용"
-alembic upgrade head
-```
-
----
-
 ## Project Structure
 
 ```text
@@ -247,6 +220,24 @@ docs/
 | [DB 설계](docs/DATABASE.md) | 테이블, 컬럼, migration 운영 방법을 정리합니다. |
 | [ERD](docs/bab_donmu_erd.html) | 데이터 관계를 시각적으로 확인합니다. |
 | [발표 슬라이드](presentation/babdongmu-demo.html) | 최종 시연 발표용 웹 슬라이드입니다. |
+
+---
+
+## Database & Migration
+
+| 상황 | 동작 |
+|------|------|
+| `babdongmu.db` 없음 | 서버 시작 시 SQLite 테이블을 자동 생성하고 Alembic head로 기록합니다. |
+| `babdongmu.db` 있음 + `DEBUG=True` | 서버 시작 시 `alembic upgrade head`를 자동 실행합니다. |
+| `babdongmu.db` 있음 + `DEBUG=False` | 자동 migration을 실행하지 않습니다. |
+| 프로덕션 PostgreSQL | GitHub Actions 배포 과정에서 `alembic upgrade head`를 실행합니다. |
+
+모델 변경 후 직접 migration을 만들 때는 아래 명령을 사용합니다.
+
+```bash
+alembic revision --autogenerate -m "변경내용"
+alembic upgrade head
+```
 
 ---
 
