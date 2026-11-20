@@ -43,8 +43,8 @@
 
 | 구성원&nbsp; | 도메인 | 백엔드 | 프론트엔드 |
 |------|------------|------------|----------------|
-| **[김상혁](https://github.com/gabriel-1204)** | 인프라 / 배포 | 스켈레톤, Docker, CI/CD, 배포 | 랜딩페이지 |
-| **[나솔림](https://github.com/solrimna)** | 관리자 / AI | 대시보드 API, 호스팅 승인, 통계, CoolSMS, Gemini AI 소개글 | admin.html |
+| **[김상혁](https://github.com/gabriel-1204)** | 인프라 / 배포 | 스켈레톤, Docker, CI/CD, 배포 | 랜딩페이지, 디자인 |
+| **[나솔림](https://github.com/solrimna)** | 관리자 / AI | 대시보드 API, 호스팅 승인, 통계, Solapi SMS, Gemini AI 소개글 | admin.html |
 | **[박지영](https://github.com/battlegroundcallofduty)** | 회원 / 인증 | 회원가입, 로그인, JWT, 서류 업로드, 신원검증 | login, register, mypage |
 | **[서호근](https://github.com/azure5finger-cmyk)** | 어르신 / 호스팅 | 어르신 CRUD, 호스팅 CRUD, 보호자 관리 | guardian, hostings, hosting-detail |
 | **[류도희](https://github.com/kittyjoa)** | 매칭 / 후기 | 매칭 신청, 체크인/아웃, 봉사시간, 후기 | my-matches |
@@ -251,11 +251,17 @@ pytest
 
 커밋 전에는 `git status`로 변경 파일을 확인하고, 필요한 파일만 명시적으로 스테이징합니다.
 
+> **참고** : `tests/test_user.py`는 프로젝트 초기 스켈레톤 단계(API 미구현, 501 응답 기준)에서 작성된 테스트로 현재 구현과 맞지 않습니다.
+> 회원·인증 도메인 테스트는 아래 명령으로 실행할 수 있습니다.
+> ```bash
+> pytest tests/test_phone_normalize.py
+> ```
+
 ---
 
 ## My Contributions
 
-담당 도메인: **회원 / 인증** — 백엔드 API + 프론트엔드 (login, register, mypage)
+담당 도메인: **회원 / 인증** — 백엔드 API 20개 + 프론트엔드 (login, register, mypage)
 
 ### 회원가입 · 로그인 · JWT 인증
 - 이메일 로그인, JWT 발급·검증 흐름 전담 구현
@@ -269,18 +275,17 @@ pytest
 - 인증 완료 후 10분 유효, 만료 시간 조건 포함한 상태 검증
 - 동일 번호 중복 가입 차단 — `get_user_by_phone_number` 라우터 레벨 체크
 - 전화번호 정규화 로직 schemas 헬퍼 함수로 추출해 재사용
-- `pytest` 기반 전화번호 정규화 단위 테스트 작성 (`tests/test_phone_normalize.py`) — 하이픈/공백 제거, 자릿수 검증, 4개 스키마(`SmsSendRequest`, `SmsVerifyRequest`, `UserRegisterRequest`, `KakaoSetupRequest`) 공통 적용 여부 커버
+- `pytest` 기반 전화번호 정규화 단위 테스트 12개 케이스 작성 (`tests/test_phone_normalize.py`) — 하이픈/공백 제거, 자릿수 검증, 4개 스키마(`SmsSendRequest`, `SmsVerifyRequest`, `UserRegisterRequest`, `KakaoSetupRequest`) 공통 적용 여부 커버
 
 ### 카카오 소셜 로그인
-- 카카오 OAuth 2.0 연동 엔드포인트 3개 구현 (인가 코드, 토큰 교환, 사용자 정보 조회)
+- 카카오 OAuth 2.0 연동 엔드포인트 3개 구현 (인가 요청, 콜백에서 토큰 교환·사용자 정보 조회, 신규 회원 추가정보 가입)
 - CSRF 방지용 `state` 파라미터 추가, `oauth_state` 쿠키 검증 직후 삭제
 - access_token을 URL fragment(`#`)로 전달해 서버 로그·히스토리 노출 방지
 - 카카오 유저 전화번호 추가 등록 필수 처리, 비밀번호 변경 차단, 마이페이지 필드 조건부 hidden
 
 ### Cloudflare R2 서류 업로드 · 신원검증
 - 서류 업로드 / 조회 / 삭제 API 구현 (R2 + DB 동기화)
-- 매직 바이트 검증 + Pillow polyglot 파일 재검증으로 위장 파일 업로드 방어
-- `asyncio.to_thread`로 R2 I/O를 별도 스레드에서 실행해 이벤트 루프 블로킹 방지
+- 5종 파일 형식(JPG·PNG·PDF·HWP·DOCX) 매직 바이트 검증 + 이미지는 Pillow 구조 검증으로 위장 파일 업로드 방어
 - 회원 탈퇴 시 R2 파일 + DB 레코드 동시 삭제, 보호자는 등록된 어르신 존재 시 탈퇴 차단
 - 승인 거절 시 거절 사유 메시지 마이페이지에 표시
 
@@ -291,7 +296,7 @@ pytest
 
 ### 정리 스케줄러
 - 만료된 SMS 인증코드, 같은 유저의 동일 서류 타입 중 오래된 레코드, R2 고아 파일 자동 삭제
-- 서비스별 삭제 함수를 `asyncio.gather`로 병렬 실행
+- 동기 라이브러리인 boto3의 R2 목록 조회·삭제를 asyncio.to_thread로 별도 스레드에서 실행해 이벤트 루프 블로킹 방지
 - `DEBUG=True` 환경에서는 R2 정리 제외 (개발 중 팀원 파일 보호)
 - 서버 기동 후 24시간 뒤 첫 실행, 환경 변수로 실행 주기 조정 가능
 
@@ -305,7 +310,38 @@ pytest
 
 ## Code Review & Trouble Shooting
 
-### 1. 비밀번호 찾기 — 전화번호 클라이언트 노출
+### 1. 특수 목적 토큰으로 일반 API 접근 가능 (인가 우회)
+**문제** : 카카오 가입용 `kakao_setup` 토큰, 비밀번호 찾기용 `password_reset` 토큰으로 일반 인증이 필요한 API(`/users/me` 등) 호출 가능한 상황.
+
+**원인** : 특수 토큰도 일반 토큰과 같은 SECRET_KEY로 서명되는데, get_current_user는 서명·만료만 검증하고 type 클레임을 확인하지 않아 둘을 구분하지 못함.
+
+**해결** : `payload.get("type") is not None`이면 즉시 401을 반환하도록 `get_current_user`에 3줄 추가. 특수 토큰은 각각의 전용 dependency에서만 검증.
+
+```python
+async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)):
+    payload = decode_token(token)
+    if payload.get("type") is not None:
+        raise HTTPException(status_code=401, detail="일반 인증 토큰이 아닙니다.")
+    ...
+```
+
+**결과** : `kakao_setup`/`password_reset` 토큰으로 `/users/me` 등 일반 API 호출 시 401 반환, 정상 로그인 토큰은 기존과 동일하게 동작함을 확인.
+<br>
+
+### 2. 카카오 OAuth — CSRF 방어·토큰 노출·쿠키 잔류
+**문제** : ① state 파라미터가 없어, 공격자의 인가 코드가 담긴 콜백 URL을 피해자가 열면 공격자 계정으로 로그인되는 로그인 CSRF 가능    
+② access_token을 쿼리스트링으로 전달해 서버 로그와 브라우저 히스토리에 노출    
+③ 검증이 끝난 oauth_state 쿠키가 삭제되지 않고 남음
+
+**해결** :
+- `secrets.token_urlsafe(32)`로 state 생성 → httpOnly 쿠키에 저장 → 콜백에서 검증
+- 성공·에러·예외 4가지 분기 모두에 `response.delete_cookie("oauth_state")` 추가
+- access_token을 fragment(`#`)로 전달하고, 프론트에서 읽은 직후 `history.replaceState`로 주소창에서도 제거
+
+**결과** : state 불일치 시 요청 차단, 모든 분기에서 쿠키 잔류 없음, 브라우저 히스토리·서버 로그에 토큰 미노출을 확인.
+<br>
+
+### 3. 비밀번호 찾기 — 전화번호 클라이언트 노출
 **문제** : 1단계 응답에 실제 전화번호(`phone_number`)를 포함해 프론트엔드가 보관했다가 2단계에서 그대로 서버로 전송하는 구조.
 
 **원인** : SMS 코드 검증(2단계)에 전화번호가 필요했고, 이를 클라이언트가 넘겨주는 방식으로 초기 설계. 코드리뷰에서 "전화번호가 클라이언트에 노출된다"고 지적.
@@ -315,7 +351,7 @@ pytest
 **결과** : 클라이언트·네트워크 어디에도 실제 전화번호가 노출되지 않으면서 SMS 인증 플로우는 기존과 동일하게 동작함을 확인.
 <br>
 
-### 2. 비밀번호 찾기 — 계정 열거 공격(Account Enumeration) 방지
+### 4. 비밀번호 찾기 — 계정 열거 공격(Account Enumeration) 방지
 **문제** : 없는 이메일이면 HTTP 404, 있으면 200을 반환해 공격자가 이메일 가입 여부 구분 가능한 상황.
 
 **원인** : "없으면 404"라는 일반적인 REST 패턴을 그대로 적용.
@@ -333,35 +369,6 @@ return {"masked_phone": mask_phone(phone)}
 ```
 
 **결과** : 존재/미존재 이메일 모두 동일한 응답 형태를 반환해 이메일 가입 여부를 외부에서 추론할 수 없음을 확인.
-<br>
-
-### 3. 카카오 OAuth — CSRF 방어·토큰 노출·쿠키 잔류
-**문제** : ① state 파라미터가 없어 CSRF 공격 가능 ② access_token을 쿼리스트링으로 전달해 서버 로그와 브라우저 히스토리에 노출 ③ 코드리뷰 반영 후 확인하다가 검증이 끝난 oauth_state 쿠키가 삭제되지 않고 남아있는 것을 추가로 발견.
-
-**해결** :
-- `secrets.token_urlsafe(32)`로 state 생성 → httpOnly 쿠키에 저장 → 콜백에서 검증
-- 성공·에러·예외 4가지 분기 모두에 `response.delete_cookie("oauth_state")` 추가
-- access_token을 fragment(`#`)로 전달하고, 프론트에서 읽은 직후 `history.replaceState`로 주소창에서도 제거
-
-**결과** : state 불일치 시 요청 차단, 모든 분기에서 쿠키 잔류 없음, 브라우저 히스토리·서버 로그에 토큰 미노출을 확인.
-<br>
-
-### 4. 특수 목적 토큰으로 일반 API 접근 가능
-**문제** : 카카오 가입용 `kakao_setup` 토큰, 비밀번호 찾기용 `password_reset` 토큰으로 일반 인증이 필요한 API(`/users/me` 등) 호출 가능한 상황.
-
-**원인** : `get_current_user`가 JWT 서명·만료만 검증하고 토큰의 `type` 필드는 확인하지 않음. 특수 토큰을 새로 추가하면서 기존 인증 로직과의 충돌을 뒤늦게 인식.
-
-**해결** : `payload.get("type") is not None`이면 즉시 401을 반환하도록 `get_current_user`에 3줄 추가. 특수 토큰은 각각의 전용 dependency에서만 검증.
-
-```python
-async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)):
-    payload = decode_token(token)
-    if payload.get("type") is not None:
-        raise HTTPException(status_code=401, detail="일반 인증 토큰이 아닙니다.")
-    ...
-```
-
-**결과** : `kakao_setup`/`password_reset` 토큰으로 `/users/me` 등 일반 API 호출 시 401 반환, 정상 로그인 토큰은 기존과 동일하게 동작함을 확인.
 
 ---
 
@@ -373,6 +380,6 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession
 
 - **배포와 Alembic** — 배포와 Alembic 마이그레이션을 다른 팀원들이 담당해줘서 제 역할에 집중할 수 있었지만, 개발 과정에서 그 중요성을 실감했습니다. 특히 배포에 대한 관심이 생겨 이후 미배포 상태로 남아있던 팀 프로젝트 하나를 개인적으로 배포해보는 계기가 됐습니다. → [Moong(뭉)! 배포 버전](https://github.com/battlegroundcallofduty/Moong_deploy)
 
-- **비동기 구조 학습 필요성** — `asyncio.to_thread`로 boto3의 동기 블로킹 문제를 해결하면서 FastAPI 비동기 구조를 더 깊이 이해해야 한다는 필요성을 느꼈습니다. 이후 비동기 개념을 다시 정리하는 계기가 됐습니다.
+- **비동기 구조 학습 필요성** — 정리 스케줄러에 asyncio.to_thread를 적용해 boto3의 동기 블로킹을 막았지만, 프로젝트 이후 다시 점검해보니 팀 공용 R2 업로드·삭제 함수에는 적용되지 않아 async def 안에서 동기 호출이 이벤트 루프를 막고 있었습니다. async를 붙이는 것만으로는 비동기가 되지 않는다는 점을 확인했고, 이를 계기로 이벤트 루프와 동기/비동기 개념을 다시 정리했습니다.
 
 - **프로젝트 주제에 대한 소감** — IT 기술에 익숙하지 않은 어르신들을 위한 서비스를 만드는 것 자체가 사회적으로 의미 깊다고 느꼈습니다. 고령화 사회에서 시니어 복지 분야에 IT를 접목하는 시도가 앞으로 더 넓어지면 좋겠다는 생각도 들었습니다. 사회적 가치를 넘어, 제대로 수익화한다면 충분히 사업성도 있는 분야라는 생각도 함께 들었습니다.
