@@ -31,7 +31,7 @@
 2. &nbsp;[How It Works](#How-It-Works)&nbsp;&nbsp;·&nbsp;&nbsp;[Demo](#Demo)&nbsp;&nbsp;·&nbsp;&nbsp;[Features](#Features)&nbsp;&nbsp;·&nbsp;&nbsp;[Architecture](#Architecture)
 3. &nbsp;[Getting Started](#Getting-Started)&nbsp;&nbsp;·&nbsp;&nbsp;[Project Structure](#Project-Structure)&nbsp;&nbsp;·&nbsp;&nbsp;[Docs](#Docs)
 4. &nbsp;[Database & Migration](#Database--Migration)&nbsp;&nbsp;·&nbsp;&nbsp;[Development](#Development)
-5. &nbsp;[**My Contributions**](#My-Contributions)&nbsp;&nbsp;·&nbsp;&nbsp;[**Code Review & Trouble Shooting**](#Code-Review--Trouble-Shooting)&nbsp;&nbsp;·&nbsp;&nbsp;[Project Review](#Project-Review)
+5. &nbsp;[**My Contributions**](#My-Contributions)&nbsp;&nbsp;·&nbsp;&nbsp;[**Code Review & Trouble Shooting**](#Code-Review--Trouble-Shooting)&nbsp;&nbsp;·&nbsp;&nbsp;[**Async Review**](#Async-Review)&nbsp;&nbsp;·&nbsp;&nbsp;[Project Review](#Project-Review)
 
 ---
 
@@ -43,7 +43,7 @@
 
 | 구성원&nbsp; | 도메인 | 백엔드 | 프론트엔드 |
 |------|------------|------------|----------------|
-| **[김상혁](https://github.com/gabriel-1204)** | 인프라 / 배포 | 스켈레톤, Docker, CI/CD, 배포 | 랜딩페이지, 디자인 |
+| **[김상혁](https://github.com/gabriel-1204)** | 인프라 / 배포 | 기획, 스켈레톤, Docker, CI/CD, 배포 | 랜딩페이지, 디자인 |
 | **[나솔림](https://github.com/solrimna)** | 관리자 / AI | 대시보드 API, 호스팅 승인, 통계, Solapi SMS, Gemini AI 소개글 | admin.html |
 | **[박지영](https://github.com/battlegroundcallofduty)** | 회원 / 인증 | 회원가입, 로그인, JWT, 서류 업로드, 신원검증 | login, register, mypage |
 | **[서호근](https://github.com/azure5finger-cmyk)** | 어르신 / 호스팅 | 어르신 CRUD, 호스팅 CRUD, 보호자 관리 | guardian, hostings, hosting-detail |
@@ -130,7 +130,7 @@ flowchart TB
     Domain --> R2["Cloudflare R2"]
     Domain --> SMS["Solapi SMS"]
     Domain --> Gemini["Gemini AI"]
-    Scheduler["Hosting Scheduler"] --> Domain
+    Scheduler["Hosting / Cleanup Scheduler"] --> Domain
     GitHub["GitHub Actions"] --> EC2["AWS EC2 + Docker + Caddy"]
     EC2 --> API
 ```
@@ -192,7 +192,7 @@ docker compose up --build
 app/
 ├── main.py                 # FastAPI 앱 진입점
 ├── database.py             # SQLAlchemy async DB 연결과 로컬 migration 처리
-├── scheduler.py            # 호스팅 상태 자동 전환 스케줄러
+├── scheduler.py            # 호스팅 상태 자동 전환 · 데이터 정리 스케줄러
 ├── api/v1/router.py        # API 라우터 통합
 ├── core/security.py        # JWT와 비밀번호 해싱
 ├── domain/                 # 역할과 기능별 도메인
@@ -275,7 +275,7 @@ pytest
 - 인증 완료 후 10분 유효, 만료 시간 조건 포함한 상태 검증
 - 동일 번호 중복 가입 차단 — `get_user_by_phone_number` 라우터 레벨 체크
 - 전화번호 정규화 로직 schemas 헬퍼 함수로 추출해 재사용
-- `pytest` 기반 전화번호 정규화 단위 테스트 12개 케이스 작성 (`tests/test_phone_normalize.py`) — 하이픈/공백 제거, 자릿수 검증, 4개 스키마(`SmsSendRequest`, `SmsVerifyRequest`, `UserRegisterRequest`, `KakaoSetupRequest`) 공통 적용 여부 커버
+- `pytest` 기반 전화번호 정규화 단위 테스트 12개 케이스 작성 (`tests/test_phone_normalize.py`) — 통과 케이스 4개, 거부 케이스 5개, 스키마별 적용 테스트 3개
 
 ### 카카오 소셜 로그인
 - 카카오 OAuth 2.0 연동 엔드포인트 3개 구현 (인가 요청, 콜백에서 토큰 교환·사용자 정보 조회, 신규 회원 추가정보 가입)
@@ -296,7 +296,7 @@ pytest
 
 ### 정리 스케줄러
 - 만료된 SMS 인증코드, 같은 유저의 동일 서류 타입 중 오래된 레코드, R2 고아 파일 자동 삭제
-- 동기 라이브러리인 boto3의 R2 목록 조회·삭제를 asyncio.to_thread로 별도 스레드에서 실행해 이벤트 루프 블로킹 방지
+- 동기 라이브러리인 boto3의 R2 목록 조회·삭제를 `asyncio.to_thread`로 별도 스레드에서 실행해 이벤트 루프 블로킹 방지
 - `DEBUG=True` 환경에서는 R2 정리 제외 (개발 중 팀원 파일 보호)
 - 서버 기동 후 24시간 뒤 첫 실행, 환경 변수로 실행 주기 조정 가능
 
@@ -313,7 +313,7 @@ pytest
 ### 1. 특수 목적 토큰으로 일반 API 접근 가능 (인가 우회)
 **문제** : 카카오 가입용 `kakao_setup` 토큰, 비밀번호 찾기용 `password_reset` 토큰으로 일반 인증이 필요한 API(`/users/me` 등) 호출 가능한 상황.
 
-**원인** : 특수 토큰도 일반 토큰과 같은 SECRET_KEY로 서명되는데, get_current_user는 서명·만료만 검증하고 type 클레임을 확인하지 않아 둘을 구분하지 못함.
+**원인** : 특수 토큰도 일반 토큰과 같은 `SECRET_KEY`로 서명되는데, `get_current_user`는 서명·만료만 검증하고 type 클레임을 확인하지 않아 둘을 구분하지 못함.
 
 **해결** : `payload.get("type") is not None`이면 즉시 401을 반환하도록 `get_current_user`에 3줄 추가. 특수 토큰은 각각의 전용 dependency에서만 검증.
 
@@ -334,9 +334,9 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession
 ③ 검증이 끝난 oauth_state 쿠키가 삭제되지 않고 남음
 
 **해결** :
-- `secrets.token_urlsafe(32)`로 state 생성 → httpOnly 쿠키에 저장 → 콜백에서 검증
-- 성공·에러·예외 4가지 분기 모두에 `response.delete_cookie("oauth_state")` 추가
-- access_token을 fragment(`#`)로 전달하고, 프론트에서 읽은 직후 `history.replaceState`로 주소창에서도 제거
+① `secrets.token_urlsafe(32)`로 state 생성 → httpOnly 쿠키에 저장 → 콜백에서 검증
+② access_token을 fragment(`#`)로 전달하고, 프론트에서 읽은 직후 `history.replaceState`로 주소창에서도 제거
+③ 성공·에러·예외 4가지 분기 모두에 `response.delete_cookie("oauth_state")` 추가
 
 **결과** : state 불일치 시 요청 차단, 모든 분기에서 쿠키 잔류 없음, 브라우저 히스토리·서버 로그에 토큰 미노출을 확인.
 <br>
@@ -372,6 +372,45 @@ return {"masked_phone": mask_phone(phone)}
 
 ---
 
+## Async Review
+
+> 프로젝트 종료 후 외부 I/O 호출 코드를 다시 점검하며 정리한 내용입니다. 원본 보존을 위해 코드에는 반영하지 않았습니다.
+
+### 외부 I/O별 처리 현황
+
+| 대상 | 라이브러리 | 처리 방식 | 이벤트 루프 |
+|------|-----------|-----------|:---:|
+| DB | SQLAlchemy async (aiosqlite / psycopg 3) | 비동기 (`await db.execute`) | 안 막힘 |
+| 카카오 API | `httpx.AsyncClient` | 비동기 | 안 막힘 |
+| Gemini | `google-genai` (`client.aio`) | 비동기 | 안 막힘 |
+| SMS | Solapi SDK (동기) | `asyncio.to_thread`로 별도 스레드 실행 | 안 막힘 |
+| QR 이미지 생성 | `qrcode` (CPU 작업) | `asyncio.to_thread`로 별도 스레드 실행 | 안 막힘 |
+| R2 고아 파일 정리 (스케줄러) | boto3 (동기) | `asyncio.to_thread`로 별도 스레드 실행 | 안 막힘 |
+| **R2 업로드 · 삭제 (공용 함수)** | **boto3 (동기)** | **`async def` 안에서 동기 호출** | **막힘** |
+
+### 문제
+- 공용 함수 `upload_image`, `delete_image`는 `async def`지만 내부의 boto3 호출(`put_object`, `delete_object`)이 동기라, R2 응답을 기다리는 동안 이벤트 루프 전체가 멈춥니다.
+- 이 함수는 서류 업로드 · 삭제, 후기 이미지 업로드 · 삭제, 회원 탈퇴, 어르신 삭제, 스케줄러의 중복 서류 정리에서 공통으로 호출됩니다.
+- - 회원 탈퇴 · 중복 서류 정리 · 어르신 삭제는 `asyncio.gather(*[delete_image(...)])`로 여러 파일을 지우지만, `delete_image` 안에 `await` 지점이 없어 동시에 실행되지 않고 하나씩 순서대로 실행됩니다. 그 결과 파일 수만큼 처리 시간이 늘어나고, 그동안 다른 요청도 함께 대기합니다.
+
+### 개선 방향
+공용 함수의 boto3 호출만 `asyncio.to_thread`로 감싸면 호출하는 모든 경로에 한 번에 적용되고, 위 3곳의 `gather`도 실제로 동시에 실행됩니다.
+
+```python
+# app/services/r2.py — upload_image
+await asyncio.to_thread(
+    client.put_object,
+    Bucket=bucket_name, Key=key, Body=contents, ContentType=file.content_type,
+)
+
+# app/services/r2.py — delete_image
+await asyncio.to_thread(client.delete_object, Bucket=bucket, Key=key)
+```
+
+장기적으로는 비동기 S3 클라이언트(`aioboto3`) 도입도 검토할 수 있습니다.
+
+---
+
 ## Project Review
 
 - **Refresh Token 미구현에 대한 아쉬움** — 카카오 로그인, 스케줄러 등 다른 기능 구현에 집중하다 보니 후반부에야 필요성을 인식했습니다. 발표까지 시간이 촉박해 구조를 변경하기 어려운 상황이었고, 프로젝트 안정성을 우선해 도입하지 않았습니다. 추후 개선한다면 가장 먼저 추가하고 싶은 기능입니다.
@@ -380,6 +419,6 @@ return {"masked_phone": mask_phone(phone)}
 
 - **배포와 Alembic** — 배포와 Alembic 마이그레이션을 다른 팀원들이 담당해줘서 제 역할에 집중할 수 있었지만, 개발 과정에서 그 중요성을 실감했습니다. 특히 배포에 대한 관심이 생겨 이후 미배포 상태로 남아있던 팀 프로젝트 하나를 개인적으로 배포해보는 계기가 됐습니다. → [Moong(뭉)! 배포 버전](https://github.com/battlegroundcallofduty/Moong_deploy)
 
-- **비동기 구조 학습 필요성** — 정리 스케줄러에 asyncio.to_thread를 적용해 boto3의 동기 블로킹을 막았지만, 프로젝트 이후 다시 점검해보니 팀 공용 R2 업로드·삭제 함수에는 적용되지 않아 async def 안에서 동기 호출이 이벤트 루프를 막고 있었습니다. async를 붙이는 것만으로는 비동기가 되지 않는다는 점을 확인했고, 이를 계기로 이벤트 루프와 동기/비동기 개념을 다시 정리했습니다.
+- **비동기 구조 이해 부족** — 정리 스케줄러의 R2 고아 파일 정리에는 `asyncio.to_thread`를 적용했지만, 같은 boto3를 쓰는 공용 업로드·삭제 함수를 거치는 경로는 점검하지 못했습니다. 프로젝트 이후 외부 I/O 호출을 하나씩 확인하면서 `async def` 안에서도 동기 호출은 이벤트 루프를 막는다는 점, `asyncio.gather`도 각 작업에 `await` 지점이 있어야 병렬로 동작한다는 점을 알게 됐습니다. 새 라이브러리를 도입할 때 동기/비동기 여부부터 확인하는 게 필요하다는 걸 깨달았습니다. → [Async Review](#Async-Review)
 
 - **프로젝트 주제에 대한 소감** — IT 기술에 익숙하지 않은 어르신들을 위한 서비스를 만드는 것 자체가 사회적으로 의미 깊다고 느꼈습니다. 고령화 사회에서 시니어 복지 분야에 IT를 접목하는 시도가 앞으로 더 넓어지면 좋겠다는 생각도 들었습니다. 사회적 가치를 넘어, 제대로 수익화한다면 충분히 사업성도 있는 분야라는 생각도 함께 들었습니다.
