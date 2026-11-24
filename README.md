@@ -31,7 +31,7 @@
 2. &nbsp;[How It Works](#How-It-Works)&nbsp;&nbsp;·&nbsp;&nbsp;[Demo](#Demo)&nbsp;&nbsp;·&nbsp;&nbsp;[Features](#Features)&nbsp;&nbsp;·&nbsp;&nbsp;[Architecture](#Architecture)
 3. &nbsp;[Getting Started](#Getting-Started)&nbsp;&nbsp;·&nbsp;&nbsp;[Project Structure](#Project-Structure)&nbsp;&nbsp;·&nbsp;&nbsp;[Docs](#Docs)
 4. &nbsp;[Database & Migration](#Database--Migration)&nbsp;&nbsp;·&nbsp;&nbsp;[Development](#Development)
-5. &nbsp;[**My Contributions**](#My-Contributions)&nbsp;&nbsp;·&nbsp;&nbsp;[**Code Review & Trouble Shooting**](#Code-Review--Trouble-Shooting)&nbsp;&nbsp;·&nbsp;&nbsp;[**Async Review**](#Async-Review)&nbsp;&nbsp;·&nbsp;&nbsp;[Project Review](#Project-Review)
+5. &nbsp;[**My Contributions**](#My-Contributions)&nbsp;&nbsp;·&nbsp;&nbsp;[**Code Review & Trouble Shooting**](#Code-Review--Trouble-Shooting)&nbsp;&nbsp;·&nbsp;&nbsp;[Async Review](#Async-Review)&nbsp;&nbsp;·&nbsp;&nbsp;[Project Review](#Project-Review)
 
 ---
 
@@ -425,4 +425,4 @@ await asyncio.to_thread(client.delete_object, Bucket=bucket, Key=key)
 
 - **비동기 구조 이해 부족** — 정리 스케줄러의 R2 고아 파일 정리에는 `asyncio.to_thread`를 적용했지만, 같은 boto3를 쓰는 공용 업로드·삭제 함수를 거치는 경로는 점검하지 못했습니다. 프로젝트 이후 외부 I/O 호출을 하나씩 확인하면서 `async def` 안에서도 동기 호출은 이벤트 루프를 막는다는 점, `asyncio.gather`도 각 작업에 `await` 지점이 있어야 동시에 동작한다는 점을 알게 됐습니다. → [Async Review](#Async-Review)
 
-- **프로젝트 주제에 대한 소감** — IT 기술에 익숙하지 않은 어르신들을 위한 서비스를 만드는 것 자체가 사회적으로 의미 깊다고 느꼈습니다. 고령화 사회에서 시니어 복지 분야에 IT를 접목하는 시도가 앞으로 더 넓어지면 좋겠다는 생각도 들었습니다. 사회적 가치를 넘어, 제대로 수익화한다면 충분히 사업성도 있는 분야라는 생각도 함께 들었습니다.
+- **프로젝트 주제에 대한 소감** — IT 기술에 익숙하지 않은 어르신들을 위한 서비스를 만드는 것 자체가 사회적으로 의미가 깊다고 느꼈습니다. 고령화 사회에서 시니어 복지 분야에 IT를 접목하는 시도가 앞으로 더 넓어지면 좋겠다는 생각도 들었습니다. 사회적 가치를 넘어, 제대로 수익화한다면 충분히 사업성도 있는 분야라는 생각도 함께 들었습니다.
